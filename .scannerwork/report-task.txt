@@ -1,0 +1,6 @@
+projectKey=OCR
+serverUrl=http://localhost:9000
+serverVersion=26.9.0.129388
+dashboardUrl=http://localhost:9000/dashboard?id=OCR
+ceTaskId=fd27d665-7ea2-4612-afbc-c973aaae759a
+ceTaskUrl=http://localhost:9000/api/ce/task?id=fd27d665-7ea2-4612-afbc-c973aaae759a

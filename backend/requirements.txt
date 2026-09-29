@@ -1,0 +1,39 @@
+# ── Web Framework ──────────────────────────────────────────────────────────────
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+python-multipart==0.0.20
+
+# ── Configuration & Validation ─────────────────────────────────────────────────
+pydantic==2.10.4
+pydantic-settings==2.7.0
+python-dotenv==1.0.1
+# ── Database ────────────────────────────────────────────────────────────────────
+sqlalchemy==2.0.36
+oracledb==2.5.0
+alembic==1.14.0
+# ── Queue / Worker ──────────────────────────────────────────────────────────────
+redis==5.2.1
+rq==2.1.0
+async-timeout==4.0.3; python_version < "3.11.3"
+# ── Document Processing ─────────────────────────────────────────────────────────
+pymupdf==1.25.1
+# ── OCR ─────────────────────────────────────────────────────────────────────────
+Pillow==10.4.0
+# ── AI / Model Management ───────────────────────────────────────────────────────
+ollama==0.4.4
+# ── Utilities ───────────────────────────────────────────────────────────────────
+httpx==0.27.2
+aiofiles==24.1.0
+python-magic-bin==0.4.14; sys_platform == "win32"
+python-magic==0.4.27; sys_platform != "win32"
+numpy==1.26.4
+jsonschema==4.23.0
+structlog==24.4.0
+img2table==1.3.1
+pandas==2.2.2
+# ── Testing ─────────────────────────────────────────────────────────────────────
+pytest==8.3.4
+pytest-asyncio==0.25.2
+pytest-mock==3.14.0
+
+rq-win==0.4.2

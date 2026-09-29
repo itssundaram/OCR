@@ -1,0 +1,52 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyd
+*.pyo
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# ── Env files — NEVER commit real credentials ─────────────────────────────────
+backend/.env
+frontend/.env
+.env
+
+# ── Data directories ─────────────────────────────────────────────────────────
+data/documents/
+data/results/
+data/thumbnails/
+data/temp/
+data/logs/
+
+# ── Node ──────────────────────────────────────────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+.pytest_cache/
+htmlcov/
+.coverage
+oracle_migration.sql
+
+# ── Model files — too large for git ──────────────────────────────────────────
+*.bin
+*.pt
+*.pth
+*.gguf
+*.safetensors
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
