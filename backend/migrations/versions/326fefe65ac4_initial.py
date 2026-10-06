@@ -66,7 +66,7 @@ def upgrade() -> None:
     op.create_index('idx_dt_active_lookup', 'DOCUMENT_TEMPLATES', ['document_type_id', 'page_key', 'is_active'], unique=False)
     op.create_index('idx_dt_type_page', 'DOCUMENT_TEMPLATES', ['document_type_id', 'page_key'], unique=False)
     op.create_index(op.f('ix_DOCUMENT_TEMPLATES_document_type_id'), 'DOCUMENT_TEMPLATES', ['document_type_id'], unique=False)
-    op.create_index('uq_one_active_template_per_page', 'DOCUMENT_TEMPLATES', [sa.text('CASE WHEN is_active = 1 THEN document_type_id ELSE NULL END'), sa.text('CASE WHEN is_active = 1 THEN page_key ELSE NULL END')], unique=True)
+    op.create_index('uq_one_active_template_per_page', 'DOCUMENT_TEMPLATES', [sa.text('(CASE WHEN is_active = 1 THEN document_type_id ELSE NULL END)'), sa.text('(CASE WHEN is_active = 1 THEN page_key ELSE NULL END)')], unique=True)  # Extra outer parens: Postgres requires expression-index columns to be parenthesized; Oracle accepts the redundant parens too, so this stays portable.
     op.create_table('PROCESSING_JOBS',
     sa.Column('id', sa.String(length=36), nullable=False),
     sa.Column('document_id', sa.String(length=36), nullable=False),
