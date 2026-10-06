@@ -125,6 +125,28 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(['pipeline_run_id'], ['PIPELINE_RUNS.id'], )
     )
     
+    # TEMPLATES
+    op.execute(sa.schema.CreateSequence(sa.Sequence('doc_templates_id_seq')))
+    op.create_table('TEMPLATES',
+        sa.Column('id', sa.Integer(), sa.Sequence('doc_templates_id_seq'), primary_key=True),
+        sa.Column('department_id', sa.Integer(), nullable=False),
+        sa.Column('code', sa.String(length=100), nullable=False),
+        sa.Column('version', sa.Integer(), nullable=False),
+        sa.Column('template_json', OracleJSON(), nullable=False),
+        sa.Column('extraction_instructions', sa.Text(), nullable=True),
+        sa.Column('is_active', sa.Integer(), nullable=False, server_default='0'),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
+        sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('CURRENT_TIMESTAMP'), nullable=False),
+        sa.ForeignKeyConstraint(['department_id'], ['DEPARTMENTS.id'], ),
+        sa.UniqueConstraint('department_id', 'code', 'version', name='uq_tmpl_dept_code_ver'),
+        sa.CheckConstraint('is_active IN (0, 1)', name='ck_tmpl_active')
+    )
+    op.create_index('idx_tmpl_dept_code', 'TEMPLATES', ['department_id', 'code'])
+    op.create_index('idx_tmpl_active_lookup', 'TEMPLATES', ['department_id', 'code', 'is_active'])
+    op.create_index('uq_one_active_tmpl_per_code', 'TEMPLATES',
+        [sa.text('(CASE WHEN is_active = 1 THEN department_id ELSE NULL END)'),
+         sa.text('(CASE WHEN is_active = 1 THEN code ELSE NULL END)')], unique=True)
+
     # DEPARTMENT_URLS
     op.execute(sa.schema.CreateSequence(sa.Sequence('dept_urls_id_seq')))
     op.create_table('DEPARTMENT_URLS',
@@ -164,6 +186,7 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_table('TEMPLATE_FIELDS')
     op.drop_table('DEPARTMENT_URLS')
+    op.drop_table('TEMPLATES')
     op.drop_table('PROCESSING_EVENTS')
     op.drop_table('TABLE_EXTRACTIONS')
     op.drop_table('FIELD_EXTRACTIONS')
@@ -179,3 +202,4 @@ def downgrade() -> None:
     op.execute(sa.text('DROP SEQUENCE proc_event_id_seq'))
     op.execute(sa.text('DROP SEQUENCE table_ext_id_seq'))
     op.execute(sa.text('DROP SEQUENCE field_ext_id_seq'))
+    op.execute(sa.text('DROP SEQUENCE doc_templates_id_seq'))
