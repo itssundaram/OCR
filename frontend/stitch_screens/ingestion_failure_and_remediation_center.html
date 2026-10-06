@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Document Ingestion Failure &amp; Remediation Center - DocGov CivicIntel</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "secondary-fixed-dim": "#89ceff",
+            "on-error": "#ffffff",
+            "surface-container-lowest": "#ffffff",
+            "secondary": "#006591",
+            "surface-container-low": "#eff4ff",
+            "on-secondary-fixed": "#001e2f",
+            "primary-container": "#1e3a8a",
+            "surface": "#f8f9ff",
+            "surface-container-high": "#dce9ff",
+            "on-secondary-fixed-variant": "#004c6e",
+            "inverse-on-surface": "#eaf1ff",
+            "tertiary-fixed-dim": "#d0bcff",
+            "surface-variant": "#d3e4fe",
+            "on-secondary": "#ffffff",
+            "primary-fixed-dim": "#b6c4ff",
+            "inverse-surface": "#213145",
+            "on-error-container": "#93000a",
+            "on-primary-fixed-variant": "#264191",
+            "tertiary-fixed": "#e9ddff",
+            "tertiary": "#340081",
+            "error-container": "#ffdad6",
+            "surface-dim": "#cbdbf5",
+            "on-surface": "#0b1c30",
+            "surface-tint": "#4059aa",
+            "on-surface-variant": "#444651",
+            "outline": "#757682",
+            "error": "#ba1a1a",
+            "tertiary-container": "#4e03b8",
+            "surface-bright": "#f8f9ff",
+            "on-tertiary-container": "#b89cff",
+            "outline-variant": "#c5c5d3",
+            "primary": "#00236f",
+            "on-primary-container": "#90a8ff",
+            "surface-container": "#e5eeff",
+            "on-tertiary-fixed": "#23005c",
+            "background": "#f8f9ff",
+            "secondary-fixed": "#c9e6ff",
+            "on-primary": "#ffffff",
+            "primary-fixed": "#dce1ff",
+            "inverse-primary": "#b6c4ff",
+            "on-tertiary-fixed-variant": "#5516be",
+            "surface-container-highest": "#d3e4fe",
+            "on-secondary-container": "#004666",
+            "on-tertiary": "#ffffff",
+            "on-background": "#0b1c30",
+            "on-primary-fixed": "#00164e",
+            "secondary-container": "#39b8fd"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-md": "1rem",
+            "space-xs": "0.25rem",
+            "margin": "1.5rem",
+            "space-xl": "2rem",
+            "space-sm": "0.5rem",
+            "gutter": "1.25rem",
+            "space-lg": "1.5rem"
+          },
+          "fontFamily": {
+            "display-lg": ["Inter"],
+            "body-md": ["Inter"],
+            "label-md": ["Inter"],
+            "headline-md": ["Inter"],
+            "data-mono": ["Inter"],
+            "headline-sm": ["Inter"],
+            "headline-lg": ["Inter"],
+            "display-lg-mobile": ["Inter"],
+            "title-md": ["Inter"],
+            "body-sm": ["Inter"],
+            "body-lg": ["Inter"],
+            "label-sm": ["Inter"]
+          },
+          "fontSize": {
+            "display-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "label-md": ["13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+            "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "data-mono": ["13px", { "lineHeight": "18px", "letterSpacing": "0em", "fontWeight": "500" }],
+            "headline-sm": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600" }],
+            "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.015em", "fontWeight": "600" }],
+            "display-lg-mobile": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+            "title-md": ["16px", { "lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "600" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      font-size: 20px;
+      line-height: 1;
+      display: inline-block;
+      vertical-align: middle;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface antialiased font-body-md min-h-screen flex flex-col">
+<!-- TOP APP BAR (from Shared Components JSON) -->
+<header class="bg-surface-container-lowest text-primary flex justify-between items-center h-14 px-gutter w-full sticky top-0 z-40 border-b border-outline-variant shadow-sm">
+<div class="flex items-center gap-space-md">
+<div class="flex items-center gap-space-xs text-headline-sm font-headline-sm font-bold text-primary">
+<span class="material-symbols-outlined text-primary-container" data-icon="policy">policy</span>
+<span>DocGov CivicIntel</span>
+</div>
+<div class="hidden lg:flex items-center ml-space-lg bg-surface-container-low rounded-lg px-space-sm py-1 border border-outline-variant/60 w-80">
+<span class="material-symbols-outlined text-outline" data-icon="search">search</span>
+<input class="bg-transparent border-none text-body-sm font-body-sm focus:ring-0 text-on-surface placeholder-outline w-full pl-2 outline-none" placeholder="Search exceptions, hashes, or node IDs..." type="text"/>
+<kbd class="text-[10px] bg-surface-container text-on-surface-variant font-data-mono px-1.5 py-0.5 rounded border border-outline-variant">⌘K</kbd>
+</div>
+</div>
+<div class="flex items-center gap-space-sm">
+<div class="hidden sm:flex items-center gap-1 mr-2 px-2.5 py-1 bg-surface-container-low rounded border border-outline-variant/60 text-label-sm font-label-sm text-secondary">
+<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse mr-1"></span>
+<span>Node Cluster US-East: Operational</span>
+</div>
+<button class="p-2 rounded hover:bg-surface-container-low text-on-surface-variant transition-colors duration-150 ease-in-out relative" title="Notifications">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="p-2 rounded hover:bg-surface-container-low text-on-surface-variant transition-colors duration-150 ease-in-out" title="Help">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<button class="p-2 rounded hover:bg-surface-container-low text-on-surface-variant transition-colors duration-150 ease-in-out" title="Settings">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="h-6 w-px bg-outline-variant mx-1"></div>
+<div class="flex items-center gap-2 pl-2">
+<div class="w-8 h-8 rounded bg-primary-container text-white flex items-center justify-center font-title-md text-label-md">
+          DS
+        </div>
+<div class="hidden md:flex flex-col text-left">
+<span class="text-label-md font-label-md text-on-surface font-semibold leading-tight">Inv. D. Sturgis</span>
+<span class="text-body-sm font-body-sm text-outline text-[11px] leading-tight">Senior Compliance Officer</span>
+</div>
+</div>
+</div>
+</header>
+<div class="flex flex-1">
+<!-- PERSISTENT SIDEBAR NAVIGATION (from Shared Components JSON) -->
+<aside class="hidden md:flex flex-col justify-between h-[calc(100vh-3.5rem)] w-64 shrink-0 py-space-md px-space-sm sticky top-14 left-0 z-30 bg-surface-container-lowest border-r border-outline-variant shadow-sm">
+<div class="flex flex-col gap-space-sm">
+<!-- Sidebar Agency Header -->
+<div class="px-space-md py-space-xs mb-2">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="verified_user">verified_user</span>
+<span class="text-title-md font-title-md font-bold text-primary">CivicIntel Platform</span>
+</div>
+<p class="text-body-sm font-body-sm text-outline mt-0.5">Agency Compliance v4.2</p>
+</div>
+<!-- Ingestion CTA -->
+<button class="mx-space-xs mb-3 flex items-center justify-center gap-2 bg-primary-container text-white font-label-md text-label-md py-2 px-space-md rounded-lg shadow-sm hover:bg-primary transition-colors duration-150">
+<span class="material-symbols-outlined text-[18px]" data-icon="add_circle">add_circle</span>
+<span>New Document Ingestion</span>
+</button>
+<!-- Navigation Tabs -->
+<nav class="space-y-1">
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance">account_balance</span>
+<span>Departments</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="link">link</span>
+<span>URLs</span>
+</a>
+<!-- Active State: OCR (Contextually mapped to OCR Ingestion Failure) -->
+<a class="flex items-center gap-space-sm bg-surface-container text-primary border-l-2 border-primary font-title-md text-title-md px-space-md py-space-sm rounded-r-lg transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-primary" data-icon="document_scanner">document_scanner</span>
+<span>OCR</span>
+<span class="ml-auto bg-error text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full">1 ERR</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="account_tree">account_tree</span>
+<span>Orchestration</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+<span>Logs</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="topic">topic</span>
+<span>Manage Templates</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="support">support</span>
+<span>Help &amp; Support</span>
+</a>
+</nav>
+</div>
+<!-- Footer Tabs -->
+<div class="pt-space-sm border-t border-outline-variant space-y-1">
+<a class="flex items-center gap-space-sm text-on-surface-variant font-body-sm text-body-sm px-space-md py-space-xs rounded-lg hover:bg-surface-container-low" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="verified_user">verified_user</span>
+<span>System Health</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant font-body-sm text-body-sm px-space-md py-space-xs rounded-lg hover:bg-surface-container-low" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="tune">tune</span>
+<span>Compliance Settings</span>
+</a>
+</div>
+</aside>
+<!-- MAIN REMEDIATION CONTENT AREA -->
+<main class="flex-1 min-w-0 bg-background overflow-y-auto px-4 sm:px-6 lg:px-8 py-6">
+<!-- Breadcrumbs & System Alert Banner -->
+<div class="mb-5">
+<nav class="flex items-center gap-2 text-label-sm font-label-sm text-outline mb-2.5">
+<a class="hover:text-primary flex items-center gap-1" href="#">
+<span class="material-symbols-outlined text-[16px]" data-icon="document_scanner">document_scanner</span>
+<span>OCR</span>
+</a>
+<span class="text-outline-variant">/</span>
+<a class="hover:text-primary" href="#">Ingestion Exceptions</a>
+<span class="text-outline-variant">/</span>
+<span class="text-on-surface font-semibold font-data-mono">Error #ERR-9402-GPU</span>
+</nav>
+<!-- Top Critical Exception Banner -->
+<div class="bg-[#FFF5F5] border-l-4 border-error rounded-r-lg p-4 border border-y-error/20 border-r-error/20 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div class="flex items-start gap-3">
+<div class="p-2 bg-error/10 text-error rounded mt-0.5">
+<span class="material-symbols-outlined text-error font-bold" data-icon="error_outline">error_outline</span>
+</div>
+<div>
+<div class="flex items-center gap-2 flex-wrap">
+<span class="bg-[#FEF2F2] text-[#991B1B] border border-[#FECACA] font-label-sm text-label-sm px-2 py-0.5 rounded font-semibold">
+                  Ingestion Exception
+                </span>
+<span class="font-headline-sm text-headline-sm text-[#991B1B]">
+                  Worker Node GPU Memory Exhaustion &amp; Low Confidence Fallback Required
+                </span>
+</div>
+<p class="text-body-sm font-body-sm text-[#7F1D1D] mt-1">
+                The tri-model inference pipeline automatically halted at Stage 4 to prevent corrupted record propagation into the civic registry database.
+              </p>
+</div>
+</div>
+<div class="flex items-center gap-2 self-start md:self-center shrink-0">
+<span class="inline-flex items-center gap-1.5 text-label-sm font-label-sm text-[#991B1B] bg-white px-2.5 py-1.5 rounded border border-[#FECACA] font-data-mono">
+<span class="w-2 h-2 rounded-full bg-error animate-ping"></span>
+              Incident State: Suspended
+            </span>
+</div>
+</div>
+</div>
+<!-- Document Metadata Header & Primary Remediation Action Toolbar -->
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-4 shadow-sm mb-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+<div class="flex flex-col sm:flex-row sm:items-center gap-4">
+<div class="w-12 h-12 rounded bg-surface-container flex items-center justify-center text-primary-container shrink-0 border border-outline-variant/60">
+<span class="material-symbols-outlined text-2xl" data-icon="picture_as_pdf">picture_as_pdf</span>
+</div>
+<div>
+<div class="flex items-center gap-2 flex-wrap">
+<h1 class="text-headline-sm font-headline-sm text-on-surface font-bold">
+                Commercial_Zoning_Permit_App_41B.pdf
+              </h1>
+<span class="bg-surface-container text-primary font-label-sm text-label-sm px-2 py-0.5 rounded border border-outline-variant">
+                PDF v1.7 • 8 Pages
+              </span>
+</div>
+<div class="flex items-center gap-4 text-body-sm font-body-sm text-on-surface-variant mt-1.5 flex-wrap">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-outline" data-icon="apartment">apartment</span>
+                Department: <strong class="text-on-surface">Urban Development (URB-02)</strong>
+</span>
+<span class="text-outline-variant">•</span>
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-outline" data-icon="schedule">schedule</span>
+                Ingested 12 minutes ago
+              </span>
+<span class="text-outline-variant">•</span>
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-outline" data-icon="badge">badge</span>
+                Submitted by Inv. D. Sturgis
+              </span>
+</div>
+</div>
+</div>
+<!-- Primary Actions -->
+<div class="flex items-center gap-2 flex-wrap shrink-0">
+<button class="bg-surface-container-lowest hover:bg-surface-container-low border border-outline-variant text-on-surface text-label-md font-label-md px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-[18px] text-outline" data-icon="download">download</span>
+<span>Download Diagnostic Bundle (.ZIP)</span>
+</button>
+<button class="bg-surface-container-lowest hover:bg-surface-container-low border border-outline-variant text-on-surface text-label-md font-label-md px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-[18px] text-outline" data-icon="assignment_return">assignment_return</span>
+<span>Manually Route to Human Review Queue</span>
+</button>
+<button class="bg-primary-container hover:bg-primary text-white text-label-md font-label-md px-4 py-2 rounded-lg flex items-center gap-1.5 shadow-sm transition-colors">
+<span class="material-symbols-outlined text-[18px]" data-icon="replay">replay</span>
+<span>Retry with CPU Fallback Cluster</span>
+</button>
+</div>
+</div>
+<!-- ERROR DIAGNOSTIC ANATOMY CARDS: "What Happened, Why, and What Can You Do?" -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+<!-- Card 1: What Happened -->
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-4 shadow-sm flex flex-col justify-between relative overflow-hidden">
+<div class="absolute top-0 left-0 right-0 h-1 bg-[#EF4444]"></div>
+<div>
+<div class="flex items-center justify-between mb-2">
+<span class="text-label-sm font-label-sm font-semibold uppercase tracking-wider text-[#991B1B] flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="report_problem">report_problem</span>
+                What Happened?
+              </span>
+<span class="text-label-sm font-data-mono text-outline">Stage 4 / 6</span>
+</div>
+<h3 class="text-title-md font-title-md text-on-surface mb-2">
+              Tri-Model Inference Aborted on Page 3
+            </h3>
+<p class="text-body-sm font-body-sm text-on-surface-variant leading-relaxed">
+              2 of 3 models (<strong>Surya Layout</strong> &amp; <strong>Qwen-VL</strong>) threw unhandled Out-Of-Memory CUDA runtime exceptions when parsing a 1200 DPI scanned architectural parcel embed.
+            </p>
+</div>
+<div class="mt-4 pt-3 border-t border-outline-variant/60 flex items-center justify-between text-body-sm font-body-sm">
+<span class="text-outline font-data-mono text-[11px]">EXIT_CODE: 137 (SIGKILL)</span>
+<span class="text-error font-medium flex items-center gap-1 text-[12px]">
+<span class="material-symbols-outlined text-[14px]" data-icon="cancel">cancel</span>
+              Zero Token Output
+            </span>
+</div>
+</div>
+<!-- Card 2: Why it Happened -->
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-4 shadow-sm flex flex-col justify-between relative overflow-hidden">
+<div class="absolute top-0 left-0 right-0 h-1 bg-[#F59E0B]"></div>
+<div>
+<div class="flex items-center justify-between mb-2">
+<span class="text-label-sm font-label-sm font-semibold uppercase tracking-wider text-[#92400E] flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="search_insights">search_insights</span>
+                Why It Happened
+              </span>
+<span class="text-label-sm font-data-mono text-outline">Hardware Barrier</span>
+</div>
+<h3 class="text-title-md font-title-md text-on-surface mb-2">
+              VRAM 16GB Allocation Limit Breached
+            </h3>
+<p class="text-body-sm font-body-sm text-on-surface-variant leading-relaxed">
+              The PDF rasterizer unpacked an uncompressed 48-bit color bitmap requiring 18.4GB buffer allocation on worker node <code class="bg-surface-container px-1 py-0.5 rounded text-primary text-[11px] font-data-mono">us-east-ocr-gpu-04</code>, exceeding the hardware threshold.
+            </p>
+</div>
+<div class="mt-4 pt-3 border-t border-outline-variant/60 flex items-center justify-between text-body-sm font-body-sm">
+<span class="text-outline font-data-mono text-[11px]">NODE: us-east-gpu-04</span>
+<span class="text-[#B45309] font-medium flex items-center gap-1 text-[12px]">
+<span class="material-symbols-outlined text-[14px]" data-icon="memory">memory</span>
+              Peak: 16,384 MiB
+            </span>
+</div>
+</div>
+<!-- Card 3: Recommended Resolution -->
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-4 shadow-sm flex flex-col justify-between relative overflow-hidden">
+<div class="absolute top-0 left-0 right-0 h-1 bg-[#10B981]"></div>
+<div>
+<div class="flex items-center justify-between mb-2">
+<span class="text-label-sm font-label-sm font-semibold uppercase tracking-wider text-[#065F46] flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="auto_fix_high">auto_fix_high</span>
+                Recommended Resolution
+              </span>
+<span class="text-label-sm font-label-sm text-[#065F46] font-semibold bg-[#ECFDF5] px-1.5 py-0.5 rounded border border-[#A7F3D0]">99.4% Success Rate</span>
+</div>
+<h3 class="text-title-md font-title-md text-on-surface mb-2">
+              Downscale to 300 DPI + CPU Fallback
+            </h3>
+<p class="text-body-sm font-body-sm text-on-surface-variant leading-relaxed">
+              Auto-downsample raster layers to 300 DPI binarized grayscale and route through the resilient Tesseract/Paddle CPU worker cluster without losing zoning parcel boundary accuracy.
+            </p>
+</div>
+<div class="mt-4 pt-3 border-t border-outline-variant/60 flex items-center justify-between text-body-sm font-body-sm">
+<span class="text-outline text-[12px]">Estimated runtime: ~4.2s</span>
+<button class="text-primary hover:text-primary-container font-semibold flex items-center gap-1 text-[12px]">
+<span>Apply Fix Now</span>
+<span class="material-symbols-outlined text-[14px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- DETAILED MULTI-FAILURE MATRIX & EDGE STATE TABS -->
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant shadow-sm mb-6 overflow-hidden">
+<div class="border-b border-outline-variant bg-surface-container-low px-4 pt-3">
+<div class="flex items-center justify-between mb-2">
+<div>
+<span class="text-label-sm font-label-sm uppercase tracking-wider text-outline">Enterprise Diagnostic Matrix</span>
+<h2 class="text-title-md font-title-md text-on-surface">Simulate or Inspect Known System Failure Modes</h2>
+</div>
+<span class="text-body-sm font-body-sm text-outline hidden sm:inline">Showing 5 Edge-State Archetypes</span>
+</div>
+<!-- Tabs -->
+<div class="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-0">
+<!-- Active Tab 1 -->
+<button class="flex items-center gap-2 py-2.5 px-3 border-b-2 border-primary text-primary font-title-md text-label-md whitespace-nowrap bg-surface-container-lowest rounded-t">
+<span class="material-symbols-outlined text-[18px] text-error" data-icon="memory">memory</span>
+<span>GPU Worker Timeout (#ERR-9402)</span>
+<span class="w-2 h-2 rounded-full bg-error"></span>
+</button>
+<!-- Tab 2 -->
+<button class="flex items-center gap-2 py-2.5 px-3 border-b-2 border-transparent hover:border-outline-variant text-on-surface-variant font-label-md text-label-md whitespace-nowrap transition-colors">
+<span class="material-symbols-outlined text-[18px] text-outline" data-icon="security_update_warning">security_update_warning</span>
+<span>Corrupted / Tampered PDF</span>
+<span class="text-outline-variant text-[11px] font-data-mono">MD5 Fail</span>
+</button>
+<!-- Tab 3 -->
+<button class="flex items-center gap-2 py-2.5 px-3 border-b-2 border-transparent hover:border-outline-variant text-on-surface-variant font-label-md text-label-md whitespace-nowrap transition-colors">
+<span class="material-symbols-outlined text-[18px] text-outline" data-icon="blur_on">blur_on</span>
+<span>Severe Low-Confidence Scan (&lt;45%)</span>
+</button>
+<!-- Tab 4 -->
+<button class="flex items-center gap-2 py-2.5 px-3 border-b-2 border-transparent hover:border-outline-variant text-on-surface-variant font-label-md text-label-md whitespace-nowrap transition-colors">
+<span class="material-symbols-outlined text-[18px] text-outline" data-icon="schema">schema</span>
+<span>Missing / Deprecated Schema Template</span>
+</button>
+<!-- Tab 5 -->
+<button class="flex items-center gap-2 py-2.5 px-3 border-b-2 border-transparent hover:border-outline-variant text-on-surface-variant font-label-md text-label-md whitespace-nowrap transition-colors">
+<span class="material-symbols-outlined text-[18px] text-outline" data-icon="find_in_page">find_in_page</span>
+<span>Zero-Result Empty Extraction</span>
+</button>
+</div>
+</div>
+<!-- Active Tab Contextual Info Strip -->
+<div class="px-4 py-2.5 bg-surface-container/60 border-b border-outline-variant flex items-center justify-between text-body-sm font-body-sm text-on-surface-variant flex-wrap gap-2">
+<div class="flex items-center gap-3">
+<span class="font-data-mono text-[12px] bg-surface-container-lowest px-2 py-0.5 rounded border border-outline-variant text-primary font-semibold">
+              ACTIVE FAULT: OOM_CONTAINER_EXIT_SIGNAL_137
+            </span>
+<span>Cluster: <strong class="text-on-surface">Kubernetes worker-pool-h100-a</strong></span>
+<span class="hidden md:inline">•</span>
+<span class="hidden md:inline">Max Retry Budget: <strong>1 of 3 exhausted</strong></span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-label-sm font-label-sm text-outline">Isolation Policy:</span>
+<span class="text-label-sm font-label-sm text-on-surface font-semibold">Auto-Quarantine Active</span>
+</div>
+</div>
+</div>
+<!-- ACTIVE ERROR INTERACTIVE INSPECTION PANE (Split Comparison Viewer) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6">
+<!-- Left Pane: High-Contrast Document Preview with Failure Overlay (7 Cols) -->
+<div class="lg:col-span-7 bg-surface-container-lowest rounded-lg border border-outline-variant shadow-sm flex flex-col">
+<!-- Viewer Toolbar -->
+<div class="p-3 border-b border-outline-variant flex items-center justify-between bg-surface-container-low">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="frame_inspect">frame_inspect</span>
+<span class="text-title-md font-title-md text-on-surface">Document Inspection Canvas</span>
+<span class="bg-[#FEF2F2] text-[#991B1B] border border-[#FECACA] text-[11px] font-semibold px-2 py-0.5 rounded">
+                Page 3 of 8 (Fault Location)
+              </span>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant" title="Zoom Out">
+<span class="material-symbols-outlined text-[18px]" data-icon="zoom_out">zoom_out</span>
+</button>
+<span class="text-label-sm font-data-mono px-1">100%</span>
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant" title="Zoom In">
+<span class="material-symbols-outlined text-[18px]" data-icon="zoom_in">zoom_in</span>
+</button>
+<div class="h-4 w-px bg-outline-variant mx-1"></div>
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant" title="Highlight Overflows">
+<span class="material-symbols-outlined text-[18px] text-error" data-icon="layers">layers</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant" title="Maximize View">
+<span class="material-symbols-outlined text-[18px]" data-icon="fullscreen">fullscreen</span>
+</button>
+</div>
+</div>
+<!-- Document Canvas View -->
+<div class="p-6 bg-slate-100 flex-1 flex items-center justify-center overflow-auto min-h-[460px] relative">
+<!-- Simulated Document Paper Sheet -->
+<div class="w-full max-w-[520px] bg-white shadow-md border border-slate-300 p-6 rounded relative text-slate-800 font-sans text-xs">
+<!-- Document Header Mockup -->
+<div class="border-b-2 border-slate-800 pb-3 mb-4 flex justify-between items-start">
+<div>
+<div class="text-[10px] tracking-widest uppercase font-bold text-slate-500">Department of Urban Planning &amp; Housing</div>
+<div class="text-base font-bold text-slate-900 leading-tight">COMMERCIAL ZONING PERMIT SCHEDULE B</div>
+<div class="text-[11px] text-slate-600">Parcel Lot: 884-02-A9 • Verification Audit Copy</div>
+</div>
+<div class="border border-slate-400 p-1 text-center font-mono text-[9px]">
+<div>FILE REF</div>
+<strong>41-B-2024</strong>
+</div>
+</div>
+<!-- Successful Extracted Section (Mockup) -->
+<div class="mb-4">
+<div class="bg-emerald-50 border border-emerald-300 px-2 py-1 mb-2 rounded flex items-center justify-between">
+<span class="text-emerald-800 font-semibold text-[10px] uppercase">Section 1: Applicant Registration [Extracted 99.1%]</span>
+<span class="material-symbols-outlined text-emerald-600 text-[14px]" data-icon="check_circle">check_circle</span>
+</div>
+<div class="grid grid-cols-2 gap-2 text-[10px] text-slate-600">
+<div><strong>Developer Name:</strong> Pacific Crest Logistics Corp</div>
+<div><strong>License No:</strong> CA-URB-883910-Z</div>
+<div><strong>Site Address:</strong> 1044 Harbor Blvd, Dock 4</div>
+<div><strong>Tax Parcel ID:</strong> 092-441-998</div>
+</div>
+</div>
+<!-- FAILING AREA WITH BOUNDING BOX OVERLAY -->
+<div class="relative border-2 border-dashed border-red-500 bg-red-500/10 p-2 rounded mb-3">
+<!-- Bounding Box Annotation Tag -->
+<div class="absolute -top-3 left-3 bg-error text-white font-data-mono text-[10px] font-bold px-2 py-0.5 rounded shadow flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]" data-icon="warning">warning</span>
+<span>OOM CRASH ZONE: 1200 DPI Raster Matrix (28,800 x 19,200 px)</span>
+</div>
+<div class="text-[10px] font-bold text-red-900 mb-1 pt-1">
+                  Section 2: High-Density CAD Blueprint Table &amp; Metes/Bounds Survey
+                </div>
+<!-- Simulated Blueprint Raster Texture Graphic -->
+<div class="w-full h-36 bg-slate-900 rounded border border-red-400 p-2 relative overflow-hidden flex flex-col justify-between">
+<!-- Grid overlay -->
+<div class="absolute inset-0 opacity-20 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:12px_12px]"></div>
+<div class="relative z-10 flex justify-between items-start text-sky-400 font-mono text-[9px]">
+<span>DWG_LAYER_SURVEY_03</span>
+<span class="text-red-400 font-bold bg-red-950/80 px-1 border border-red-600">CUDA VRAM OVERFLOW @ 16,384 MiB</span>
+</div>
+<!-- Blueprint vector wireframe illusion -->
+<div class="relative z-10 my-auto text-center">
+<div class="inline-block border border-dashed border-sky-400 px-6 py-2 text-sky-200 font-mono text-[10px] bg-slate-800/80 rounded">
+                      [ CAD PARCEL LOT MATRIX: UNCOMPRESSED TIFF EMBED ]
+                      <div class="text-[8px] text-sky-400 mt-0.5">Scale: 1:500 • Layer Depth: 48-bit RGBA • Unpacked size: 1.62 GB</div>
+</div>
+</div>
+<div class="relative z-10 flex justify-between text-slate-400 font-mono text-[8px]">
+<span>COORDS: 37.7749° N, 122.4194° W</span>
+<span class="text-red-300">SuryaLayout::InferenceException (std::bad_alloc)</span>
+</div>
+</div>
+<div class="mt-2 text-[10px] text-red-900 bg-red-100/80 p-1.5 rounded border border-red-200 flex items-center justify-between">
+<span><strong>Parser Alert:</strong> Tokenizer failed to generate bounding coordinates for 42 tabular boundary rows.</span>
+<span class="font-data-mono font-bold text-red-700">Page 3 / Line 114</span>
+</div>
+</div>
+<!-- Document Footer Mockup -->
+<div class="pt-2 border-t border-slate-300 flex justify-between text-[9px] text-slate-500">
+<span>DocGov CivicIntel Ingestion Daemon v4.2.1</span>
+<span>Page 3 of 8 • Form Rev. 2024-Q3</span>
+</div>
+</div>
+</div>
+<!-- Viewer Footer Status -->
+<div class="p-3 border-t border-outline-variant bg-surface-container-low flex items-center justify-between text-body-sm font-body-sm">
+<span class="text-on-surface-variant flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+              Bounding Box Renderer: <strong class="text-on-surface">1 Fatal Conflict Flagged</strong>
+</span>
+<div class="flex items-center gap-2">
+<button class="text-label-sm font-label-sm text-secondary hover:underline flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="file_download">file_download</span>
+                Extract Raw Page 3 TIFF
+              </button>
+</div>
+</div>
+</div>
+<!-- Right Pane: Step-by-Step Remediation Stepper (5 Cols) -->
+<div class="lg:col-span-5 bg-surface-container-lowest rounded-lg border border-outline-variant shadow-sm flex flex-col justify-between">
+<div>
+<!-- Header -->
+<div class="p-4 border-b border-outline-variant bg-surface-container-low flex items-center justify-between">
+<div>
+<span class="text-label-sm font-label-sm uppercase tracking-wider text-outline">Actionable Pipeline Control</span>
+<h3 class="text-title-md font-title-md text-on-surface">Guided Incident Remediation</h3>
+</div>
+<span class="bg-[#EFF6FF] text-[#1E3A8A] border border-[#BFDBFE] font-label-sm text-label-sm px-2 py-0.5 rounded font-semibold">
+                Interactive Fix
+              </span>
+</div>
+<!-- Stepper Container -->
+<div class="p-5 space-y-6">
+<!-- STEP 1: Completed -->
+<div class="flex items-start gap-3">
+<div class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[16px]" data-icon="check">check</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<h4 class="text-title-md font-title-md text-on-surface">Step 1: Automated Safety Rollback</h4>
+<span class="bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0] text-label-sm font-label-sm px-2 py-0.5 rounded">
+                      Succeeded
+                    </span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-1">
+                    Node <code class="font-data-mono text-[11px] bg-surface-container px-1 rounded">us-east-ocr-gpu-04</code> purged GPU VRAM leak, flushed uncommitted transactions, and container returned to healthy state.
+                  </p>
+<div class="mt-2 text-[11px] font-data-mono text-outline bg-surface-container-low p-2 rounded border border-outline-variant/60">
+<div>[02:14:18] INFO: Purged cache buffers: 16,380 MiB reclaimed.</div>
+<div>[02:14:19] INFO: Quarantined job payload id: req_9402_a81b.</div>
+</div>
+</div>
+</div>
+<!-- STEP 2: Active / Selection Required -->
+<div class="flex items-start gap-3">
+<div class="w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center font-bold text-label-md shrink-0 mt-0.5 ring-4 ring-primary/20">
+                  2
+                </div>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<h4 class="text-title-md font-title-md text-on-surface">Step 2: Fallback Engine Auto-Select</h4>
+<span class="bg-[#FFFBEB] text-[#92400E] border border-[#FDE68A] text-label-sm font-label-sm px-2 py-0.5 rounded font-semibold animate-pulse">
+                      Pending Officer Action
+                    </span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-1">
+                    Select the safest recovery pipeline strategy for processing this architectural zoning application:
+                  </p>
+<!-- Remediation Options Radio List -->
+<div class="mt-3 space-y-2.5">
+<!-- Option A (Recommended) -->
+<label class="block p-3 rounded-lg border-2 border-primary bg-primary/5 cursor-pointer relative hover:border-primary transition-all">
+<div class="flex items-start gap-3">
+<input checked="" class="mt-1 text-primary focus:ring-secondary" name="remediation_strategy" type="radio"/>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<span class="text-label-md font-label-md text-primary font-bold">Option A: Binarize &amp; Downsample to 300 DPI</span>
+<span class="bg-primary text-white text-[10px] font-bold px-1.5 py-0.2 rounded">Recommended</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5">
+                            Downscales Page 3 CAD raster to 300 DPI threshold while retaining tabular survey coordinates. Routes to high-throughput CPU cluster.
+                          </p>
+<div class="flex items-center gap-3 mt-1.5 text-[11px] text-outline font-data-mono">
+<span>Latency: ~4.2s</span>
+<span>•</span>
+<span>Target Accuracy: 98.8%</span>
+</div>
+</div>
+</div>
+</label>
+<!-- Option B -->
+<label class="block p-3 rounded-lg border border-outline-variant hover:border-outline bg-surface-container-lowest cursor-pointer transition-all">
+<div class="flex items-start gap-3">
+<input class="mt-1 text-primary focus:ring-secondary" name="remediation_strategy" type="radio"/>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<span class="text-label-md font-label-md text-on-surface font-semibold">Option B: Isolate Page 3 to Human Verification Desk</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5">
+                            Pass Pages 1, 2, 4–8 through automatic ingestion and send the single blueprint page to the manual zoning transcription queue.
+                          </p>
+<div class="flex items-center gap-3 mt-1.5 text-[11px] text-outline font-data-mono">
+<span>SLA: 15–30 min</span>
+<span>•</span>
+<span>Target Accuracy: 100%</span>
+</div>
+</div>
+</div>
+</label>
+<!-- Option C -->
+<label class="block p-3 rounded-lg border border-outline-variant hover:border-outline bg-surface-container-lowest cursor-pointer transition-all">
+<div class="flex items-start gap-3">
+<input class="mt-1 text-primary focus:ring-secondary" name="remediation_strategy" type="radio"/>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<span class="text-label-md font-label-md text-on-surface font-semibold">Option C: Re-run on High-Memory GPU Node (A100 80GB)</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5">
+                            Allocate dedicated super-compute worker instance without modifying document raster resolution.
+                          </p>
+<div class="flex items-center gap-3 mt-1.5 text-[11px] text-outline font-data-mono">
+<span>Queue wait: ~1m 45s</span>
+<span>•</span>
+<span>Cloud Budget Cost: $0.18</span>
+</div>
+</div>
+</div>
+</label>
+</div>
+</div>
+</div>
+<!-- STEP 3: Pending Sign-off -->
+<div class="flex items-start gap-3 opacity-60">
+<div class="w-7 h-7 rounded-full bg-surface-container text-outline border border-outline-variant flex items-center justify-center font-bold text-label-md shrink-0 mt-0.5">
+                  3
+                </div>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<h4 class="text-title-md font-title-md text-on-surface">Step 3: Officer Sign-off &amp; Reprocessing</h4>
+<span class="text-label-sm font-label-sm text-outline">Locked</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-1">
+                    Attach electronic signature badge and dispatch payload back to ingestion daemon.
+                  </p>
+</div>
+</div>
+</div>
+</div>
+<!-- Stepper Action Footer -->
+<div class="p-4 border-t border-outline-variant bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-2 text-body-sm font-body-sm text-outline">
+<span class="material-symbols-outlined text-[16px]" data-icon="lock">lock</span>
+<span>Audit Log Tracked (Officer: D. Sturgis)</span>
+</div>
+<button class="bg-primary hover:bg-primary-container text-white font-label-md text-label-md px-5 py-2.5 rounded-lg flex items-center gap-2 shadow-sm transition-colors">
+<span>Execute Remediation Plan</span>
+<span class="material-symbols-outlined text-[18px]" data-icon="play_arrow">play_arrow</span>
+</button>
+</div>
+</div>
+</div>
+<!-- REUSABLE COMPONENT STATES BANNER: SHOWCASING OTHER COMMON ENTERPRISE EDGE STATES -->
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant p-5 shadow-sm mb-6">
+<div class="flex items-center justify-between mb-3 border-b border-outline-variant pb-2">
+<div>
+<h3 class="text-title-md font-title-md text-on-surface">System-Wide OCR Edge States &amp; Inline Alert Patterns</h3>
+<p class="text-body-sm font-body-sm text-outline">Reusable civic notification states configured for Phase 7 compliance workflows</p>
+</div>
+<span class="text-label-sm font-label-sm text-outline font-data-mono">Design System Ref: Section 7.4</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- Edge State 1: Template Inactive Warning -->
+<div class="bg-[#FFFBEB] border border-[#FDE68A] rounded-lg p-3.5 flex items-start gap-3">
+<span class="material-symbols-outlined text-[#B45309] text-xl mt-0.5" data-icon="warning_amber">warning_amber</span>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md font-bold text-[#92400E]">Template Inactive Warning</span>
+<span class="text-[10px] bg-[#FEF3C7] text-[#92400E] font-data-mono px-1.5 py-0.5 rounded border border-[#FDE68A]">WARN-204</span>
+</div>
+<p class="text-body-sm font-body-sm text-[#78350F] mt-1">
+                Zoning Schema v3.8 was superseded on Oct 1. Document parsed with legacy fallback schema.
+              </p>
+<div class="mt-2.5 flex items-center gap-2">
+<button class="text-label-sm font-label-sm text-[#92400E] font-bold hover:underline">
+                  Migrate to Schema v4.0
+                </button>
+<span class="text-[#D97706]">•</span>
+<button class="text-label-sm font-label-sm text-[#78350F] hover:underline">
+                  Dismiss
+                </button>
+</div>
+</div>
+</div>
+<!-- Edge State 2: Partial Field Extraction -->
+<div class="bg-[#EFF6FF] border border-[#BFDBFE] rounded-lg p-3.5 flex items-start gap-3">
+<span class="material-symbols-outlined text-[#1D4ED8] text-xl mt-0.5" data-icon="incomplete_circle">incomplete_circle</span>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md font-bold text-[#1E3A8A]">Partial Field Extraction</span>
+<span class="text-[10px] bg-[#DBEAFE] text-[#1E3A8A] font-data-mono px-1.5 py-0.5 rounded border border-[#BFDBFE]">14 / 18 Fields</span>
+</div>
+<p class="text-body-sm font-body-sm text-[#1E40AF] mt-1">
+                4 required fields ("Tax Assessor Stamp", "Notary Date", "Zone Code B") scored below 70% threshold.
+              </p>
+<div class="mt-2.5 flex items-center gap-2">
+<button class="text-label-sm font-label-sm text-[#1E3A8A] font-bold hover:underline">
+                  Open Manual Key-Value Editor
+                </button>
+</div>
+</div>
+</div>
+<!-- Edge State 3: Network Flap Auto-Retry -->
+<div class="bg-surface-container border border-outline-variant rounded-lg p-3.5 flex items-start gap-3">
+<span class="material-symbols-outlined text-secondary text-xl mt-0.5 animate-spin" data-icon="sync">sync</span>
+<div class="flex-1">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md font-bold text-on-surface">Network Flap Auto-Retry</span>
+<span class="text-[10px] bg-surface-container-highest text-secondary font-data-mono px-1.5 py-0.5 rounded">Retry in 4s</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-1">
+                Socket reset on S3 document bucket during chunk transfer. Exponential backoff attempt (2/5).
+              </p>
+<div class="mt-2.5 flex items-center gap-2">
+<button class="text-label-sm font-label-sm text-primary font-bold hover:underline">
+                  Force Immediate Retry
+                </button>
+<span class="text-outline">•</span>
+<button class="text-label-sm font-label-sm text-outline hover:underline">
+                  Cancel Job
+                </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- SYSTEM LOG STREAM SNAPSHOT -->
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant shadow-sm overflow-hidden">
+<div class="px-4 py-3 bg-surface-container-low border-b border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-[18px]" data-icon="terminal">terminal</span>
+<span class="text-title-md font-title-md text-on-surface">Node Execution Log Stream</span>
+<span class="text-label-sm font-data-mono text-outline">#node-gpu-04.civicintel.internal</span>
+</div>
+<button class="text-body-sm font-body-sm text-secondary hover:underline flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="file_copy">file_copy</span>
+            Copy Full Traceback
+          </button>
+</div>
+<div class="p-4 bg-[#0B132B] font-data-mono text-[12px] text-slate-300 leading-relaxed overflow-x-auto custom-scrollbar">
+<div class="text-slate-400">2024-10-24T14:12:02.112Z [INFO]  Pipeline instantiated for doc_uuid: f48b2901-44a1-4091</div>
+<div class="text-slate-400">2024-10-24T14:12:03.490Z [INFO]  Stage 1 (MIME Type &amp; SHA-256 Checksum): VALID (sha256: 4a9e...c701)</div>
+<div class="text-slate-400">2024-10-24T14:12:05.811Z [INFO]  Stage 2 (PDF Rasterization &amp; Page Splitting): 8 Pages Generated.</div>
+<div class="text-slate-400">2024-10-24T14:12:08.204Z [INFO]  Stage 3 (Layout Segmentation - Page 1-2): Succeeded (Confidence: 99.4%)</div>
+<div class="text-yellow-400">2024-10-24T14:12:10.992Z [WARN]  Stage 4: Page 3 raster detected: 28800x19200 px @ 1200 DPI. Memory demand: ~18.4GB</div>
+<div class="text-red-400 font-bold">2024-10-24T14:12:11.450Z [FATAL] CUDA out of memory. Tried to allocate 1.62 GiB (GPU 0; 15.78 GiB total capacity; 14.92 GiB already allocated; 480.00 MiB free)</div>
+<div class="text-red-400">2024-10-24T14:12:11.452Z [ERROR] Worker process terminated with exit code 137 (SIGKILL).</div>
+<div class="text-emerald-400">2024-10-24T14:12:12.010Z [RECOVERY] Safety watchdog triggered: Rolled back state. Marked exception #ERR-9402-GPU for human-in-the-loop review.</div>
+</div>
+</div>
+</main>
+</div>
+<!-- COMPLIANCE & ACCESSIBILITY AUDIT FOOTER -->
+<footer class="bg-surface-container-lowest border-t border-outline-variant px-gutter py-2.5 flex flex-col sm:flex-row items-center justify-between text-body-sm font-body-sm text-outline z-20">
+<div class="flex items-center gap-4">
+<span class="flex items-center gap-1 text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-emerald-600" data-icon="gavel">gavel</span>
+<span>Federal Document Ingestion Compliance Standard: NIST SP 800-53 Rev 5</span>
+</span>
+<span class="hidden md:inline text-outline-variant">•</span>
+<span class="hidden md:inline">WCAG 2.1 AAA Target</span>
+</div>
+<div class="flex items-center gap-3 mt-2 sm:mt-0 font-data-mono text-[11px]">
+<span>SESSION: AUTH-FED-9941</span>
+<span>•</span>
+<span>NODE: us-east-gpu-04</span>
+<span>•</span>
+<span class="text-primary font-semibold">CIVICINTEL v4.2-PROD</span>
+</div>
+</footer>
+</body></html>

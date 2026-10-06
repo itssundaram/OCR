@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Help &amp; Support Center - DocGov CivicIntel</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Inter Google Font -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config verbatim -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-secondary-fixed": "#001e2f",
+            "on-secondary": "#ffffff",
+            "inverse-on-surface": "#eaf1ff",
+            "surface-container-low": "#eff4ff",
+            "secondary-fixed-dim": "#89ceff",
+            "on-tertiary-container": "#b89cff",
+            "tertiary-container": "#4e03b8",
+            "tertiary": "#340081",
+            "tertiary-fixed": "#e9ddff",
+            "surface-dim": "#cbdbf5",
+            "outline-variant": "#c5c5d3",
+            "inverse-primary": "#b6c4ff",
+            "background": "#f8f9ff",
+            "on-primary-fixed-variant": "#264191",
+            "secondary-container": "#39b8fd",
+            "surface-container": "#e5eeff",
+            "on-error-container": "#93000a",
+            "primary-fixed": "#dce1ff",
+            "surface-bright": "#f8f9ff",
+            "error-container": "#ffdad6",
+            "on-tertiary": "#ffffff",
+            "on-tertiary-fixed-variant": "#5516be",
+            "secondary-fixed": "#c9e6ff",
+            "primary-container": "#1e3a8a",
+            "on-tertiary-fixed": "#23005c",
+            "surface-container-lowest": "#ffffff",
+            "on-surface": "#0b1c30",
+            "surface-container-highest": "#d3e4fe",
+            "on-secondary-fixed-variant": "#004c6e",
+            "on-primary": "#ffffff",
+            "on-background": "#0b1c30",
+            "primary-fixed-dim": "#b6c4ff",
+            "surface-container-high": "#dce9ff",
+            "inverse-surface": "#213145",
+            "surface-tint": "#4059aa",
+            "on-secondary-container": "#004666",
+            "secondary": "#006591",
+            "on-surface-variant": "#444651",
+            "primary": "#00236f",
+            "on-error": "#ffffff",
+            "error": "#ba1a1a",
+            "surface-variant": "#d3e4fe",
+            "surface": "#f8f9ff",
+            "on-primary-fixed": "#00164e",
+            "outline": "#757682",
+            "on-primary-container": "#90a8ff",
+            "tertiary-fixed-dim": "#d0bcff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "gutter": "1.25rem",
+            "margin": "1.5rem",
+            "space-md": "1rem",
+            "space-xl": "2rem",
+            "space-sm": "0.5rem",
+            "space-lg": "1.5rem",
+            "space-xs": "0.25rem"
+          },
+          "fontFamily": {
+            "title-md": ["Inter"],
+            "label-sm": ["Inter"],
+            "headline-md": ["Inter"],
+            "body-sm": ["Inter"],
+            "label-md": ["Inter"],
+            "headline-lg": ["Inter"],
+            "data-mono": ["Inter"],
+            "display-lg": ["Inter"],
+            "body-lg": ["Inter"],
+            "headline-sm": ["Inter"],
+            "body-md": ["Inter"],
+            "display-lg-mobile": ["Inter"]
+          },
+          "fontSize": {
+            "title-md": ["16px", { "lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "600" }],
+            "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }],
+            "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "400" }],
+            "label-md": ["13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+            "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.015em", "fontWeight": "600" }],
+            "data-mono": ["13px", { "lineHeight": "18px", "letterSpacing": "0em", "fontWeight": "500" }],
+            "display-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "headline-sm": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600" }],
+            "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "display-lg-mobile": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "700" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 20px;
+      line-height: 1;
+      letter-spacing: normal;
+      text-transform: none;
+      display: inline-block;
+      white-space: nowrap;
+      word-wrap: normal;
+      direction: ltr;
+      -webkit-font-feature-settings: 'liga';
+      -webkit-font-smoothing: antialiased;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface antialiased flex min-h-screen">
+<!-- SideNavBar Component -->
+<aside class="flex flex-col justify-between h-full w-64 shrink-0 py-space-md px-space-sm fixed left-0 top-0 z-30 bg-surface-container-lowest border-r border-outline-variant shadow-sm">
+<div class="flex flex-col gap-space-md">
+<!-- Sidebar Header / Brand Badge -->
+<div class="flex items-center gap-space-sm px-space-sm pb-space-sm border-b border-outline-variant">
+<div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined" data-icon="policy">policy</span>
+</div>
+<div class="flex flex-col">
+<span class="text-title-md font-title-md font-bold text-primary">CivicIntel Platform</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant">Agency Compliance v4.2</span>
+</div>
+</div>
+<!-- Action Button -->
+<div class="px-space-xs">
+<button class="w-full flex items-center justify-center gap-space-xs bg-primary-container text-on-primary font-label-md text-label-md py-space-sm rounded-lg hover:bg-primary transition-colors duration-150 shadow-sm">
+<span class="material-symbols-outlined" data-icon="add_circle">add_circle</span>
+<span>New Document Ingestion</span>
+</button>
+</div>
+<!-- Navigation Tabs (8 tabs from JSON, 'Help & Support' active) -->
+<nav class="flex flex-col gap-1">
+<!-- Dashboard -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<!-- Departments -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance">account_balance</span>
+<span>Departments</span>
+</a>
+<!-- URLs -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="link">link</span>
+<span>URLs</span>
+</a>
+<!-- OCR -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="document_scanner">document_scanner</span>
+<span>OCR</span>
+</a>
+<!-- Orchestration -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="account_tree">account_tree</span>
+<span>Orchestration</span>
+</a>
+<!-- Logs -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+<span>Logs</span>
+</a>
+<!-- Manage Templates -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="topic">topic</span>
+<span>Manage Templates</span>
+</a>
+<!-- Help & Support (ACTIVE - JSON: style_active_navigation) -->
+<a class="flex items-center gap-space-sm bg-surface-container text-primary border-l-2 border-primary font-title-md text-title-md px-space-md py-space-sm rounded-r-lg" href="#">
+<span class="material-symbols-outlined" data-icon="support">support</span>
+<span>Help &amp; Support</span>
+</a>
+</nav>
+</div>
+<!-- Sidebar Footer -->
+<div class="flex flex-col gap-1 border-t border-outline-variant pt-space-sm">
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="verified_user">verified_user</span>
+<span>System Health</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="tune">tune</span>
+<span>Compliance Settings</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Wrapper (offset by sidebar width 16rem = 64) -->
+<div class="pl-64 flex-1 flex flex-col min-w-0">
+<!-- TopNavBar Component -->
+<header class="flex justify-between items-center h-14 px-gutter w-full sticky top-0 z-40 bg-surface-container-lowest border-b border-outline-variant shadow-sm">
+<!-- Search on Left (from JSON search_bar: "on_left") -->
+<div class="flex items-center gap-space-md w-96">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" data-icon="search">search</span>
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-lg pl-9 pr-3 py-1.5 font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-secondary transition-colors" placeholder="Search records, doc hashes, rules..." type="text"/>
+</div>
+</div>
+<!-- Center Brand Identity -->
+<div class="flex items-center gap-space-sm">
+<span class="text-headline-sm font-headline-sm font-bold text-primary">DocGov CivicIntel</span>
+<span class="bg-surface-container-high text-primary px-2 py-0.5 rounded-full font-label-sm text-label-sm border border-outline-variant">FedRAMP High</span>
+</div>
+<!-- Trailing Icon Actions & User Avatar -->
+<div class="flex items-center gap-space-sm">
+<button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors duration-150 relative" title="Notifications">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-error"></span>
+</button>
+<button class="p-2 rounded-lg text-primary bg-surface-container font-title-md hover:bg-surface-container-high transition-colors duration-150" title="Help">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<button class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors duration-150" title="Settings">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="h-6 w-px bg-outline-variant mx-1"></div>
+<!-- Officer User Avatar -->
+<div class="flex items-center gap-space-sm pl-1">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-title-md text-title-md" title="Officer user avatar badge">
+<span class="material-symbols-outlined text-sm" data-icon="shield_person">shield_person</span>
+</div>
+<div class="hidden xl:flex flex-col">
+<span class="font-label-md text-label-md text-on-surface font-semibold">Specialist C. Vance</span>
+<span class="font-label-sm text-label-sm text-outline">Compliance Officer</span>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="p-margin flex-1 flex flex-col gap-space-xl max-w-7xl w-full mx-auto">
+<!-- Hero Knowledge & Search Section -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-xl shadow-sm relative overflow-hidden">
+<!-- Subtle Institutional Architectural Accent -->
+<div class="absolute -right-12 -top-12 w-64 h-64 rounded-full bg-surface-container-low opacity-60 pointer-events-none"></div>
+<div class="relative z-10 flex flex-col items-center text-center max-w-3xl mx-auto">
+<div class="inline-flex items-center gap-space-xs bg-surface-container-low text-primary px-3 py-1 rounded-full font-label-sm text-label-sm border border-outline-variant mb-space-sm">
+<span class="material-symbols-outlined text-sm" data-icon="verified">verified</span>
+<span>Agency Intelligence Knowledge System • 24/7 Support</span>
+</div>
+<h1 class="text-display-lg font-display-lg text-primary tracking-tight">DocGov CivicIntel Knowledge &amp; Support Portal</h1>
+<p class="mt-space-xs text-body-lg font-body-lg text-on-surface-variant">Find user guides, template creation tutorials, pipeline troubleshooting, and technical assistance.</p>
+<!-- Large Search Bar -->
+<div class="mt-space-lg w-full relative">
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-4 text-primary" data-icon="search">search</span>
+<input class="w-full bg-surface-bright border-2 border-outline-variant focus:border-secondary rounded-xl pl-12 pr-28 py-3.5 text-body-md font-body-md text-on-surface shadow-sm focus:outline-none transition-all" placeholder="Search documentation, error codes, OCR guides, or compliance rules..." type="text"/>
+<button class="absolute right-2 px-space-md py-2 bg-primary-container text-on-primary font-label-md text-label-md rounded-lg hover:bg-primary transition-colors">
+                Search
+              </button>
+</div>
+<!-- Quick Tag Pills -->
+<div class="mt-space-sm flex flex-wrap items-center justify-center gap-space-xs text-body-sm font-body-sm">
+<span class="text-outline font-label-sm text-label-sm mr-1">Frequent topics:</span>
+<button class="bg-surface-container px-2.5 py-1 rounded-full font-label-sm text-label-sm text-primary hover:bg-surface-container-high border border-outline-variant transition-colors">
+                Surya OCR
+              </button>
+<button class="bg-surface-container px-2.5 py-1 rounded-full font-label-sm text-label-sm text-primary hover:bg-surface-container-high border border-outline-variant transition-colors">
+                Paddle fallback
+              </button>
+<button class="bg-surface-container px-2.5 py-1 rounded-full font-label-sm text-label-sm text-primary hover:bg-surface-container-high border border-outline-variant transition-colors">
+                Adding fields
+              </button>
+<button class="bg-surface-container px-2.5 py-1 rounded-full font-label-sm text-label-sm text-primary hover:bg-surface-container-high border border-outline-variant transition-colors">
+                Confidence threshold
+              </button>
+<button class="bg-surface-container px-2.5 py-1 rounded-full font-label-sm text-label-sm text-primary hover:bg-surface-container-high border border-outline-variant transition-colors">
+                PDF compression
+              </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Knowledge Base Categories (6-Card Clean Bento Grid) -->
+<section class="flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<div>
+<h2 class="text-headline-md font-headline-md text-on-surface">Knowledge Base Documentation</h2>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Explore detailed reference manuals, architectural specifications, and workflow setups.</p>
+</div>
+<a class="font-label-md text-label-md text-secondary hover:underline inline-flex items-center gap-1" href="#">
+<span>Browse Complete Documentation Index</span>
+<span class="material-symbols-outlined text-sm" data-icon="arrow_forward">arrow_forward</span>
+</a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-md">
+<!-- Card 1: Getting Started -->
+<article class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-lg shadow-sm hover:border-outline hover:shadow-md transition-all flex flex-col justify-between group">
+<div>
+<div class="flex items-center justify-between mb-space-sm">
+<div class="w-12 h-12 rounded-lg bg-surface-container text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-2xl" data-icon="rocket_launch">rocket_launch</span>
+</div>
+<span class="bg-surface-container-low text-primary text-label-sm font-label-sm px-2 py-0.5 rounded border border-outline-variant">Core Guides</span>
+</div>
+<h3 class="text-title-md font-title-md text-on-surface group-hover:text-primary transition-colors">Getting Started</h3>
+<p class="mt-space-xs text-body-md font-body-md text-on-surface-variant">
+                Basic document ingestion, 3-step OCR workflow, understanding confidence scores, and navigating verification workspaces.
+              </p>
+</div>
+<div class="mt-space-md pt-space-sm border-t border-outline-variant flex items-center justify-between text-label-sm font-label-sm text-secondary">
+<span>8 Articles • 2 Interactive Labs</span>
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform" data-icon="chevron_right">chevron_right</span>
+</div>
+</article>
+<!-- Card 2: OCR Engines & Accuracy -->
+<article class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-lg shadow-sm hover:border-outline hover:shadow-md transition-all flex flex-col justify-between group">
+<div>
+<div class="flex items-center justify-between mb-space-sm">
+<div class="w-12 h-12 rounded-lg bg-surface-container text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-2xl" data-icon="document_scanner">document_scanner</span>
+</div>
+<span class="bg-surface-container-low text-primary text-label-sm font-label-sm px-2 py-0.5 rounded border border-outline-variant">Engine Specs</span>
+</div>
+<h3 class="text-title-md font-title-md text-on-surface group-hover:text-primary transition-colors">OCR Engines &amp; Accuracy</h3>
+<p class="mt-space-xs text-body-md font-body-md text-on-surface-variant">
+                Differences between Surya, Paddle, and Qwen; handling handwritten text, degraded stamps, skewed angles, and noisy scans.
+              </p>
+</div>
+<div class="mt-space-md pt-space-sm border-t border-outline-variant flex items-center justify-between text-label-sm font-label-sm text-secondary">
+<span>12 Articles • Accuracy Matrix</span>
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform" data-icon="chevron_right">chevron_right</span>
+</div>
+</article>
+<!-- Card 3: Managing Templates -->
+<article class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-lg shadow-sm hover:border-outline hover:shadow-md transition-all flex flex-col justify-between group">
+<div>
+<div class="flex items-center justify-between mb-space-sm">
+<div class="w-12 h-12 rounded-lg bg-surface-container text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-2xl" data-icon="topic">topic</span>
+</div>
+<span class="bg-surface-container-low text-primary text-label-sm font-label-sm px-2 py-0.5 rounded border border-outline-variant">Schema Tools</span>
+</div>
+<h3 class="text-title-md font-title-md text-on-surface group-hover:text-primary transition-colors">Managing Templates</h3>
+<p class="mt-space-xs text-body-md font-body-md text-on-surface-variant">
+                Creating custom schemas, defining bounding boxes, table extraction strategies, key-value anchors, and validation regex.
+              </p>
+</div>
+<div class="mt-space-md pt-space-sm border-t border-outline-variant flex items-center justify-between text-label-sm font-label-sm text-secondary">
+<span>15 Articles • Sample Schemas</span>
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform" data-icon="chevron_right">chevron_right</span>
+</div>
+</article>
+<!-- Card 4: Multi-Pipeline Orchestration -->
+<article class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-lg shadow-sm hover:border-outline hover:shadow-md transition-all flex flex-col justify-between group">
+<div>
+<div class="flex items-center justify-between mb-space-sm">
+<div class="w-12 h-12 rounded-lg bg-surface-container text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-2xl" data-icon="account_tree">account_tree</span>
+</div>
+<span class="bg-surface-container-low text-primary text-label-sm font-label-sm px-2 py-0.5 rounded border border-outline-variant">Distributed</span>
+</div>
+<h3 class="text-title-md font-title-md text-on-surface group-hover:text-primary transition-colors">Multi-Pipeline Orchestration</h3>
+<p class="mt-space-xs text-body-md font-body-md text-on-surface-variant">
+                Parallel pipeline execution, voter comparison logic, automated fallback rules, and dynamic worker load-balancing parameters.
+              </p>
+</div>
+<div class="mt-space-md pt-space-sm border-t border-outline-variant flex items-center justify-between text-label-sm font-label-sm text-secondary">
+<span>9 Articles • Architecture Map</span>
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform" data-icon="chevron_right">chevron_right</span>
+</div>
+</article>
+<!-- Card 5: System Logs & Auditing -->
+<article class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-lg shadow-sm hover:border-outline hover:shadow-md transition-all flex flex-col justify-between group">
+<div>
+<div class="flex items-center justify-between mb-space-sm">
+<div class="w-12 h-12 rounded-lg bg-surface-container text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-2xl" data-icon="receipt_long">receipt_long</span>
+</div>
+<span class="bg-surface-container-low text-primary text-label-sm font-label-sm px-2 py-0.5 rounded border border-outline-variant">Compliance</span>
+</div>
+<h3 class="text-title-md font-title-md text-on-surface group-hover:text-primary transition-colors">System Logs &amp; Auditing</h3>
+<p class="mt-space-xs text-body-md font-body-md text-on-surface-variant">
+                Trace document lifecycle, worker statuses, audit export procedures, SIEM forwarding, and compliance data retention schedules.
+              </p>
+</div>
+<div class="mt-space-md pt-space-sm border-t border-outline-variant flex items-center justify-between text-label-sm font-label-sm text-secondary">
+<span>11 Articles • NIST Logs Spec</span>
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform" data-icon="chevron_right">chevron_right</span>
+</div>
+</article>
+<!-- Card 6: Troubleshooting & FAQs -->
+<article class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-lg shadow-sm hover:border-outline hover:shadow-md transition-all flex flex-col justify-between group">
+<div>
+<div class="flex items-center justify-between mb-space-sm">
+<div class="w-12 h-12 rounded-lg bg-surface-container text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-2xl" data-icon="help_center">help_center</span>
+</div>
+<span class="bg-surface-container-low text-primary text-label-sm font-label-sm px-2 py-0.5 rounded border border-outline-variant">Remediation</span>
+</div>
+<h3 class="text-title-md font-title-md text-on-surface group-hover:text-primary transition-colors">Troubleshooting &amp; FAQs</h3>
+<p class="mt-space-xs text-body-md font-body-md text-on-surface-variant">
+                Fixing low confidence scores, rotated scans, corrupted PDFs, missing metadata tags, OCR pipeline aborts, and webhook timeouts.
+              </p>
+</div>
+<div class="mt-space-md pt-space-sm border-t border-outline-variant flex items-center justify-between text-label-sm font-label-sm text-secondary">
+<span>24 FAQs • Diagnostic Checklist</span>
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform" data-icon="chevron_right">chevron_right</span>
+</div>
+</article>
+</div>
+</section>
+<!-- Bottom Support & System Health Section -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-lg shadow-sm">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg">
+<!-- Contact Agency Support (7 cols) -->
+<div class="lg:col-span-7 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-outline-variant pb-space-lg lg:pb-0 lg:pr-space-lg">
+<div>
+<div class="flex items-center justify-between mb-space-xs">
+<h3 class="text-headline-sm font-headline-sm text-primary flex items-center gap-space-xs">
+<span class="material-symbols-outlined" data-icon="contact_support">contact_support</span>
+<span>Contact Agency Support</span>
+</h3>
+<span class="bg-surface-container text-on-surface font-label-sm text-label-sm px-2 py-0.5 rounded">Tier 2/Tier 3 Officers</span>
+</div>
+<p class="text-body-md font-body-md text-on-surface-variant mb-space-md">
+                Government technical support representatives are on call for urgent system degradation, security incidents, or batch OCR ingestion bottlenecks.
+              </p>
+<!-- Support Channels Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">
+<!-- Phone -->
+<div class="p-space-sm rounded-lg bg-surface-container-low border border-outline-variant flex items-start gap-space-sm">
+<span class="material-symbols-outlined text-primary mt-0.5" data-icon="call">call</span>
+<div>
+<span class="block font-label-sm text-label-sm text-outline">Phone Hotline (Toll-Free)</span>
+<a class="font-data-mono text-data-mono font-bold text-primary hover:underline" href="tel:18002484246">1800-CIVIC-INTEL</a>
+<span class="block text-body-sm font-body-sm text-on-surface-variant">Priority code required</span>
+</div>
+</div>
+<!-- Email -->
+<div class="p-space-sm rounded-lg bg-surface-container-low border border-outline-variant flex items-start gap-space-sm">
+<span class="material-symbols-outlined text-primary mt-0.5" data-icon="mail">mail</span>
+<div>
+<span class="block font-label-sm text-label-sm text-outline">Official Agency Email</span>
+<a class="font-data-mono text-data-mono font-bold text-primary hover:underline" href="mailto:support@civicintel.gov">support@civicintel.gov</a>
+<span class="block text-body-sm font-body-sm text-on-surface-variant">PGP Encrypted Inquiries</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Ticket Action Area -->
+<div class="mt-space-md flex items-center justify-between pt-space-sm border-t border-outline-variant">
+<div class="text-body-sm font-body-sm text-on-surface-variant">
+                Average response time: <span class="font-bold text-on-surface">14 minutes</span>
+</div>
+<button class="px-space-md py-2 bg-primary text-on-primary font-label-md text-label-md rounded-lg hover:bg-primary-container transition-colors shadow-sm inline-flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-base" data-icon="confirmation_number">confirmation_number</span>
+<span>Dedicated Helpdesk Ticket Button</span>
+</button>
+</div>
+</div>
+<!-- Platform Status & App Version (5 cols) -->
+<div class="lg:col-span-5 flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-space-xs">
+<h3 class="text-headline-sm font-headline-sm text-on-surface flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary" data-icon="dns">dns</span>
+<span>Platform Status</span>
+</h3>
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-label-sm font-label-sm bg-emerald-50 text-emerald-800 border border-emerald-200">
+<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  99.94% Uptime
+                </span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant mb-space-sm">
+                All OCR Workers Operational across cluster nodes.
+              </p>
+<!-- Engine Status Pills -->
+<div class="space-y-2">
+<div class="flex items-center justify-between px-space-sm py-1.5 bg-surface-container-low rounded border border-outline-variant font-body-sm text-body-sm">
+<span class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+<span class="font-semibold text-on-surface">Surya v2.4</span>
+</span>
+<span class="font-data-mono text-data-mono text-emerald-700">Live • 12 Nodes</span>
+</div>
+<div class="flex items-center justify-between px-space-sm py-1.5 bg-surface-container-low rounded border border-outline-variant font-body-sm text-body-sm">
+<span class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+<span class="font-semibold text-on-surface">PaddleOCR v2.7</span>
+</span>
+<span class="font-data-mono text-data-mono text-emerald-700">Live • 8 Nodes</span>
+</div>
+<div class="flex items-center justify-between px-space-sm py-1.5 bg-surface-container-low rounded border border-outline-variant font-body-sm text-body-sm">
+<span class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+<span class="font-semibold text-on-surface">Qwen-VL</span>
+</span>
+<span class="font-data-mono text-data-mono text-emerald-700">Live • 4 H100 GPU Clusters</span>
+</div>
+</div>
+</div>
+<!-- Version Footer -->
+<div class="mt-space-md pt-space-sm border-t border-outline-variant flex items-center justify-between text-label-sm font-label-sm text-outline">
+<span>Application Version:</span>
+<span class="font-data-mono text-data-mono text-on-surface font-medium">v4.2.1-gov-enterprise (Build 2024.11-SEC-STABLE)</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer system acknowledgment -->
+<footer class="h-10 px-gutter border-t border-outline-variant flex items-center justify-between text-label-sm font-label-sm text-outline bg-surface-container-lowest">
+<span>Official United States Federal Civic Document Intelligence Network</span>
+<div class="flex gap-space-md">
+<a class="hover:underline" href="#">Security Classification: CUI // SP-DOC</a>
+<a class="hover:underline" href="#">Privacy Act Notice</a>
+<a class="hover:underline" href="#">Incident Response Escalation</a>
+</div>
+</footer>
+</div>
+</body></html>

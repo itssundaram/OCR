@@ -11,7 +11,7 @@ from app.db.models import Department
 from app.schemas.common import APIResponse
 from app.core.exceptions import DocIntError
 from pydantic import BaseModel
-
+from app.repositories.department_repo import DepartmentRepository
 
 router = APIRouter(tags=["Departments"], prefix="/departments")
 
@@ -46,73 +46,66 @@ class DepartmentResponse(BaseModel):
 @router.get("", response_model=APIResponse[list[DepartmentResponse]])
 def list_departments(db: Session = Depends(get_db)):
     """List all active departments."""
-    stmt = select(Department).where(Department.is_active == 1).order_by(Department.name)
-    departments = db.execute(stmt).scalars().all()
+    repo = DepartmentRepository(db)
+    departments = repo.list_all(filters={"is_active": 1})
+    # Sort by name
+    departments = sorted(departments, key=lambda x: x.name)
     return APIResponse(data=departments)
 
 
 @router.get("/all", response_model=APIResponse[list[DepartmentResponse]])
 def list_all_departments(db: Session = Depends(get_db)):
     """List all departments including inactive."""
-    stmt = select(Department).order_by(Department.name)
-    departments = db.execute(stmt).scalars().all()
+    repo = DepartmentRepository(db)
+    departments = repo.list_all()
+    departments = sorted(departments, key=lambda x: x.name)
     return APIResponse(data=departments)
 
 
 @router.post("", response_model=APIResponse[DepartmentResponse], status_code=201)
 def create_department(dept_in: DepartmentCreate, db: Session = Depends(get_db)):
     """Create a new department."""
-    stmt = select(Department).where(Department.slug == dept_in.slug.upper())
-    existing = db.execute(stmt).scalars().first()
+    repo = DepartmentRepository(db)
+    slug = dept_in.slug.upper()
+    existing = repo.get_by_slug(slug)
     if existing:
         raise DocIntError(f"Department with slug {dept_in.slug} already exists.", "DEPT_ALREADY_EXISTS")
 
-    new_dept = Department(
-        slug=dept_in.slug.upper(),
-        name=dept_in.name,
-        description=dept_in.description,
-        color=dept_in.color,
-        icon=dept_in.icon,
-        is_active=1,
-    )
-    db.add(new_dept)
-    db.commit()
-    db.refresh(new_dept)
+    new_dept = repo.create({
+        "slug": slug,
+        "name": dept_in.name,
+        "description": dept_in.description,
+        "color": dept_in.color,
+        "icon": dept_in.icon,
+        "is_active": 1,
+    })
     return APIResponse(data=new_dept)
 
 
 @router.patch("/{slug}", response_model=APIResponse[DepartmentResponse])
 def update_department(slug: str, updates: DepartmentUpdate, db: Session = Depends(get_db)):
     """Update department metadata."""
-    stmt = select(Department).where(Department.slug == slug.upper())
-    dept = db.execute(stmt).scalars().first()
+    repo = DepartmentRepository(db)
+    dept = repo.get_by_slug(slug.upper())
     if not dept:
         raise DocIntError(f"Department {slug} not found.", "DEPT_NOT_FOUND")
 
-    if updates.name is not None:
-        dept.name = updates.name
-    if updates.description is not None:
-        dept.description = updates.description
-    if updates.color is not None:
-        dept.color = updates.color
-    if updates.icon is not None:
-        dept.icon = updates.icon
-
-    db.commit()
-    db.refresh(dept)
+    update_data = {k: v for k, v in updates.model_dump(exclude_unset=True).items() if v is not None}
+    if update_data:
+        dept = repo.update(dept.id, update_data)
+        
     return APIResponse(data=dept)
 
 
 @router.post("/{slug}/deactivate", response_model=APIResponse[DepartmentResponse])
 def deactivate_department(slug: str, db: Session = Depends(get_db)):
     """Deactivate a department."""
-    stmt = select(Department).where(Department.slug == slug.upper())
-    dept = db.execute(stmt).scalars().first()
+    repo = DepartmentRepository(db)
+    dept = repo.get_by_slug(slug.upper())
     if not dept:
         raise DocIntError(f"Department {slug} not found.", "DEPT_NOT_FOUND")
-    dept.is_active = 0
-    db.commit()
-    db.refresh(dept)
+    
+    dept = repo.update(dept.id, {"is_active": 0})
     return APIResponse(data=dept)
 
 
@@ -122,6 +115,7 @@ def seed_departments(db: Session = Depends(get_db)):
     Seed the database with the 6 standard departments.
     Safe to call multiple times — skips any slugs that already exist.
     """
+    repo = DepartmentRepository(db)
     defaults = [
         {"slug": "TMS",     "name": "TMS",     "description": "TMS Documents",     "color": "#3b82f6", "icon": "folder"},
         {"slug": "PSG",     "name": "PSG",     "description": "PSG Documents",     "color": "#10b981", "icon": "folder"},
@@ -132,16 +126,16 @@ def seed_departments(db: Session = Depends(get_db)):
     ]
     created = []
     for d in defaults:
-        existing = db.execute(select(Department).where(Department.slug == d["slug"])).scalars().first()
+        existing = repo.get_by_slug(d["slug"])
         if not existing:
-            new_dept = Department(
-                slug=d["slug"], name=d["name"], description=d["description"],
-                color=d["color"], icon=d["icon"], is_active=1,
-            )
-            db.add(new_dept)
-            db.flush()
+            new_dept = repo.create({
+                "slug": d["slug"],
+                "name": d["name"],
+                "description": d["description"],
+                "color": d["color"],
+                "icon": d["icon"],
+                "is_active": 1,
+            })
             created.append(new_dept)
-    db.commit()
-    for dept in created:
-        db.refresh(dept)
     return APIResponse(data=created)
+

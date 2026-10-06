@@ -2,7 +2,8 @@ import api from './api';
 
 export const templatesService = {
   listTemplates: async (departmentSlug) => {
-    return await api.get(`/templates?department_slug=${departmentSlug}`);
+    const query = departmentSlug ? `?department_slug=${departmentSlug}` : '';
+    return await api.get(`/templates${query}`);
   },
 
   createTemplate: async (departmentSlug, data) => {

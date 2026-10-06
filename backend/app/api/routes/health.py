@@ -4,44 +4,18 @@ GET /api/v1/health
 """
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
+from redis import Redis
 
 from app.core.config import settings
 from app.core.logging import get_logger
-from app.db.database import check_oracle_connectivity
+from app.api.dependencies import get_db, get_redis_connection
+from app.services.health_service import HealthService
 
 router = APIRouter(tags=["Health"])
 logger = get_logger(__name__)
-
-
-def _check_redis() -> dict:
-    try:
-        import redis as redis_lib
-        r = redis_lib.from_url(settings.REDIS_URL, socket_timeout=2)
-        r.ping()
-        return {"status": "ok"}
-    except Exception as exc:
-        return {"status": "error", "message": str(exc)}
-
-
-def _check_ollama() -> dict:
-    if settings.AI_PROVIDER != "ollama":
-        return {"status": "not_configured"}
-    try:
-        import httpx
-        response = httpx.get(f"{settings.OLLAMA_BASE_URL}/api/tags", timeout=3.0)
-        if response.status_code == 200:
-            models = response.json().get("models", [])
-            model_names = [m.get("name", "") for m in models]
-            model_present = any(
-                settings.AI_MODEL in n or n.startswith(settings.AI_MODEL.split(":")[0])
-                for n in model_names
-            )
-            return {"status": "ok", "model": settings.AI_MODEL, "model_available": model_present}
-        return {"status": "error", "message": f"HTTP {response.status_code}"}
-    except Exception as exc:
-        return {"status": "error", "message": str(exc)}
 
 
 def _check_storage() -> dict:
@@ -57,11 +31,16 @@ def _check_storage() -> dict:
 
 
 @router.get("/health")
-def health_check():
+def health_check(
+    db: Session = Depends(get_db),
+    redis_conn: Redis = Depends(get_redis_connection)
+):
     """Full system health check."""
-    oracle = check_oracle_connectivity()
-    redis = _check_redis()
-    ai = _check_ollama()
+    health_service = HealthService(db_session=db, redis_conn=redis_conn)
+    oracle = health_service.check_oracle()
+    redis = health_service.check_redis()
+    workers = health_service.check_workers()
+    ai = health_service.check_ollama()
     storage = _check_storage()
 
     oracle_ok = oracle.get("status") == "ok"
@@ -77,6 +56,11 @@ def health_check():
             "api": "ok",
             "oracle": oracle,
             "redis": redis,
+            # Phase 10: informational only (not gated into `overall` below,
+            # to avoid changing existing monitoring/alerting behavior on
+            # this endpoint) — "redis" proves Redis is reachable, "workers"
+            # proves something is actually consuming the queue.
+            "workers": workers,
             "ai_model": ai,
             "storage": storage,
         },

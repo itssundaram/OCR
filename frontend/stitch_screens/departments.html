@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DocGov CivicIntel - Department Directory &amp; Access</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Inter Google Font -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 with Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Verbatim Tailwind Config -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-secondary-fixed": "#001e2f",
+            "on-secondary": "#ffffff",
+            "inverse-on-surface": "#eaf1ff",
+            "surface-container-low": "#eff4ff",
+            "secondary-fixed-dim": "#89ceff",
+            "on-tertiary-container": "#b89cff",
+            "tertiary-container": "#4e03b8",
+            "tertiary": "#340081",
+            "tertiary-fixed": "#e9ddff",
+            "surface-dim": "#cbdbf5",
+            "outline-variant": "#c5c5d3",
+            "inverse-primary": "#b6c4ff",
+            "background": "#f8f9ff",
+            "on-primary-fixed-variant": "#264191",
+            "secondary-container": "#39b8fd",
+            "surface-container": "#e5eeff",
+            "on-error-container": "#93000a",
+            "primary-fixed": "#dce1ff",
+            "surface-bright": "#f8f9ff",
+            "error-container": "#ffdad6",
+            "on-tertiary": "#ffffff",
+            "on-tertiary-fixed-variant": "#5516be",
+            "secondary-fixed": "#c9e6ff",
+            "primary-container": "#1e3a8a",
+            "on-tertiary-fixed": "#23005c",
+            "surface-container-lowest": "#ffffff",
+            "on-surface": "#0b1c30",
+            "surface-container-highest": "#d3e4fe",
+            "on-secondary-fixed-variant": "#004c6e",
+            "on-primary": "#ffffff",
+            "on-background": "#0b1c30",
+            "primary-fixed-dim": "#b6c4ff",
+            "surface-container-high": "#dce9ff",
+            "inverse-surface": "#213145",
+            "surface-tint": "#4059aa",
+            "on-secondary-container": "#004666",
+            "secondary": "#006591",
+            "on-surface-variant": "#444651",
+            "primary": "#00236f",
+            "on-error": "#ffffff",
+            "error": "#ba1a1a",
+            "surface-variant": "#d3e4fe",
+            "surface": "#f8f9ff",
+            "on-primary-fixed": "#00164e",
+            "outline": "#757682",
+            "on-primary-container": "#90a8ff",
+            "tertiary-fixed-dim": "#d0bcff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "gutter": "1.25rem",
+            "margin": "1.5rem",
+            "space-md": "1rem",
+            "space-xl": "2rem",
+            "space-sm": "0.5rem",
+            "space-lg": "1.5rem",
+            "space-xs": "0.25rem"
+          },
+          "fontFamily": {
+            "title-md": ["Inter"],
+            "label-sm": ["Inter"],
+            "headline-md": ["Inter"],
+            "body-sm": ["Inter"],
+            "label-md": ["Inter"],
+            "headline-lg": ["Inter"],
+            "data-mono": ["Inter"],
+            "display-lg": ["Inter"],
+            "body-lg": ["Inter"],
+            "headline-sm": ["Inter"],
+            "body-md": ["Inter"],
+            "display-lg-mobile": ["Inter"]
+          },
+          "fontSize": {
+            "title-md": ["16px", { "lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "600" }],
+            "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }],
+            "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "400" }],
+            "label-md": ["13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+            "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.015em", "fontWeight": "600" }],
+            "data-mono": ["13px", { "lineHeight": "18px", "letterSpacing": "0em", "fontWeight": "500" }],
+            "display-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "headline-sm": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600" }],
+            "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "display-lg-mobile": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "700" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 20px;
+      line-height: 1;
+      display: inline-block;
+      white-space: nowrap;
+      word-wrap: normal;
+      direction: ltr;
+      -webkit-font-smoothing: antialiased;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface antialiased min-h-screen flex flex-col font-body-md text-body-md">
+<!-- TopNavBar (Shared Component) -->
+<header class="bg-surface-container-lowest dark:bg-inverse-surface border-b border-outline-variant dark:border-outline shadow-sm dark:shadow-none flex justify-between items-center h-14 px-gutter w-full sticky top-0 z-40">
+<div class="flex items-center gap-space-md">
+<!-- SideNav Toggle (Mobile) -->
+<button class="md:hidden p-space-xs text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-colors duration-150 ease-in-out" onclick="toggleSidebar()">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<!-- Brand Logo / Identity -->
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-2xl" data-icon="policy">policy</span>
+<span class="text-headline-sm font-headline-sm font-bold text-primary dark:text-primary-fixed tracking-tight">DocGov CivicIntel</span>
+</div>
+<!-- Top Search Bar (on_left as per JSON) -->
+<div class="hidden sm:flex items-center ml-space-lg relative w-72">
+<span class="material-symbols-outlined absolute left-2.5 text-outline text-[18px]" data-icon="search">search</span>
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg pl-8 pr-3 py-1 text-label-md font-label-md text-on-surface placeholder:text-outline focus:outline-none focus:border-secondary transition-colors duration-150 ease-in-out" placeholder="Global query records or compliance..." type="text"/>
+</div>
+</div>
+<!-- Trailing Icon Actions & User Avatar -->
+<div class="flex items-center gap-space-sm">
+<button class="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out relative" title="Notifications">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" title="Help">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<button class="p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" title="Settings">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="h-5 w-px bg-outline-variant mx-1"></div>
+<!-- User Avatar Profile Badge -->
+<div class="flex items-center gap-2 pl-1 cursor-pointer">
+<img class="w-8 h-8 rounded-lg object-cover border border-outline-variant" data-alt="Official federal agency senior supervisor in a formal suit posing in a well-lit state government administrative office. Crisp clean institutional navy lighting accents and a verified security lanyard." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD5qf9A-BQ2WjXoSafktRSUQfOcqpjpoCz47zYuL6QW48c4S_1J_IgH0dkrrvryZlINIwxyyWPmoNJs5ZxqP6iINwA9gq10iuL7RCVKk4cTrKnWhSrJfIJaEi51OlTdGeXoHTGZmWwMOPlUFxE8tEuosGXYmcnv8-E6Oc34CDs04futevndQcX0OXl1KHTQtuB9BuMflNuZNSlwoV8yKGmIXASJNrZX2IXzyvV3ZE1rwyz7uKknOb1i"/>
+<div class="hidden lg:flex flex-col text-left">
+<span class="text-label-sm font-label-sm text-on-surface leading-tight">Agent J. Vance</span>
+<span class="text-[10px] text-outline leading-tight">Dir. Compliance</span>
+</div>
+</div>
+</div>
+</header>
+<div class="flex flex-1 relative">
+<!-- SideNavBar (Shared Component) -->
+<aside class="bg-surface-container-lowest dark:bg-inverse-surface border-r border-outline-variant dark:border-outline shadow-sm dark:shadow-none flex flex-col justify-between h-[calc(100vh-3.5rem)] w-64 shrink-0 py-space-md px-space-sm sticky top-14 z-30 transition-transform duration-200" id="sideNavBar">
+<!-- Top Rail Content -->
+<div class="flex flex-col gap-space-md">
+<!-- Agency Header Badge -->
+<div class="px-space-sm pb-space-xs border-b border-outline-variant">
+<div class="flex items-center gap-space-sm mb-1">
+<span class="material-symbols-outlined text-primary" data-icon="verified_user">verified_user</span>
+<div>
+<h2 class="text-title-md font-title-md font-bold text-primary dark:text-primary-fixed">CivicIntel Platform</h2>
+<p class="text-body-sm font-body-sm text-outline">Agency Compliance v4.2</p>
+</div>
+</div>
+</div>
+<!-- CTA Button -->
+<div class="px-space-xs">
+<button class="w-full flex items-center justify-center gap-2 bg-primary-container text-on-primary rounded-lg py-2 px-space-sm text-label-md font-label-md hover:bg-primary transition-colors duration-150 ease-in-out shadow-sm">
+<span class="material-symbols-outlined text-base" data-icon="add_circle">add_circle</span>
+<span>New Document Ingestion</span>
+</button>
+</div>
+<!-- Navigation Tabs List -->
+<nav class="flex flex-col gap-1">
+<!-- 1. Dashboard -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<!-- 2. Departments (ACTIVE NAVIGATION ITEM) -->
+<a class="flex items-center gap-space-sm bg-surface-container dark:bg-surface-container-high text-primary dark:text-primary-fixed border-l-2 border-primary dark:border-primary-fixed font-title-md text-title-md px-space-md py-space-sm rounded-r-lg transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance">account_balance</span>
+<span>Departments</span>
+</a>
+<!-- 3. URLs -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="link">link</span>
+<span>URLs</span>
+</a>
+<!-- 4. OCR -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="document_scanner">document_scanner</span>
+<span>OCR</span>
+</a>
+<!-- 5. Orchestration -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="account_tree">account_tree</span>
+<span>Orchestration</span>
+</a>
+<!-- 6. Logs -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+<span>Logs</span>
+</a>
+<!-- 7. Manage Templates -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="topic">topic</span>
+<span>Manage Templates</span>
+</a>
+<!-- 8. Help & Support -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="support">support</span>
+<span>Help &amp; Support</span>
+</a>
+</nav>
+</div>
+<!-- Footer Rail Content -->
+<div class="border-t border-outline-variant pt-space-sm flex flex-col gap-1">
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="verified_user">verified_user</span>
+<span>System Health</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="tune">tune</span>
+<span>Compliance Settings</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 bg-background px-margin py-margin overflow-y-auto">
+<div class="max-w-7xl mx-auto flex flex-col gap-space-lg">
+<!-- Top Section: Header & Actions -->
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md bg-surface-container-lowest p-space-lg rounded-xl border border-outline-variant shadow-sm">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="px-2 py-0.5 rounded text-label-sm font-label-sm bg-surface-container text-primary font-semibold border border-outline-variant">ORCHESTRATION DIRECTORY</span>
+<span class="text-outline text-label-sm font-label-sm">• 5 Active Divisions</span>
+</div>
+<h1 class="text-headline-lg font-headline-lg text-primary tracking-tight">Department Directory &amp; Access</h1>
+<p class="text-body-md font-body-md text-on-surface-variant mt-1">Manage agency organizational units, assigned OCR templates, document pipelines, and authorized staff.</p>
+</div>
+<!-- Primary CTA Button -->
+<div class="flex items-center gap-3">
+<button class="flex items-center gap-2 bg-surface-container-lowest border border-outline-variant text-on-surface font-label-md text-label-md px-space-md py-2 rounded-lg hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-[18px]" data-icon="download">download</span>
+<span>Export Audit CSV</span>
+</button>
+<button class="flex items-center gap-2 bg-primary-container hover:bg-primary text-on-primary font-label-md text-label-md px-space-lg py-2.5 rounded-lg shadow-sm transition-colors duration-150 ease-in-out" onclick="openModal()">
+<span class="material-symbols-outlined text-lg" data-icon="add">add</span>
+<span>Add Department</span>
+</button>
+</div>
+</div>
+<!-- Filter & Search Controls Bar -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-space-sm items-center bg-surface-container-lowest p-space-sm rounded-lg border border-outline-variant">
+<!-- Search Bar -->
+<div class="md:col-span-6 relative">
+<span class="material-symbols-outlined absolute left-3 top-2.5 text-outline text-[18px]" data-icon="search">search</span>
+<input class="w-full bg-surface-bright border border-outline-variant rounded-lg pl-9 pr-3 py-1.5 text-body-sm font-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-secondary transition-colors" id="deptSearchInput" placeholder="Search by department name or code..." type="text"/>
+</div>
+<!-- Status Filter Dropdown -->
+<div class="md:col-span-3 flex items-center gap-2">
+<label class="text-label-sm font-label-sm text-outline shrink-0">Status:</label>
+<select class="w-full bg-surface-bright border border-outline-variant rounded-lg px-2.5 py-1.5 text-label-md font-label-md text-on-surface focus:outline-none focus:border-secondary transition-colors">
+<option value="all">Status: All</option>
+<option value="active">Active</option>
+<option value="archived">Archived</option>
+<option value="maintenance">Under Maintenance</option>
+</select>
+</div>
+<!-- Sort Dropdown -->
+<div class="md:col-span-3 flex items-center gap-2">
+<label class="text-label-sm font-label-sm text-outline shrink-0">Sort:</label>
+<select class="w-full bg-surface-bright border border-outline-variant rounded-lg px-2.5 py-1.5 text-label-md font-label-md text-on-surface focus:outline-none focus:border-secondary transition-colors">
+<option value="volume">Sort: Document Volume</option>
+<option value="activity">Recently Active</option>
+<option value="name">Department Name (A-Z)</option>
+<option value="code">Code (Ascending)</option>
+</select>
+</div>
+</div>
+<!-- Departments Table / Data Grid -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-outline-variant h-9">
+<th class="px-space-md py-2 text-label-sm font-label-sm text-on-surface-variant font-semibold">DEPARTMENT NAME &amp; BADGE</th>
+<th class="px-space-md py-2 text-label-sm font-label-sm text-on-surface-variant font-semibold">CODE</th>
+<th class="px-space-md py-2 text-label-sm font-label-sm text-on-surface-variant font-semibold">TEMPLATES ASSIGNED</th>
+<th class="px-space-md py-2 text-label-sm font-label-sm text-on-surface-variant font-semibold text-right">DOCUMENTS PROCESSED</th>
+<th class="px-space-md py-2 text-label-sm font-label-sm text-on-surface-variant font-semibold text-center">STATUS</th>
+<th class="px-space-md py-2 text-label-sm font-label-sm text-on-surface-variant font-semibold">LAST ACTIVITY</th>
+<th class="px-space-md py-2 text-label-sm font-label-sm text-on-surface-variant font-semibold text-right">ACTIONS</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/60 font-body-sm text-body-sm">
+<!-- Row 1: REV-TAX -->
+<tr class="hover:bg-surface-container-low transition-colors duration-150">
+<td class="px-space-md py-3.5">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center border border-outline-variant text-primary font-bold text-label-sm shrink-0">
+                        REV
+                      </div>
+<div>
+<div class="text-title-md font-title-md text-on-surface font-semibold">Department of Revenue &amp; Taxation</div>
+<span class="inline-block text-[11px] font-label-sm px-1.5 py-0.2 rounded bg-surface-container-high text-primary font-medium mt-0.5">REV-TAX</span>
+</div>
+</div>
+</td>
+<td class="px-space-md py-3.5">
+<span class="font-data-mono text-data-mono font-medium text-on-surface bg-surface-container-low px-2 py-1 rounded border border-outline-variant">REV-01</span>
+</td>
+<td class="px-space-md py-3.5">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="description">description</span>
+<span class="text-on-surface font-medium">14 Active Templates</span>
+</div>
+</td>
+<td class="px-space-md py-3.5 text-right font-data-mono text-data-mono font-medium text-on-surface">
+                    48,210 docs
+                  </td>
+<td class="px-space-md py-3.5 text-center">
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-label-sm font-label-sm font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                      Active
+                    </span>
+</td>
+<td class="px-space-md py-3.5 text-outline">
+                    5 mins ago
+                  </td>
+<td class="px-space-md py-3.5 text-right">
+<div class="relative inline-block text-left">
+<button class="p-1 rounded text-on-surface-variant hover:bg-surface-container transition-colors" onclick="toggleActionMenu(1)">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+<div class="hidden absolute right-0 mt-1 w-44 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg z-20 py-1 text-left" id="action-menu-1">
+<a class="flex items-center gap-2 px-3 py-1.5 text-body-sm font-body-sm text-on-surface hover:bg-surface-container-low" href="#"><span class="material-symbols-outlined text-[16px]" data-icon="visibility">visibility</span>View Detail</a>
+<a class="flex items-center gap-2 px-3 py-1.5 text-body-sm font-body-sm text-on-surface hover:bg-surface-container-low" href="#"><span class="material-symbols-outlined text-[16px]" data-icon="edit">edit</span>Edit</a>
+<a class="flex items-center gap-2 px-3 py-1.5 text-body-sm font-body-sm text-on-surface hover:bg-surface-container-low" href="#"><span class="material-symbols-outlined text-[16px]" data-icon="schema">schema</span>Configure Pipelines</a>
+<div class="border-t border-outline-variant my-1"></div>
+<a class="flex items-center gap-2 px-3 py-1.5 text-body-sm font-body-sm text-error hover:bg-error-container/40" href="#"><span class="material-symbols-outlined text-[16px]" data-icon="archive">archive</span>Archive</a>
+</div>
+</div>
+</td>
+</tr>
+<!-- Row 2: UPLR -->
+<tr class="hover:bg-surface-container-low transition-colors duration-150">
+<td class="px-space-md py-3.5">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center border border-outline-variant text-primary font-bold text-label-sm shrink-0">
+                        UPL
+                      </div>
+<div>
+<div class="text-title-md font-title-md text-on-surface font-semibold">Urban Planning &amp; Land Records</div>
+<span class="inline-block text-[11px] font-label-sm px-1.5 py-0.2 rounded bg-surface-container-high text-primary font-medium mt-0.5">UPLR</span>
+</div>
+</div>
+</td>
+<td class="px-space-md py-3.5">
+<span class="font-data-mono text-data-mono font-medium text-on-surface bg-surface-container-low px-2 py-1 rounded border border-outline-variant">UPL-04</span>
+</td>
+<td class="px-space-md py-3.5">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="description">description</span>
+<span class="text-on-surface font-medium">8 Active Templates</span>
+</div>
+</td>
+<td class="px-space-md py-3.5 text-right font-data-mono text-data-mono font-medium text-on-surface">
+                    31,890 docs
+                  </td>
+<td class="px-space-md py-3.5 text-center">
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-label-sm font-label-sm font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                      Active
+                    </span>
+</td>
+<td class="px-space-md py-3.5 text-outline">
+                    2 hours ago
+                  </td>
+<td class="px-space-md py-3.5 text-right">
+<div class="relative inline-block text-left">
+<button class="p-1 rounded text-on-surface-variant hover:bg-surface-container transition-colors" onclick="toggleActionMenu(2)">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+<div class="hidden absolute right-0 mt-1 w-44 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg z-20 py-1 text-left" id="action-menu-2">
+<a class="flex items-center gap-2 px-3 py-1.5 text-body-sm font-body-sm text-on-surface hover:bg-surface-container-low" href="#"><span class="material-symbols-outlined text-[16px]" data-icon="visibility">visibility</span>View Detail</a>
+<a class="flex items-center gap-2 px-3 py-1.5 text-body-sm font-body-sm text-on-surface hover:bg-surface-container-low" href="#"><span class="material-symbols-outlined text-[16px]" data-icon="edit">edit</span>Edit</a>
+<a class="flex items-center gap-2 px-3 py-1.5 text-body-sm font-body-sm text-on-surface hover:bg-surface-container-low" href="#"><span class="material-symbols-outlined text-[16px]" data-icon="schema">schema</span>Configure Pipelines</a>
+<div class="border-t border-outline-variant my-1"></div>
+<a class="flex items-center gap-2 px-3 py-1.5 text-body-sm font-body-sm text-error hover:bg-error-container/40" href="#"><span class="material-symbols-outlined text-[16px]" data-icon="archive">archive</span>Archive</a>
+</div>
+</div>
+</td>
+</tr>
+<!-- Row 3: CRVS -->
+<tr class="hover:bg-surface-container-low transition-colors duration-150">
+<td class="px-space-md py-3.5">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center border border-outline-variant text-primary font-bold text-label-sm shrink-0">
+                        CRV
+                      </div>
+<div>
+<div class="text-title-md font-title-md text-on-surface font-semibold">Civil Registration &amp; Vital Statistics</div>
+<span class="inline-block text-[11px] font-label-sm px-1.5 py-0.2 rounded bg-surface-container-high text-primary font-medium mt-0.5">CRVS</span>
+</div>
+</div>
+</td>
+<td class="px-space-md py-3.5">
+<span class="font-data-mono text-data-mono font-medium text-on-surface bg-surface-container-low px-2 py-1 rounded border border-outline-variant">CRV-02</span>
+</td>
+<td class="px-space-md py-3.5">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="description">description</span>
+<span class="text-on-surface font-medium">22 Active Templates</span>
+</div>
+</td>
+<td class="px-space-md py-3.5 text-right font-data-mono text-data-mono font-medium text-on-surface">
+                    62,140 docs
+                  </td>
+<td class="px-space-md py-3.5 text-center">
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-label-sm font-label-sm font-semibold bg-amber-50 text-amber-800 border border-amber-300">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+                      Under Maintenance
+                    </span>
+</td>
+<td class="px-space-md py-3.5 text-outline">
+                    Yesterday
+                  </td>
+<td class="px-space-md py-3.5 text-right">
+<div class="relative inline-block text-left">
+<button class="p-1 rounded text-on-surface-variant hover:bg-surface-container transition-colors" onclick="toggleActionMenu(3)">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+<div class="hidden absolute right-0 mt-1 w-44 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg z-20 py-1 text-left" id="action-menu-3">
+<a class="flex items-center gap-2 px-3 py-1.5 text-body-sm font-body-sm text-on-surface hover:bg-surface-container-low" href="#"><span class="material-symbols-outlined text-[16px]" data-icon="visibility">visibility</span>View Detail</a>
+<a class="flex items-center gap-2 px-3 py-1.5 text-body-sm font-body-sm text-on-surface hover:bg-surface-container-low" href="#"><span class="material-symbols-outlined text-[16px]" data-icon="edit">edit</span>Edit</a>
+<a class="flex items-center gap-2 px-3 py-1.5 text-body-sm font-body-sm text-on-surface hover:bg-surface-container-low" href="#"><span class="material-symbols-outlined text-[16px]" data-icon="schema">schema</span>Configure Pipelines</a>
+<div class="border-t border-outline-variant my-1"></div>
+<a class="flex items-center gap-2 px-3 py-1.5 text-body-sm font-body-sm text-error hover:bg-error-container/40" href="#"><span class="material-symbols-outlined text-[16px]" data-icon="archive">archive</span>Archive</a>
+</div>
+</div>
+</td>
+</tr>
+<!-- Row 4: PWI -->
+<tr class="hover:bg-surface-container-low transition-colors duration-150">
+<td class="px-space-md py-3.5">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center border border-outline-variant text-primary font-bold text-label-sm shrink-0">
+                        PWI
+                      </div>
+<div>
+<div class="text-title-md font-title-md text-on-surface font-semibold">Public Works &amp; Infrastructure</div>
+<span class="inline-block text-[11px] font-label-sm px-1.5 py-0.2 rounded bg-surface-container-high text-primary font-medium mt-0.5">PWI</span>
+</div>
+</div>
+</td>
+<td class="px-space-md py-3.5">
+<span class="font-data-mono text-data-mono font-medium text-on-surface bg-surface-container-low px-2 py-1 rounded border border-outline-variant">PWI-09</span>
+</td>
+<td class="px-space-md py-3.5">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="description">description</span>
+<span class="text-on-surface font-medium">11 Active Templates</span>
+</div>
+</td>
+<td class="px-space-md py-3.5 text-right font-data-mono text-data-mono font-medium text-on-surface">
+                    19,405 docs
+                  </td>
+<td class="px-space-md py-3.5 text-center">
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-label-sm font-label-sm font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                      Active
+                    </span>
+</td>
+<td class="px-space-md py-3.5 text-outline">
+                    3 days ago
+                  </td>
+<td class="px-space-md py-3.5 text-right">
+<div class="relative inline-block text-left">
+<button class="p-1 rounded text-on-surface-variant hover:bg-surface-container transition-colors" onclick="toggleActionMenu(4)">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+<div class="hidden absolute right-0 mt-1 w-44 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg z-20 py-1 text-left" id="action-menu-4">
+<a class="flex items-center gap-2 px-3 py-1.5 text-body-sm font-body-sm text-on-surface hover:bg-surface-container-low" href="#"><span class="material-symbols-outlined text-[16px]" data-icon="visibility">visibility</span>View Detail</a>
+<a class="flex items-center gap-2 px-3 py-1.5 text-body-sm font-body-sm text-on-surface hover:bg-surface-container-low" href="#"><span class="material-symbols-outlined text-[16px]" data-icon="edit">edit</span>Edit</a>
+<a class="flex items-center gap-2 px-3 py-1.5 text-body-sm font-body-sm text-on-surface hover:bg-surface-container-low" href="#"><span class="material-symbols-outlined text-[16px]" data-icon="schema">schema</span>Configure Pipelines</a>
+<div class="border-t border-outline-variant my-1"></div>
+<a class="flex items-center gap-2 px-3 py-1.5 text-body-sm font-body-sm text-error hover:bg-error-container/40" href="#"><span class="material-symbols-outlined text-[16px]" data-icon="archive">archive</span>Archive</a>
+</div>
+</div>
+</td>
+</tr>
+<!-- Row 5: HSL -->
+<tr class="hover:bg-surface-container-low transition-colors duration-150">
+<td class="px-space-md py-3.5">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center border border-outline-variant text-primary font-bold text-label-sm shrink-0">
+                        HSL
+                      </div>
+<div>
+<div class="text-title-md font-title-md text-on-surface font-semibold">Health Services &amp; Licensing</div>
+<span class="inline-block text-[11px] font-label-sm px-1.5 py-0.2 rounded bg-surface-container-high text-primary font-medium mt-0.5">HSL</span>
+</div>
+</div>
+</td>
+<td class="px-space-md py-3.5">
+<span class="font-data-mono text-data-mono font-medium text-on-surface bg-surface-container-low px-2 py-1 rounded border border-outline-variant">HSL-03</span>
+</td>
+<td class="px-space-md py-3.5">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="description">description</span>
+<span class="text-on-surface font-medium">17 Active Templates</span>
+</div>
+</td>
+<td class="px-space-md py-3.5 text-right font-data-mono text-data-mono font-medium text-on-surface">
+                    54,820 docs
+                  </td>
+<td class="px-space-md py-3.5 text-center">
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-label-sm font-label-sm font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                      Active
+                    </span>
+</td>
+<td class="px-space-md py-3.5 text-outline">
+                    4 hours ago
+                  </td>
+<td class="px-space-md py-3.5 text-right">
+<div class="relative inline-block text-left">
+<button class="p-1 rounded text-on-surface-variant hover:bg-surface-container transition-colors" onclick="toggleActionMenu(5)">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+<div class="hidden absolute right-0 mt-1 w-44 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg z-20 py-1 text-left" id="action-menu-5">
+<a class="flex items-center gap-2 px-3 py-1.5 text-body-sm font-body-sm text-on-surface hover:bg-surface-container-low" href="#"><span class="material-symbols-outlined text-[16px]" data-icon="visibility">visibility</span>View Detail</a>
+<a class="flex items-center gap-2 px-3 py-1.5 text-body-sm font-body-sm text-on-surface hover:bg-surface-container-low" href="#"><span class="material-symbols-outlined text-[16px]" data-icon="edit">edit</span>Edit</a>
+<a class="flex items-center gap-2 px-3 py-1.5 text-body-sm font-body-sm text-on-surface hover:bg-surface-container-low" href="#"><span class="material-symbols-outlined text-[16px]" data-icon="schema">schema</span>Configure Pipelines</a>
+<div class="border-t border-outline-variant my-1"></div>
+<a class="flex items-center gap-2 px-3 py-1.5 text-body-sm font-body-sm text-error hover:bg-error-container/40" href="#"><span class="material-symbols-outlined text-[16px]" data-icon="archive">archive</span>Archive</a>
+</div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Pagination Footer -->
+<div class="px-space-md py-2.5 bg-surface-bright border-t border-outline-variant flex flex-col sm:flex-row items-center justify-between gap-2">
+<span class="text-body-sm font-body-sm text-outline">Showing 1 to 5 of 5 departments</span>
+<div class="flex items-center gap-1">
+<button class="px-2.5 py-1 rounded border border-outline-variant text-body-sm font-body-sm text-outline hover:bg-surface-container-low disabled:opacity-50" disabled="">Previous</button>
+<button class="px-2.5 py-1 rounded bg-primary text-on-primary text-body-sm font-body-sm font-medium">1</button>
+<button class="px-2.5 py-1 rounded border border-outline-variant text-body-sm font-body-sm text-outline hover:bg-surface-container-low disabled:opacity-50" disabled="">Next</button>
+</div>
+</div>
+</div>
+<!-- System Pipeline Summary Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+<div class="bg-surface-container-lowest p-space-md rounded-xl border border-outline-variant shadow-sm flex items-start justify-between">
+<div>
+<span class="text-label-sm font-label-sm text-outline uppercase tracking-wider">Total Aggregated Pipeline</span>
+<p class="text-headline-md font-headline-md font-bold text-primary mt-1">216,465 Docs</p>
+<span class="text-body-sm font-body-sm text-emerald-700 flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="trending_up">trending_up</span>
+                +14.2% from prior billing cycle
+              </span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container text-primary">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-xl border border-outline-variant shadow-sm flex items-start justify-between">
+<div>
+<span class="text-label-sm font-label-sm text-outline uppercase tracking-wider">Active Schema Templates</span>
+<p class="text-headline-md font-headline-md font-bold text-primary mt-1">72 OCR Schemas</p>
+<span class="text-body-sm font-body-sm text-outline mt-1 block">Across 5 Department clusters</span>
+</div>
+<div class="p-2.5 rounded-lg bg-surface-container text-primary">
+<span class="material-symbols-outlined" data-icon="folder_copy">folder_copy</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-xl border border-outline-variant shadow-sm flex items-start justify-between">
+<div>
+<span class="text-label-sm font-label-sm text-outline uppercase tracking-wider">Orchestration Health</span>
+<p class="text-headline-md font-headline-md font-bold text-emerald-800 mt-1">99.94% Uptime</p>
+<span class="text-body-sm font-body-sm text-outline mt-1 block">Zero critical pipeline failures</span>
+</div>
+<div class="p-2.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">
+<span class="material-symbols-outlined" data-icon="check_circle">check_circle</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Interactive Modal Dialog: Add Department (Interactive & Toggleable) -->
+<div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm transition-opacity duration-200" id="addDepartmentModal">
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-2xl max-w-lg w-full overflow-hidden transform transition-all">
+<!-- Modal Header -->
+<div class="flex items-center justify-between px-space-lg py-3.5 border-b border-outline-variant bg-surface-container-low">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="domain_add">domain_add</span>
+<h2 class="text-title-md font-title-md font-bold text-primary">Create New Department</h2>
+</div>
+<button class="text-outline hover:text-on-surface p-1 rounded-lg transition-colors" onclick="closeModal()">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+</div>
+<!-- Modal Body Form -->
+<form class="p-space-lg flex flex-col gap-space-md" id="newDeptForm" onsubmit="handleFormSubmit(event)">
+<!-- Department Name -->
+<div class="flex flex-col gap-1">
+<label class="text-label-md font-label-md text-on-surface font-semibold">
+            Department Name <span class="text-error">*</span>
+</label>
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-3 py-2 text-body-md font-body-md text-on-surface focus:outline-none focus:border-secondary transition-colors" placeholder="e.g. Department of Agricultural Records" required="" type="text"/>
+</div>
+<!-- Department Code & Contact Email (Two Columns) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-space-md">
+<div class="flex flex-col gap-1">
+<label class="text-label-md font-label-md text-on-surface font-semibold">
+              Department Code <span class="text-error">*</span>
+</label>
+<input class="w-full uppercase bg-surface-container-lowest border border-outline-variant rounded-lg px-3 py-2 text-body-md font-body-md text-on-surface font-data-mono focus:outline-none focus:border-secondary transition-colors" maxlength="6" minlength="3" pattern="[A-Z0-9-]{3,6}" placeholder="AGR-01" required="" type="text" uppercase=""/>
+<span class="text-[11px] text-outline">3 to 6 characters (uppercase, numbers, hyphens).</span>
+</div>
+<div class="flex flex-col gap-1">
+<label class="text-label-md font-label-md text-on-surface font-semibold">
+              Primary Contact Email <span class="text-error">*</span>
+</label>
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-3 py-2 text-body-md font-body-md text-on-surface focus:outline-none focus:border-secondary transition-colors" placeholder="director.agr@agency.gov" required="" type="email"/>
+</div>
+</div>
+<!-- Description -->
+<div class="flex flex-col gap-1">
+<label class="text-label-md font-label-md text-on-surface font-semibold">Description</label>
+<textarea class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-3 py-2 text-body-md font-body-md text-on-surface focus:outline-none focus:border-secondary transition-colors resize-none" placeholder="Brief mandate and jurisdictional boundary description..." rows="2"></textarea>
+</div>
+<!-- Assigned Template Pack -->
+<div class="flex flex-col gap-1">
+<label class="text-label-md font-label-md text-on-surface font-semibold">Assigned Template Pack</label>
+<select class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-3 py-2 text-body-md font-body-md text-on-surface focus:outline-none focus:border-secondary transition-colors">
+<option value="core">Standard Municipal Form Bundle (12 OCR models)</option>
+<option value="tax">Taxation &amp; Audit Document Pack (24 OCR models)</option>
+<option value="permits">Land Registry &amp; Zoning Blueprints (16 OCR models)</option>
+<option value="identity">Civil Vital Statistics Pack (18 OCR models)</option>
+<option value="empty">None (Assign schema manually later)</option>
+</select>
+</div>
+<!-- Status Toggle -->
+<div class="flex items-center justify-between pt-1 border-t border-outline-variant">
+<div>
+<div class="text-label-md font-label-md text-on-surface font-semibold">Operational Status</div>
+<div class="text-body-sm font-body-sm text-outline">Allow instant document ingestion upon creation</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-container"></div>
+</label>
+</div>
+<!-- Action Buttons -->
+<div class="flex items-center justify-end gap-space-sm pt-space-sm border-t border-outline-variant">
+<button class="px-space-md py-2 border border-outline-variant text-on-surface font-label-md text-label-md rounded-lg hover:bg-surface-container-low transition-colors" onclick="closeModal()" type="button">
+            Cancel
+          </button>
+<button class="px-space-lg py-2 bg-primary-container hover:bg-primary text-on-primary font-label-md text-label-md rounded-lg shadow-sm transition-colors" type="submit">
+            Create Department
+          </button>
+</div>
+</form>
+</div>
+</div>
+<!-- Micro-interactions Script -->
+<script>
+    function openModal() {
+      const modal = document.getElementById('addDepartmentModal');
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('addDepartmentModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function handleFormSubmit(e) {
+      e.preventDefault();
+      alert('Department registered successfully into DocGov CivicIntel Orchestration matrix.');
+      closeModal();
+    }
+
+    function toggleActionMenu(id) {
+      const menu = document.getElementById('action-menu-' + id);
+      const isHidden = menu.classList.contains('hidden');
+      // Hide other menus
+      for (let i = 1; i <= 5; i++) {
+        const otherMenu = document.getElementById('action-menu-' + i);
+        if (otherMenu) otherMenu.classList.add('hidden');
+      }
+      if (isHidden) {
+        menu.classList.remove('hidden');
+      }
+    }
+
+    // Close menus on outside click
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('[onclick^="toggleActionMenu"]') && !e.target.closest('[id^="action-menu-"]')) {
+        for (let i = 1; i <= 5; i++) {
+          const m = document.getElementById('action-menu-' + i);
+          if (m) m.classList.add('hidden');
+        }
+      }
+    });
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sideNavBar');
+      sidebar.classList.toggle('hidden');
+    }
+  </script>
+</body></html>

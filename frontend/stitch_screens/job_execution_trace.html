@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Job Execution Trace: #JOB-8841-REV - DocGov CivicIntel</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-primary-container": "#90a8ff",
+            "on-primary-fixed": "#00164e",
+            "primary": "#00236f",
+            "primary-fixed-dim": "#b6c4ff",
+            "surface-container-low": "#eff4ff",
+            "surface-container": "#e5eeff",
+            "on-secondary-container": "#004666",
+            "outline": "#757682",
+            "on-tertiary-fixed-variant": "#5516be",
+            "on-surface-variant": "#444651",
+            "on-error": "#ffffff",
+            "surface-bright": "#f8f9ff",
+            "primary-fixed": "#dce1ff",
+            "error-container": "#ffdad6",
+            "tertiary-fixed": "#e9ddff",
+            "surface-container-highest": "#d3e4fe",
+            "outline-variant": "#c5c5d3",
+            "surface-variant": "#d3e4fe",
+            "secondary-fixed-dim": "#89ceff",
+            "surface-container-high": "#dce9ff",
+            "inverse-surface": "#213145",
+            "inverse-primary": "#b6c4ff",
+            "surface": "#f8f9ff",
+            "tertiary-container": "#4e03b8",
+            "on-surface": "#0b1c30",
+            "surface-container-lowest": "#ffffff",
+            "background": "#f8f9ff",
+            "secondary": "#006591",
+            "error": "#ba1a1a",
+            "on-background": "#0b1c30",
+            "on-secondary-fixed": "#001e2f",
+            "on-secondary-fixed-variant": "#004c6e",
+            "inverse-on-surface": "#eaf1ff",
+            "surface-dim": "#cbdbf5",
+            "tertiary-fixed-dim": "#d0bcff",
+            "on-tertiary-fixed": "#23005c",
+            "secondary-container": "#39b8fd",
+            "on-primary": "#ffffff",
+            "tertiary": "#340081",
+            "on-error-container": "#93000a",
+            "on-primary-fixed-variant": "#264191",
+            "surface-tint": "#4059aa",
+            "on-tertiary": "#ffffff",
+            "primary-container": "#1e3a8a",
+            "on-tertiary-container": "#b89cff",
+            "secondary-fixed": "#c9e6ff",
+            "on-secondary": "#ffffff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-lg": "1.5rem",
+            "margin": "1.5rem",
+            "space-xl": "2rem",
+            "space-xs": "0.25rem",
+            "space-sm": "0.5rem",
+            "space-md": "1rem",
+            "gutter": "1.25rem"
+          },
+          "fontFamily": {
+            "body-lg": ["Inter"],
+            "data-mono": ["Inter"],
+            "display-lg-mobile": ["Inter"],
+            "label-md": ["Inter"],
+            "body-md": ["Inter"],
+            "label-sm": ["Inter"],
+            "headline-sm": ["Inter"],
+            "title-md": ["Inter"],
+            "display-lg": ["Inter"],
+            "headline-md": ["Inter"],
+            "body-sm": ["Inter"],
+            "headline-lg": ["Inter"]
+          },
+          "fontSize": {
+            "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "data-mono": ["13px", { "lineHeight": "18px", "letterSpacing": "0em", "fontWeight": "500" }],
+            "display-lg-mobile": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+            "label-md": ["13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+            "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }],
+            "headline-sm": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600" }],
+            "title-md": ["16px", { "lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "600" }],
+            "display-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "400" }],
+            "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.015em", "fontWeight": "600" }]
+          }
+        },
+      },
+    }
+  </script>
+</head>
+<body class="bg-background text-on-surface antialiased flex flex-col min-h-screen">
+<!-- Side Navigation Bar (Anchored from Shared Components JSON) -->
+<aside class="flex flex-col justify-between h-full w-64 shrink-0 py-space-md px-space-sm fixed left-0 top-0 z-30 bg-surface-container-lowest dark:bg-inverse-surface border-r border-outline-variant dark:border-outline shadow-sm dark:shadow-none">
+<div class="flex flex-col gap-space-md">
+<!-- Agency Header -->
+<div class="flex items-center gap-space-sm px-space-sm pb-space-sm border-b border-outline-variant">
+<div class="w-9 h-9 rounded bg-primary-container flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-[20px]" data-icon="account_balance">account_balance</span>
+</div>
+<div class="flex flex-col">
+<span class="text-title-md font-title-md font-bold text-primary dark:text-primary-fixed leading-tight">CivicIntel Platform</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant">Agency Compliance v4.2</span>
+</div>
+</div>
+<!-- Action CTA -->
+<div class="px-space-xs">
+<button class="w-full flex items-center justify-center gap-space-xs bg-primary hover:bg-primary-container text-on-primary text-label-md font-label-md py-space-sm px-space-md rounded transition-colors duration-150">
+<span class="material-symbols-outlined text-[18px]" data-icon="add_circle">add_circle</span>
+<span>New Document Ingestion</span>
+</button>
+</div>
+<!-- Navigation Tabs (8 Items from JSON; Logs is ACTIVE) -->
+<nav class="flex flex-col gap-space-xs">
+<!-- 1. Dashboard -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<!-- 2. Departments -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="account_balance">account_balance</span>
+<span>Departments</span>
+</a>
+<!-- 3. URLs -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="link">link</span>
+<span>URLs</span>
+</a>
+<!-- 4. OCR -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="document_scanner">document_scanner</span>
+<span>OCR</span>
+</a>
+<!-- 5. Orchestration -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="account_tree">account_tree</span>
+<span>Orchestration</span>
+</a>
+<!-- 6. Logs (MANDATORY ACTIVE TAB) -->
+<a class="flex items-center gap-space-sm bg-surface-container dark:bg-surface-container-high text-primary dark:text-primary-fixed border-l-2 border-primary dark:border-primary-fixed font-title-md text-title-md px-space-md py-space-sm rounded-r-lg" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="receipt_long">receipt_long</span>
+<span>Logs</span>
+</a>
+<!-- 7. Manage Templates -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="topic">topic</span>
+<span>Manage Templates</span>
+</a>
+<!-- 8. Help & Support -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="support">support</span>
+<span>Help &amp; Support</span>
+</a>
+</nav>
+</div>
+<!-- Sidebar Footer -->
+<div class="flex flex-col gap-space-xs pt-space-sm border-t border-outline-variant">
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded hover:bg-surface-container-low transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="verified_user">verified_user</span>
+<span>System Health</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded hover:bg-surface-container-low transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="tune">tune</span>
+<span>Compliance Settings</span>
+</a>
+</div>
+</aside>
+<!-- App Main Content Area -->
+<div class="ml-64 flex flex-col flex-1">
+<!-- Top Navigation Bar (Anchored from Shared Components JSON) -->
+<header class="flex justify-between items-center h-14 px-gutter w-full sticky top-0 z-40 bg-surface-container-lowest dark:bg-inverse-surface border-b border-outline-variant dark:border-outline shadow-sm dark:shadow-none">
+<!-- Search & Breadcrumbs Area -->
+<div class="flex items-center gap-space-md">
+<span class="text-headline-sm font-headline-sm font-bold text-primary dark:text-primary-fixed">DocGov CivicIntel</span>
+<div class="h-4 w-px bg-outline-variant"></div>
+<div class="flex items-center gap-space-xs text-body-sm font-body-sm text-on-surface-variant">
+<a class="hover:text-primary transition-colors" href="#">Logs</a>
+<span class="text-outline">/</span>
+<span class="text-primary font-label-md text-label-md">Job #JOB-8841-REV</span>
+</div>
+<!-- Search bar on left as dictated by JSON -->
+<div class="relative ml-space-md hidden lg:block">
+<span class="material-symbols-outlined absolute left-2.5 top-2 text-[18px] text-outline" data-icon="search">search</span>
+<input class="h-8 pl-8 pr-3 w-64 bg-surface rounded border border-outline-variant text-body-sm font-body-sm text-on-surface focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary" placeholder="Search pipeline trace, hash or job ID..." type="text"/>
+</div>
+</div>
+<!-- Trailing Action Icons & Officer Avatar -->
+<div class="flex items-center gap-space-sm">
+<button aria-label="notifications" class="w-8 h-8 flex items-center justify-center rounded text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors duration-150">
+<span class="material-symbols-outlined text-[20px]" data-icon="notifications">notifications</span>
+</button>
+<button aria-label="help" class="w-8 h-8 flex items-center justify-center rounded text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors duration-150">
+<span class="material-symbols-outlined text-[20px]" data-icon="help">help</span>
+</button>
+<button aria-label="settings" class="w-8 h-8 flex items-center justify-center rounded text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors duration-150">
+<span class="material-symbols-outlined text-[20px]" data-icon="settings">settings</span>
+</button>
+<div class="h-5 w-px bg-outline-variant mx-space-xs"></div>
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-primary-fixed text-primary flex items-center justify-center font-title-md text-title-md" title="Officer user avatar badge">
+            OFF
+          </div>
+<div class="hidden xl:flex flex-col text-left">
+<span class="text-label-sm font-label-sm font-bold text-on-surface">Officer D. Vance</span>
+<span class="text-body-sm font-body-sm text-outline">Clearance: Fed-Tier 4</span>
+</div>
+</div>
+</div>
+</header>
+<!-- Page Content Container -->
+<main class="p-gutter flex flex-col gap-space-lg flex-1">
+<!-- Header Section: Job Detail & Execution Trace -->
+<div class="bg-surface-container-lowest p-space-md border border-outline-variant rounded shadow-sm flex flex-col gap-space-md">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
+<div class="flex flex-col gap-1">
+<div class="flex flex-wrap items-center gap-space-sm">
+<h1 class="text-headline-md font-headline-md text-primary tracking-tight">Job Execution Trace: #JOB-8841-REV</h1>
+<!-- Badge: Completed (Clean Consensus) with green pulse -->
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-label-sm font-label-sm bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10B981] opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-[#10B981]"></span>
+</span>
+                Completed (Clean Consensus)
+              </span>
+</div>
+<p class="text-body-md font-body-md text-on-surface-variant">
+              Land_Title_Deed_Registry_2024_08B.pdf • Department of Revenue &amp; Land Records (REV-01) • Template: Deed of Conveyance v2.1
+            </p>
+</div>
+<!-- Actions -->
+<div class="flex flex-wrap items-center gap-space-sm">
+<button class="inline-flex items-center gap-space-xs px-3 py-1.5 rounded border border-outline-variant bg-surface-container-lowest hover:bg-surface-container-low text-on-surface text-label-md font-label-md transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="refresh">refresh</span>
+              Re-run Ingestion
+            </button>
+<button class="inline-flex items-center gap-space-xs px-3 py-1.5 rounded border border-outline-variant bg-surface-container-lowest hover:bg-surface-container-low text-on-surface text-label-md font-label-md transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="download">download</span>
+              Download Raw Trace JSON
+            </button>
+<button class="inline-flex items-center gap-space-xs px-3 py-1.5 rounded bg-primary hover:bg-primary-container text-on-primary text-label-md font-label-md transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="account_tree">account_tree</span>
+              View in Orchestration Canvas
+            </button>
+</div>
+</div>
+<!-- Quick Stats Bar -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-space-md pt-space-sm border-t border-outline-variant">
+<div class="flex flex-col">
+<span class="text-label-sm font-label-sm text-outline">Ingestion Initiated</span>
+<span class="text-title-md font-title-md text-on-surface mt-0.5">Oct 24, 2024 14:32:04.502 UTC</span>
+</div>
+<div class="flex flex-col">
+<span class="text-label-sm font-label-sm text-outline">Elapsed Total Time</span>
+<span class="text-title-md font-title-md text-on-surface mt-0.5">4.608s</span>
+</div>
+<div class="flex flex-col">
+<span class="text-label-sm font-label-sm text-outline">Total Pages Processed</span>
+<span class="text-title-md font-title-md text-on-surface mt-0.5">6 of 6</span>
+</div>
+<div class="flex flex-col">
+<span class="text-label-sm font-label-sm text-outline">Extracted Fields</span>
+<span class="text-title-md font-title-md text-on-surface mt-0.5">42 Fields (96.4% Avg Conf)</span>
+</div>
+</div>
+</div>
+<!-- Main Layout: Two Columns -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
+<!-- Left Column: Detailed Multi-Stage Timeline Trace (7 Columns) -->
+<div class="lg:col-span-7 bg-surface-container-lowest p-space-lg border border-outline-variant rounded shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between pb-space-sm border-b border-outline-variant">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[22px]" data-icon="timeline">timeline</span>
+<h2 class="text-title-md font-title-md text-on-surface">Execution Lifecycle Trace &amp; Audit Stepper</h2>
+</div>
+<span class="text-label-sm font-label-sm text-outline">Precise Microsecond Synchronized Log</span>
+</div>
+<!-- Stepper Container -->
+<div class="relative pl-6 space-y-6 before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-outline-variant">
+<!-- Stage 1 -->
+<div class="relative flex flex-col gap-1">
+<span class="absolute -left-6 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary ring-4 ring-surface-container">
+<span class="h-1.5 w-1.5 rounded-full bg-surface-container-lowest"></span>
+</span>
+<div class="flex items-center justify-between">
+<span class="text-title-md font-title-md text-primary">Stage 1: Document Ingest &amp; SHA-256 Checksum</span>
+<span class="text-label-sm font-label-sm px-2 py-0.5 rounded bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">Succeeded in 184ms</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant">
+                Verified clean MIME type <code class="px-1 py-0.5 bg-surface-container text-on-surface rounded text-data-mono font-data-mono">application/pdf</code>, payload integrity valid.
+              </p>
+<div class="text-data-mono font-data-mono text-body-sm text-outline bg-surface p-2 rounded border border-outline-variant">
+                sha256: 8f9b2d8e4a1122ab0f5d4719c8939c381f728cba50ef312d192fef992da41a89
+              </div>
+</div>
+<!-- Stage 2 -->
+<div class="relative flex flex-col gap-1">
+<span class="absolute -left-6 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary ring-4 ring-surface-container">
+<span class="h-1.5 w-1.5 rounded-full bg-surface-container-lowest"></span>
+</span>
+<div class="flex items-center justify-between">
+<span class="text-title-md font-title-md text-primary">Stage 2: Rasterization &amp; De-skewing at 300 DPI</span>
+<span class="text-label-sm font-label-sm px-2 py-0.5 rounded bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">Succeeded in 612ms</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant">
+                6 pages converted to uncompressed TIFF buffers. Affine transformation corrected 1.4° tilt on page 3. Contrast threshold applied.
+              </p>
+</div>
+<!-- Stage 3 -->
+<div class="relative flex flex-col gap-1">
+<span class="absolute -left-6 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary ring-4 ring-surface-container">
+<span class="h-1.5 w-1.5 rounded-full bg-surface-container-lowest"></span>
+</span>
+<div class="flex items-center justify-between">
+<span class="text-title-md font-title-md text-primary">Stage 3: Bounding Geometry &amp; Region Layout</span>
+<span class="text-label-sm font-label-sm px-2 py-0.5 rounded bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">Succeeded in 410ms</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant">
+                Identified 18 primary text blocks, 2 tabular matrices, 1 notary seal area. Spatial tree aligned to Federal Deed schema.
+              </p>
+</div>
+<!-- Stage 4: Tri-Model Parallel OCR Inference -->
+<div class="relative flex flex-col gap-2">
+<span class="absolute -left-6 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary ring-4 ring-surface-container">
+<span class="h-1.5 w-1.5 rounded-full bg-surface-container-lowest"></span>
+</span>
+<div class="flex items-center justify-between">
+<span class="text-title-md font-title-md text-primary">Stage 4: Tri-Model Parallel OCR Inference</span>
+<span class="text-label-sm font-label-sm px-2 py-0.5 rounded bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">Succeeded in 2,420ms</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant">
+                Distributed worker pods executed simultaneous asynchronous model passes over bounding zones:
+              </p>
+<!-- Sub-worker Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-sm pt-1">
+<!-- Worker 1 -->
+<div class="p-space-sm rounded bg-surface border-l-4 border-[#8B5CF6] border-t border-r border-b border-outline-variant flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between">
+<span class="text-label-md font-label-md text-on-surface font-bold">Surya v2.4</span>
+<span class="text-label-sm font-label-sm text-outline">2.1s</span>
+</div>
+<span class="text-body-sm font-body-sm text-on-surface-variant">Pod: worker-pod-04a</span>
+</div>
+<div class="mt-2 flex items-center justify-between border-t border-outline-variant pt-1 text-body-sm font-body-sm">
+<span class="text-outline">42 fields</span>
+<span class="text-[#065F46] font-bold">96.4% conf</span>
+</div>
+</div>
+<!-- Worker 2 -->
+<div class="p-space-sm rounded bg-surface border-l-4 border-[#8B5CF6] border-t border-r border-b border-outline-variant flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between">
+<span class="text-label-md font-label-md text-on-surface font-bold">PaddleOCR v2.7</span>
+<span class="text-label-sm font-label-sm text-outline">1.1s</span>
+</div>
+<span class="text-body-sm font-body-sm text-on-surface-variant">Pod: worker-pod-02b</span>
+</div>
+<div class="mt-2 flex items-center justify-between border-t border-outline-variant pt-1 text-body-sm font-body-sm">
+<span class="text-outline">42 fields</span>
+<span class="text-[#92400E] font-bold">93.8% conf</span>
+</div>
+</div>
+<!-- Worker 3 -->
+<div class="p-space-sm rounded bg-surface border-l-4 border-[#8B5CF6] border-t border-r border-b border-outline-variant flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between">
+<span class="text-label-md font-label-md text-on-surface font-bold">Qwen2-VL</span>
+<span class="text-label-sm font-label-sm text-outline">2.4s</span>
+</div>
+<span class="text-body-sm font-body-sm text-on-surface-variant">Pod: worker-pod-gpu01</span>
+</div>
+<div class="mt-2 flex items-center justify-between border-t border-outline-variant pt-1 text-body-sm font-body-sm">
+<span class="text-outline">42 fields</span>
+<span class="text-[#065F46] font-bold">95.1% conf</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Stage 5 -->
+<div class="relative flex flex-col gap-1">
+<span class="absolute -left-6 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary ring-4 ring-surface-container">
+<span class="h-1.5 w-1.5 rounded-full bg-surface-container-lowest"></span>
+</span>
+<div class="flex items-center justify-between">
+<span class="text-title-md font-title-md text-primary">Stage 5: Consensus Quorum Arbitration</span>
+<span class="text-label-sm font-label-sm px-2 py-0.5 rounded bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">Succeeded in 312ms</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant">
+                38/42 unanimous agreement across all models. 4 ambiguous fields resolved via weighted 2-of-3 quorum threshold criteria. Zero human escalations required.
+              </p>
+</div>
+<!-- Stage 6 -->
+<div class="relative flex flex-col gap-1">
+<span class="absolute -left-6 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary ring-4 ring-surface-container">
+<span class="h-1.5 w-1.5 rounded-full bg-surface-container-lowest"></span>
+</span>
+<div class="flex items-center justify-between">
+<span class="text-title-md font-title-md text-primary">Stage 6: Schema Validation &amp; Federal Payload Delivery</span>
+<span class="text-label-sm font-label-sm px-2 py-0.5 rounded bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">Succeeded in 140ms</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant">
+                Emitted fully compliant GeoJSON &amp; ISO-19115 schema payload to Department Kafka broker topic <code class="px-1 py-0.5 bg-surface-container text-on-surface rounded text-data-mono font-data-mono">gov.rev.deeds.v1</code>.
+              </p>
+</div>
+</div>
+</div>
+<!-- Right Column: Telemetry & Audit Metadata (5 Columns) -->
+<div class="lg:col-span-5 flex flex-col gap-space-lg">
+<!-- Card 1: Execution Environment & Hardware -->
+<div class="bg-surface-container-lowest p-space-md border border-outline-variant rounded shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between pb-space-xs border-b border-outline-variant">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="memory">memory</span>
+<h3 class="text-title-md font-title-md text-on-surface">Execution Environment &amp; Hardware</h3>
+</div>
+<span class="text-label-sm font-label-sm text-[#065F46] bg-[#ECFDF5] px-2 py-0.5 rounded border border-[#A7F3D0]">Cluster Healthy</span>
+</div>
+<div class="flex flex-col gap-2 pt-1 text-body-sm font-body-sm">
+<div class="flex justify-between items-center py-1 border-b border-outline-variant">
+<span class="text-outline">Worker Cluster</span>
+<span class="text-data-mono font-data-mono text-on-surface font-semibold">US-EAST-GOV-OCR-CLUSTER-04</span>
+</div>
+<div class="flex justify-between items-center py-1 border-b border-outline-variant">
+<span class="text-outline">Hardware</span>
+<span class="text-data-mono font-data-mono text-on-surface font-semibold">NVIDIA H100 SXM5 80GB (16GB VRAM)</span>
+</div>
+<div class="flex justify-between items-center py-1 border-b border-outline-variant">
+<span class="text-outline">Container Image</span>
+<span class="text-data-mono font-data-mono text-on-surface font-semibold">civicintel-ocr-worker:v4.2.1-fips-compliant</span>
+</div>
+<div class="flex justify-between items-center py-1 border-b border-outline-variant">
+<span class="text-outline">Memory Peak</span>
+<span class="text-data-mono font-data-mono text-on-surface font-semibold">4.12 GB / 16 GB (25.7%)</span>
+</div>
+<div class="flex flex-col gap-1 py-1">
+<div class="flex justify-between text-label-sm font-label-sm">
+<span class="text-outline">GPU Utilization Peak</span>
+<span class="text-primary font-bold">74% peak</span>
+</div>
+<div class="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
+<div class="bg-primary h-1.5 rounded-full" style="width: 74%"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 2: Audit Event Log Stream (Real-Time Terminal Snippet) -->
+<div class="bg-[#0b1c30] text-[#eaf1ff] p-space-md rounded border border-[#213145] shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between pb-space-xs border-b border-white/10">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-[18px] text-[#39b8fd]" data-icon="terminal">terminal</span>
+<h3 class="text-title-md font-title-md text-white">Audit Event Log Stream</h3>
+</div>
+<span class="text-label-sm font-label-sm px-2 py-0.5 rounded bg-white/10 text-white/80 font-data-mono">SYNCHRONIZED</span>
+</div>
+<!-- Terminal output window -->
+<div class="font-data-mono text-data-mono leading-relaxed space-y-1.5 overflow-x-auto p-2 bg-[#001126] rounded border border-white/5 text-[12px]">
+<div class="text-slate-300">
+<span class="text-slate-500">[14:32:04.512]</span> <span class="text-[#39b8fd] font-bold">INFO:</span> Ingest listener received 4.8MB payload from rev-queue
+              </div>
+<div class="text-slate-300">
+<span class="text-slate-500">[14:32:04.696]</span> <span class="text-[#39b8fd] font-bold">INFO:</span> SHA-256 integrity match verified clean
+              </div>
+<div class="text-slate-300">
+<span class="text-slate-500">[14:32:05.308]</span> <span class="text-[#39b8fd] font-bold">INFO:</span> Rasterized 6 pages at 300 DPI
+              </div>
+<div class="text-slate-300">
+<span class="text-slate-500">[14:32:05.718]</span> <span class="text-[#39b8fd] font-bold">INFO:</span> Dispatched to worker pods [pod-04a, pod-02b, pod-gpu01]
+              </div>
+<div class="text-slate-300">
+<span class="text-slate-500">[14:32:08.138]</span> <span class="text-[#39b8fd] font-bold">INFO:</span> Quorum arbitrator accepted 38 unanimous keys
+              </div>
+<div class="text-slate-300">
+<span class="text-slate-500">[14:32:08.450]</span> <span class="text-[#39b8fd] font-bold">INFO:</span> Final payload dispatched to Kafka topic gov.rev.deeds.v1
+              </div>
+</div>
+</div>
+<!-- Card 3: Officer Sign-off & Cryptographic Seal -->
+<div class="bg-surface-container-lowest p-space-md border border-outline-variant rounded shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between pb-space-xs border-b border-outline-variant">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="verified">verified</span>
+<h3 class="text-title-md font-title-md text-on-surface">Officer Sign-off &amp; Cryptographic Seal</h3>
+</div>
+<span class="text-label-sm font-label-sm bg-surface-container text-primary font-semibold px-2 py-0.5 rounded">IMMUTABLE</span>
+</div>
+<div class="flex flex-col gap-2 pt-1 text-body-sm font-body-sm">
+<div class="flex flex-col gap-0.5 py-1 border-b border-outline-variant">
+<span class="text-outline text-label-sm font-label-sm">Cryptographic Signature</span>
+<span class="text-data-mono font-data-mono text-on-surface break-all text-body-sm font-semibold">
+                  ECDSA-P256-SHA256: 7f89c09d5a812300bfe51283e7a64c4892e8a1bc
+                </span>
+</div>
+<div class="flex justify-between items-center py-1 border-b border-outline-variant">
+<span class="text-outline text-label-sm font-label-sm">Audit Level</span>
+<span class="inline-flex items-center gap-1 text-label-sm font-label-sm font-bold text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="policy">policy</span>
+                  FedRAMP High / CJIS Compliant
+                </span>
+</div>
+<div class="flex justify-between items-center py-1">
+<span class="text-outline text-label-sm font-label-sm">Verified By</span>
+<span class="text-label-sm font-label-sm font-bold text-primary">
+                  Automated Pipeline Service Principal (SPN-DOCGOV-901)
+                </span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

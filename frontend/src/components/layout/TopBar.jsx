@@ -1,34 +1,40 @@
 import React from 'react';
-import { Search } from 'lucide-react';
+import { Search, Menu } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 
-const TopBar = () => {
+const TITLES = {
+  dashboard: 'Dashboard',
+  manage: 'Manage Departments & Templates',
+  'generate-url': 'Generate URL',
+  ocr: 'OCR — Single Pipeline',
+  logs: 'Logs',
+  orchestration: 'Orchestration',
+  help: 'Help & Support',
+};
+
+const TopBar = ({ toggleSidebar }) => {
   const location = useLocation();
-  
-  // Create a clean title from the path
+
   const pathParts = location.pathname.split('/').filter(Boolean);
-  let title = "Dashboard";
-  if (pathParts.length > 0) {
-    title = pathParts[0].charAt(0).toUpperCase() + pathParts[0].slice(1);
-    if (title === 'Types') title = 'Document Types';
-    if (title === 'Upload') title = 'Process Document';
-  }
+  const title = TITLES[pathParts[0]] || 'DocInt';
 
   return (
     <header className="topbar">
-      <div className="topbar-left">
+      <div className="topbar-left" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <button onClick={toggleSidebar} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex' }}>
+          <Menu size={24} />
+        </button>
         <h2 className="page-title">{title}</h2>
       </div>
-      
+
       <div className="topbar-center">
         <div className="search-container">
           <Search className="search-icon" size={18} />
-          <input type="text" placeholder="Search documents, types..." className="search-input" />
+          <input type="text" placeholder="Search documents, templates..." className="search-input" />
         </div>
       </div>
-      
-      <div className="topbar-right">
-      </div>
+
+      <div className="topbar-right" />
     </header>
   );
 };

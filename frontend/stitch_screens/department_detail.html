@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Department of Revenue &amp; Land Records (REV-01) - DocGov CivicIntel</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-secondary-fixed": "#001e2f",
+            "on-secondary": "#ffffff",
+            "inverse-on-surface": "#eaf1ff",
+            "surface-container-low": "#eff4ff",
+            "secondary-fixed-dim": "#89ceff",
+            "on-tertiary-container": "#b89cff",
+            "tertiary-container": "#4e03b8",
+            "tertiary": "#340081",
+            "tertiary-fixed": "#e9ddff",
+            "surface-dim": "#cbdbf5",
+            "outline-variant": "#c5c5d3",
+            "inverse-primary": "#b6c4ff",
+            "background": "#f8f9ff",
+            "on-primary-fixed-variant": "#264191",
+            "secondary-container": "#39b8fd",
+            "surface-container": "#e5eeff",
+            "on-error-container": "#93000a",
+            "primary-fixed": "#dce1ff",
+            "surface-bright": "#f8f9ff",
+            "error-container": "#ffdad6",
+            "on-tertiary": "#ffffff",
+            "on-tertiary-fixed-variant": "#5516be",
+            "secondary-fixed": "#c9e6ff",
+            "primary-container": "#1e3a8a",
+            "on-tertiary-fixed": "#23005c",
+            "surface-container-lowest": "#ffffff",
+            "on-surface": "#0b1c30",
+            "surface-container-highest": "#d3e4fe",
+            "on-secondary-fixed-variant": "#004c6e",
+            "on-primary": "#ffffff",
+            "on-background": "#0b1c30",
+            "primary-fixed-dim": "#b6c4ff",
+            "surface-container-high": "#dce9ff",
+            "inverse-surface": "#213145",
+            "surface-tint": "#4059aa",
+            "on-secondary-container": "#004666",
+            "secondary": "#006591",
+            "on-surface-variant": "#444651",
+            "primary": "#00236f",
+            "on-error": "#ffffff",
+            "error": "#ba1a1a",
+            "surface-variant": "#d3e4fe",
+            "surface": "#f8f9ff",
+            "on-primary-fixed": "#00164e",
+            "outline": "#757682",
+            "on-primary-container": "#90a8ff",
+            "tertiary-fixed-dim": "#d0bcff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "gutter": "1.25rem",
+            "margin": "1.5rem",
+            "space-md": "1rem",
+            "space-xl": "2rem",
+            "space-sm": "0.5rem",
+            "space-lg": "1.5rem",
+            "space-xs": "0.25rem"
+          },
+          "fontFamily": {
+            "title-md": ["Inter"],
+            "label-sm": ["Inter"],
+            "headline-md": ["Inter"],
+            "body-sm": ["Inter"],
+            "label-md": ["Inter"],
+            "headline-lg": ["Inter"],
+            "data-mono": ["Inter"],
+            "display-lg": ["Inter"],
+            "body-lg": ["Inter"],
+            "headline-sm": ["Inter"],
+            "body-md": ["Inter"],
+            "display-lg-mobile": ["Inter"]
+          },
+          "fontSize": {
+            "title-md": ["16px", { "lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "600" }],
+            "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }],
+            "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "400" }],
+            "label-md": ["13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+            "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.015em", "fontWeight": "600" }],
+            "data-mono": ["13px", { "lineHeight": "18px", "letterSpacing": "0em", "fontWeight": "500" }],
+            "display-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "headline-sm": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600" }],
+            "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "display-lg-mobile": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "700" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface antialiased flex h-screen overflow-hidden selection:bg-surface-container-highest">
+<!-- LEFT PERSISTENT SIDEBAR COMPONENT (Shared Component: SideNavBar) -->
+<aside class="flex flex-col justify-between h-full w-64 shrink-0 py-space-md px-space-sm fixed left-0 top-0 z-30 bg-surface-container-lowest border-r border-outline-variant shadow-sm">
+<!-- Brand / Agency Identification Header -->
+<div class="flex flex-col gap-space-md">
+<div class="flex items-center gap-space-sm px-space-sm pb-space-sm border-b border-outline-variant">
+<div class="w-9 h-9 rounded-lg bg-primary flex items-center justify-center text-on-primary shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-[20px]" data-icon="account_balance">account_balance</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-title-md text-title-md font-bold text-primary truncate leading-tight">CivicIntel Platform</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant truncate">Agency Compliance v4.2</span>
+</div>
+</div>
+<!-- Quick Action / CTA -->
+<div class="px-space-xs">
+<button class="w-full flex items-center justify-center gap-space-xs bg-primary-container text-on-primary py-space-sm px-space-md rounded-lg font-title-md text-body-md transition-colors duration-150 ease-in-out hover:bg-primary shadow-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+<span>New Document Ingestion</span>
+</button>
+</div>
+<!-- Navigation Tabs (Departments is active) -->
+<nav aria-label="Main Navigation" class="flex flex-col gap-1 mt-space-xs">
+<!-- 1. Dashboard -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<!-- 2. Departments (Active State matched to page intent) -->
+<a aria-current="page" class="flex items-center gap-space-sm bg-surface-container text-primary border-l-2 border-primary font-title-md text-title-md px-space-md py-space-sm rounded-r-lg transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="account_balance">account_balance</span>
+<span>Departments</span>
+</a>
+<!-- 3. URLs -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="link">link</span>
+<span>URLs</span>
+</a>
+<!-- 4. OCR -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="document_scanner">document_scanner</span>
+<span>OCR</span>
+</a>
+<!-- 5. Orchestration -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="account_tree">account_tree</span>
+<span>Orchestration</span>
+</a>
+<!-- 6. Logs -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="receipt_long">receipt_long</span>
+<span>Logs</span>
+</a>
+<!-- 7. Manage Templates -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="topic">topic</span>
+<span>Manage Templates</span>
+</a>
+<!-- 8. Help & Support -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="support">support</span>
+<span>Help &amp; Support</span>
+</a>
+</nav>
+</div>
+<!-- Sidebar Bottom / Footer Controls -->
+<div class="flex flex-col gap-1 pt-space-sm border-t border-outline-variant">
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="verified_user">verified_user</span>
+<span>System Health</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="tune">tune</span>
+<span>Compliance Settings</span>
+</a>
+</div>
+</aside>
+<!-- MAIN VIEWPORT CONTAINER (Adjusted for Fixed Sidebar) -->
+<div class="flex-1 flex flex-col ml-64 min-w-0 h-screen overflow-y-auto bg-background">
+<!-- TOP NAVIGATION BAR COMPONENT (Shared Component: TopNavBar) -->
+<header class="flex justify-between items-center h-14 px-gutter w-full sticky top-0 z-40 bg-surface-container-lowest border-b border-outline-variant shadow-sm shrink-0">
+<!-- Left side: Brand string & Search Filter -->
+<div class="flex items-center gap-space-lg">
+<span class="font-headline-sm text-headline-sm font-bold text-primary tracking-tight">DocGov CivicIntel</span>
+<!-- Search bar (on_left) -->
+<div class="relative w-80">
+<span class="material-symbols-outlined absolute left-2.5 top-2 text-on-surface-variant text-[18px]" data-icon="search">search</span>
+<input class="w-full bg-surface-container-low border border-outline-variant rounded-lg pl-9 pr-3 py-1 font-body-sm text-body-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-colors" placeholder="Search records, schemas, or ingestion nodes..." type="text"/>
+</div>
+</div>
+<!-- Right side: Trailing icon actions + Profile avatar -->
+<div class="flex items-center gap-space-sm">
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out relative" title="Notifications">
+<span class="material-symbols-outlined text-[20px]" data-icon="notifications">notifications</span>
+<span class="w-2 h-2 rounded-full bg-error absolute top-1.5 right-1.5 ring-2 ring-surface-container-lowest"></span>
+</button>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" title="Help &amp; Documentation">
+<span class="material-symbols-outlined text-[20px]" data-icon="help">help</span>
+</button>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" title="Global Settings">
+<span class="material-symbols-outlined text-[20px]" data-icon="settings">settings</span>
+</button>
+<div class="h-5 w-px bg-outline-variant mx-space-xs"></div>
+<!-- User Badge -->
+<div class="flex items-center gap-space-xs pl-space-xs">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest border border-outline-variant flex items-center justify-center text-primary font-title-md text-label-md font-bold overflow-hidden" title="Officer user avatar badge">
+            DS
+          </div>
+<div class="hidden xl:flex flex-col text-left">
+<span class="font-label-md text-label-md font-semibold text-on-surface leading-tight">Off. D. Sharma</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant leading-none">Senior Verifier</span>
+</div>
+</div>
+</div>
+</header>
+<!-- CONTENT CANVAS -->
+<main class="p-margin flex flex-col gap-space-lg">
+<!-- Breadcrumb & Header Action Surface -->
+<section class="flex flex-col gap-space-xs">
+<nav aria-label="Breadcrumbs" class="flex items-center gap-space-xs font-label-md text-label-md text-on-surface-variant">
+<a class="hover:text-primary transition-colors" href="#">Departments</a>
+<span class="text-outline-variant">/</span>
+<span class="text-on-surface font-semibold">REV-01 - Revenue &amp; Land Records</span>
+</nav>
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md pt-space-xs">
+<div class="flex items-center flex-wrap gap-space-sm">
+<h1 class="font-headline-lg text-headline-lg text-on-surface font-bold tracking-tight">
+              Department of Revenue &amp; Land Records
+            </h1>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-label-sm font-label-sm font-semibold bg-surface-container-low text-primary border border-surface-container-highest">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+              REV-01 • Active
+            </span>
+</div>
+<!-- Header Action Buttons -->
+<div class="flex items-center gap-space-xs shrink-0">
+<button class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface font-label-md text-label-md hover:bg-surface-container-low transition-colors duration-150 shadow-sm">
+<span class="material-symbols-outlined text-[16px]" data-icon="edit">edit</span>
+<span>Edit Department</span>
+</button>
+<button class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-outline-variant bg-surface-container-lowest text-on-surface font-label-md text-label-md hover:bg-surface-container-low transition-colors duration-150 shadow-sm">
+<span class="material-symbols-outlined text-[16px]" data-icon="download">download</span>
+<span>Export Audit Report</span>
+</button>
+<button class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary-container text-on-primary font-label-md text-label-md hover:bg-primary transition-colors duration-150 shadow-sm">
+<span class="material-symbols-outlined text-[16px]" data-icon="add_circle">add_circle</span>
+<span>+ Assign Template</span>
+</button>
+</div>
+</div>
+</section>
+<!-- OVERVIEW SUMMARY CARDS (Bento Grid 4-Column Layout) -->
+<section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md">
+<!-- Card 1: Total Documents -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-md shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface-variant font-medium">Total Documents</span>
+<span class="w-7 h-7 rounded-lg bg-surface-container-low text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]" data-icon="description">description</span>
+</span>
+</div>
+<div class="mt-space-sm flex items-baseline gap-space-xs">
+<span class="font-headline-lg text-headline-lg font-bold text-on-surface tracking-tight">54,120</span>
+<span class="inline-flex items-center text-label-sm font-label-sm font-semibold text-secondary">
+<span class="material-symbols-outlined text-[14px]" data-icon="trending_up">trending_up</span>
+              8.4% MoM
+            </span>
+</div>
+<div class="mt-space-xs font-body-sm text-body-sm text-on-surface-variant">
+            Processed via automated OCR engine
+          </div>
+</div>
+<!-- Card 2: Active Templates -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-md shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface-variant font-medium">Active Templates</span>
+<span class="w-7 h-7 rounded-lg bg-surface-container-low text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]" data-icon="schema">schema</span>
+</span>
+</div>
+<div class="mt-space-sm flex items-baseline gap-space-xs">
+<span class="font-headline-lg text-headline-lg font-bold text-on-surface tracking-tight">18</span>
+<span class="font-title-md text-body-md text-on-surface-variant">schemas</span>
+</div>
+<div class="mt-space-xs font-body-sm text-body-sm text-on-surface-variant">
+            Land deed &amp; conveyance variants
+          </div>
+</div>
+<!-- Card 3: Active Ingestion URLs -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-md shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface-variant font-medium">Active Ingestion URLs</span>
+<span class="w-7 h-7 rounded-lg bg-surface-container-low text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]" data-icon="hub">hub</span>
+</span>
+</div>
+<div class="mt-space-sm flex items-baseline gap-space-xs">
+<span class="font-headline-lg text-headline-lg font-bold text-on-surface tracking-tight">6</span>
+<span class="font-title-md text-body-md text-on-surface-variant">live endpoints</span>
+</div>
+<div class="mt-space-xs font-body-sm text-body-sm text-secondary flex items-center gap-1 font-medium">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+            All listeners responding (200 OK)
+          </div>
+</div>
+<!-- Card 4: Extraction Success Rate -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-md shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface-variant font-medium">Extraction Success Rate</span>
+<span class="w-7 h-7 rounded-lg bg-surface-container-low text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]" data-icon="verified">verified</span>
+</span>
+</div>
+<div class="mt-space-sm flex items-baseline gap-space-xs">
+<span class="font-headline-lg text-headline-lg font-bold text-on-surface tracking-tight">98.4%</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">average</span>
+</div>
+<div class="mt-space-xs font-body-sm text-body-sm text-on-surface-variant">
+            Targeting standard &gt;97.5% compliance
+          </div>
+</div>
+</section>
+<!-- TAB NAVIGATION BAR -->
+<nav aria-label="Section Tabs" class="flex border-b border-outline-variant space-x-6">
+<a aria-current="page" class="pb-space-sm font-title-md text-title-md text-primary border-b-2 border-primary inline-flex items-center gap-2" href="#overview">
+<span class="material-symbols-outlined text-[18px]" data-icon="grid_view">grid_view</span>
+<span>Overview</span>
+</a>
+<a class="pb-space-sm font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors inline-flex items-center gap-2" href="#templates">
+<span class="material-symbols-outlined text-[18px]" data-icon="topic">topic</span>
+<span>Templates</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] bg-surface-container-high text-on-surface-variant">18</span>
+</a>
+<a class="pb-space-sm font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors inline-flex items-center gap-2" href="#urls">
+<span class="material-symbols-outlined text-[18px]" data-icon="link">link</span>
+<span>URLs</span>
+<span class="px-1.5 py-0.5 rounded text-[10px] bg-surface-container-high text-on-surface-variant">6</span>
+</a>
+<a class="pb-space-sm font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors inline-flex items-center gap-2" href="#documents">
+<span class="material-symbols-outlined text-[18px]" data-icon="folder_open">folder_open</span>
+<span>Documents</span>
+</a>
+<a class="pb-space-sm font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors inline-flex items-center gap-2" href="#activity">
+<span class="material-symbols-outlined text-[18px]" data-icon="history">history</span>
+<span>Activity</span>
+</a>
+</nav>
+<!-- TAB CONTENT: OVERVIEW (Asymmetric Split Canvas) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start pb-space-xl">
+<!-- LEFT COLUMN (5 of 12 columns) -->
+<div class="lg:col-span-5 flex flex-col gap-space-lg">
+<!-- Block 1: Department Profile & Mandate -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-lg shadow-sm">
+<div class="flex items-center justify-between pb-space-sm border-b border-outline-variant mb-space-md">
+<h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">Department Profile &amp; Mandate</h2>
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]" data-icon="corporate_fare">corporate_fare</span>
+</div>
+<!-- Description -->
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+              Responsible for jurisdictional real-estate parcel registry, stamp duty records, and digital land deed validation under Federal Statutory Framework 12-B. Coordinates deed verification and OCR digitized registry records across district sub-registrar offices.
+            </p>
+<!-- Metadata Key-Value pairs -->
+<div class="mt-space-md flex flex-col divide-y divide-outline-variant/60 font-body-sm text-body-sm">
+<!-- Authorized Officers -->
+<div class="py-space-sm flex flex-col gap-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">Authorized Officers</span>
+<div class="flex items-center gap-space-md mt-1">
+<div class="flex items-center gap-1.5">
+<span class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center font-bold text-[10px] text-primary">DS</span>
+<span class="font-label-md text-label-md text-on-surface font-medium">Off. Sharma (Lead Verifier)</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center font-bold text-[10px] text-primary">AP</span>
+<span class="font-label-md text-label-md text-on-surface font-medium">Director A. Patel</span>
+</div>
+</div>
+</div>
+<!-- Primary Webhook -->
+<div class="py-space-sm flex flex-col gap-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">Primary API Webhook</span>
+<div class="flex items-center justify-between bg-surface-container-low px-2.5 py-1.5 rounded-lg border border-outline-variant font-data-mono text-data-mono text-on-surface">
+<span class="truncate">https://api.civicintel.gov/v4/hooks/ingest/rev-01</span>
+<button class="text-on-surface-variant hover:text-primary pl-2 transition-colors" title="Copy endpoint">
+<span class="material-symbols-outlined text-[16px]" data-icon="content_copy">content_copy</span>
+</button>
+</div>
+</div>
+<!-- Data Retention -->
+<div class="py-space-sm flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-semibold">Data Retention Policy</span>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm font-medium bg-surface-container text-on-surface">
+<span class="material-symbols-outlined text-[14px]" data-icon="policy">policy</span>
+                  7 years statutory (Encrypted Level-3)
+                </span>
+</div>
+</div>
+</div>
+<!-- Block 2: Assigned OCR Pipeline Default -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-lg shadow-sm border-l-4 border-l-primary-container">
+<div class="flex items-center justify-between pb-space-sm border-b border-outline-variant mb-space-md">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="document_scanner">document_scanner</span>
+<h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">Assigned OCR Pipeline Default</h2>
+</div>
+<span class="font-label-sm text-label-sm px-2 py-0.5 rounded bg-surface-container font-semibold text-primary">v2.8-prod</span>
+</div>
+<div class="flex flex-col gap-space-sm">
+<div class="flex items-start gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]" data-icon="layers">layers</span>
+</div>
+<div>
+<h3 class="font-title-md text-title-md text-on-surface font-semibold">Surya-Paddle Hybrid</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+                    Multi-lingual tabular layout reconstruction for structured legal stamp documents and land area matrices.
+                  </p>
+</div>
+</div>
+<!-- Fallback Pipeline Callout -->
+<div class="mt-space-xs p-space-sm bg-surface-container-low border border-outline-variant rounded-lg flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-secondary text-[18px] shrink-0" data-icon="alt_route">alt_route</span>
+<div class="font-body-sm text-body-sm text-on-surface">
+<span class="font-semibold text-primary">Handwritten Fallback:</span>
+<span>Routed to Qwen-VL-Pro for endorsement margin scripts and surveyor remarks.</span>
+</div>
+</div>
+<!-- Pipeline Parameters -->
+<div class="grid grid-cols-2 gap-space-sm mt-space-xs pt-space-xs border-t border-outline-variant/60 font-label-md text-label-md">
+<div>
+<span class="text-on-surface-variant block text-label-sm">Preprocessing Deskew</span>
+<span class="text-on-surface font-medium">Bilinear @ 300 DPI</span>
+</div>
+<div>
+<span class="text-on-surface-variant block text-label-sm">Confidence Threshold</span>
+<span class="text-on-surface font-medium">0.88 Strict Acceptance</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN (7 of 12 columns) -->
+<div class="lg:col-span-7 flex flex-col gap-space-lg">
+<!-- Block 3: Top Ingested Document Types (Distribution) -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-lg shadow-sm">
+<div class="flex items-center justify-between pb-space-sm border-b border-outline-variant mb-space-md">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="pie_chart">pie_chart</span>
+<h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">Top Ingested Document Types</h2>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Last 90 Days Distribution</span>
+</div>
+<!-- Distribution Visual Bars -->
+<div class="flex flex-col gap-space-md">
+<!-- Item 1: Deed of Conveyance -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between items-baseline font-body-sm text-body-sm">
+<span class="font-medium text-on-surface">Deed of Conveyance</span>
+<span class="font-data-mono text-data-mono font-semibold text-primary">42% (22,730 docs)</span>
+</div>
+<div class="w-full h-2.5 bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-primary-container rounded-full" style="width: 42%;"></div>
+</div>
+</div>
+<!-- Item 2: Form 16A -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between items-baseline font-body-sm text-body-sm">
+<span class="font-medium text-on-surface">Form 16A (Land Revenue Clearance)</span>
+<span class="font-data-mono text-data-mono font-semibold text-primary">31% (16,777 docs)</span>
+</div>
+<div class="w-full h-2.5 bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-secondary rounded-full" style="width: 31%;"></div>
+</div>
+</div>
+<!-- Item 3: Tax Assessment -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between items-baseline font-body-sm text-body-sm">
+<span class="font-medium text-on-surface">Tax Assessment Certificates</span>
+<span class="font-data-mono text-data-mono font-semibold text-primary">18% (9,741 docs)</span>
+</div>
+<div class="w-full h-2.5 bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-secondary-container rounded-full" style="width: 18%;"></div>
+</div>
+</div>
+<!-- Item 4: Others -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between items-baseline font-body-sm text-body-sm">
+<span class="font-medium text-on-surface">Others (Notices, Stamp Duty Affidavits)</span>
+<span class="font-data-mono text-data-mono font-semibold text-primary">9% (4,872 docs)</span>
+</div>
+<div class="w-full h-2.5 bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-outline-variant rounded-full" style="width: 9%;"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Block 4: Pipeline Health for this Unit -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-md shadow-sm">
+<div class="flex items-center justify-between pb-space-sm border-b border-outline-variant mb-space-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[20px]" data-icon="speed">speed</span>
+<h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">Pipeline Health for this Unit</h2>
+</div>
+<span class="inline-flex items-center gap-1 text-label-sm font-label-sm font-semibold text-secondary">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+                Nominal
+              </span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-space-md">
+<div class="p-space-sm rounded-lg bg-surface-container-low border border-outline-variant flex items-center justify-between">
+<div>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium block">Cluster Uptime</span>
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface">99.8%</span>
+</div>
+<span class="material-symbols-outlined text-secondary text-[24px]" data-icon="cloud_done">cloud_done</span>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container-low border border-outline-variant flex items-center justify-between">
+<div>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium block">Avg OCR Latency</span>
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface">340ms <span class="font-body-sm text-body-sm text-on-surface-variant font-normal">/ page</span></span>
+</div>
+<span class="material-symbols-outlined text-secondary text-[24px]" data-icon="timer">timer</span>
+</div>
+</div>
+</div>
+<!-- Block 5: Recent Department Ingestion Activity -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-lg shadow-sm">
+<div class="flex items-center justify-between pb-space-sm border-b border-outline-variant mb-space-md">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="event_note">event_note</span>
+<h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">Recent Department Ingestion Activity</h2>
+</div>
+<a class="font-label-md text-label-md text-secondary hover:text-primary font-medium transition-colors" href="#">View All Logs</a>
+</div>
+<!-- Mini Timeline List -->
+<div class="relative pl-6 space-y-4 before:content-[''] before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-outline-variant">
+<!-- Item 1 -->
+<div class="relative">
+<span class="absolute -left-6 top-1 w-2.5 h-2.5 rounded-full bg-secondary ring-4 ring-surface-container-lowest"></span>
+<div class="flex flex-col sm:flex-row sm:items-center justify-between text-body-sm font-body-sm gap-1">
+<div>
+<span class="font-semibold text-on-surface">Batch REV-2024-089 (420 deeds) completed</span>
+<p class="text-on-surface-variant text-label-sm">Surya-Paddle hybrid extraction parsed with 99.1% validation</p>
+</div>
+<span class="font-data-mono text-data-mono text-on-surface-variant shrink-0">12 mins ago</span>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="relative">
+<span class="absolute -left-6 top-1 w-2.5 h-2.5 rounded-full bg-primary ring-4 ring-surface-container-lowest"></span>
+<div class="flex flex-col sm:flex-row sm:items-center justify-between text-body-sm font-body-sm gap-1">
+<div>
+<span class="font-semibold text-on-surface">Webhook Ingest Triggered from Sub-Registrar East</span>
+<p class="text-on-surface-variant text-label-sm">Endpoint /hooks/ingest/rev-01 accepted 64 multipart payload payloads</p>
+</div>
+<span class="font-data-mono text-data-mono text-on-surface-variant shrink-0">48 mins ago</span>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="relative">
+<span class="absolute -left-6 top-1 w-2.5 h-2.5 rounded-full bg-outline ring-4 ring-surface-container-lowest"></span>
+<div class="flex flex-col sm:flex-row sm:items-center justify-between text-body-sm font-body-sm gap-1">
+<div>
+<span class="font-semibold text-on-surface">Template Version Updated: Form-16A v3.1</span>
+<p class="text-on-surface-variant text-label-sm">Updated key-value bounding box anchors for stamp seal validation</p>
+</div>
+<span class="font-data-mono text-data-mono text-on-surface-variant shrink-0">3 hrs ago</span>
+</div>
+</div>
+<!-- Item 4 -->
+<div class="relative">
+<span class="absolute -left-6 top-1 w-2.5 h-2.5 rounded-full bg-secondary ring-4 ring-surface-container-lowest"></span>
+<div class="flex flex-col sm:flex-row sm:items-center justify-between text-body-sm font-body-sm gap-1">
+<div>
+<span class="font-semibold text-on-surface">Automated Audit Sync Completed</span>
+<p class="text-on-surface-variant text-label-sm">7-year statutory retention checksums validated against cryptographic store</p>
+</div>
+<span class="font-data-mono text-data-mono text-on-surface-variant shrink-0">Yesterday, 23:00</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

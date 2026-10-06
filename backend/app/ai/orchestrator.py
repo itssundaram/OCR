@@ -120,6 +120,7 @@ class AIOrchestrator:
                 pages_processed=len(ocr_result.pages),
                 overall_confidence=overall_conf,
                 ocr_method=ocr_result.ocr_method,
+                field_confidences=result.confidence_scores,
             )
             result.parsed_data = response_json
 

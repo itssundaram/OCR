@@ -100,11 +100,15 @@ def get_db() -> Generator[Session, None, None]:
 
 
 def check_oracle_connectivity() -> dict:
-    """Lightweight Oracle health check for /health endpoint."""
+    """Lightweight DB health check for /health endpoint.
+    Dialect-aware: Oracle requires `SELECT 1 FROM DUAL` (no bare SELECT
+    without FROM), Postgres/others accept a bare `SELECT 1`. Kept portable
+    since this app runs against either backend depending on deployment."""
     try:
         with engine.connect() as conn:
-            conn.execute(text("SELECT 1 FROM DUAL")).fetchone()
-        return {"status": "ok", "message": "Oracle connection successful"}
+            probe = "SELECT 1 FROM DUAL" if engine.dialect.name == "oracle" else "SELECT 1"
+            conn.execute(text(probe)).fetchone()
+        return {"status": "ok", "message": "Database connection successful"}
     except Exception as exc:
-        logger.error("oracle_health_check_failed", error=str(exc))
+        logger.error("database_health_check_failed", error=str(exc))
         return {"status": "error", "message": str(exc)}

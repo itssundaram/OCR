@@ -134,6 +134,21 @@ class TesseractOCREngine(OCREngine):
             engine_version=self.engine_version,
         )
 
+    def process_region(self, region_image: Image.Image) -> tuple[str, float]:
+        """
+        Process a single cropped region and return the combined text and average confidence.
+        """
+        if not self._is_loaded:
+            self.load_model()
+            
+        lines = self._ocr_image(region_image, page_index=0)
+        if not lines:
+            return "", 0.0
+            
+        text = " ".join([line.text for line in lines])
+        avg_conf = sum([line.confidence for line in lines]) / len(lines)
+        return text, avg_conf
+
     # ── Private helpers ───────────────────────────────────────────────────────
 
     def _ocr_image(self, img: Image.Image, page_index: int) -> list[OCRLine]:

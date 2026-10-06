@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Document Intelligence Overview - DocGov CivicIntel</title>
+<!-- Material Symbols Outlined Font -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS via CDN with form & container query plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-secondary-fixed": "#001e2f",
+            "on-secondary": "#ffffff",
+            "inverse-on-surface": "#eaf1ff",
+            "surface-container-low": "#eff4ff",
+            "secondary-fixed-dim": "#89ceff",
+            "on-tertiary-container": "#b89cff",
+            "tertiary-container": "#4e03b8",
+            "tertiary": "#340081",
+            "tertiary-fixed": "#e9ddff",
+            "surface-dim": "#cbdbf5",
+            "outline-variant": "#c5c5d3",
+            "inverse-primary": "#b6c4ff",
+            "background": "#f8f9ff",
+            "on-primary-fixed-variant": "#264191",
+            "secondary-container": "#39b8fd",
+            "surface-container": "#e5eeff",
+            "on-error-container": "#93000a",
+            "primary-fixed": "#dce1ff",
+            "surface-bright": "#f8f9ff",
+            "error-container": "#ffdad6",
+            "on-tertiary": "#ffffff",
+            "on-tertiary-fixed-variant": "#5516be",
+            "secondary-fixed": "#c9e6ff",
+            "primary-container": "#1e3a8a",
+            "on-tertiary-fixed": "#23005c",
+            "surface-container-lowest": "#ffffff",
+            "on-surface": "#0b1c30",
+            "surface-container-highest": "#d3e4fe",
+            "on-secondary-fixed-variant": "#004c6e",
+            "on-primary": "#ffffff",
+            "on-background": "#0b1c30",
+            "primary-fixed-dim": "#b6c4ff",
+            "surface-container-high": "#dce9ff",
+            "inverse-surface": "#213145",
+            "surface-tint": "#4059aa",
+            "on-secondary-container": "#004666",
+            "secondary": "#006591",
+            "on-surface-variant": "#444651",
+            "primary": "#00236f",
+            "on-error": "#ffffff",
+            "error": "#ba1a1a",
+            "surface-variant": "#d3e4fe",
+            "surface": "#f8f9ff",
+            "on-primary-fixed": "#00164e",
+            "outline": "#757682",
+            "on-primary-container": "#90a8ff",
+            "tertiary-fixed-dim": "#d0bcff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "gutter": "1.25rem",
+            "margin": "1.5rem",
+            "space-md": "1rem",
+            "space-xl": "2rem",
+            "space-sm": "0.5rem",
+            "space-lg": "1.5rem",
+            "space-xs": "0.25rem"
+          },
+          "fontFamily": {
+            "title-md": ["Inter"],
+            "label-sm": ["Inter"],
+            "headline-md": ["Inter"],
+            "body-sm": ["Inter"],
+            "label-md": ["Inter"],
+            "headline-lg": ["Inter"],
+            "data-mono": ["Inter"],
+            "display-lg": ["Inter"],
+            "body-lg": ["Inter"],
+            "headline-sm": ["Inter"],
+            "body-md": ["Inter"],
+            "display-lg-mobile": ["Inter"]
+          },
+          "fontSize": {
+            "title-md": ["16px", { "lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "600" }],
+            "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }],
+            "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "400" }],
+            "label-md": ["13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+            "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.015em", "fontWeight": "600" }],
+            "data-mono": ["13px", { "lineHeight": "18px", "letterSpacing": "0em", "fontWeight": "500" }],
+            "display-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "headline-sm": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600" }],
+            "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "display-lg-mobile": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "700" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .material-symbols-outlined[data-weight="fill"] {
+      font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface antialiased font-body-md text-body-md min-h-screen flex flex-col">
+<!-- Fixed SideNavBar Anchor (Shared Component) -->
+<aside class="flex flex-col justify-between h-full w-64 shrink-0 py-space-md px-space-sm fixed left-0 top-0 z-30 bg-surface-container-lowest border-r border-outline-variant shadow-sm hidden md:flex">
+<div class="flex flex-col gap-space-md">
+<!-- Header Brand & Badge -->
+<div class="px-space-sm py-space-xs flex items-center gap-space-sm">
+<div class="w-9 h-9 rounded-lg bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined" data-icon="account_balance">account_balance</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-title-md text-title-md font-bold text-primary truncate">CivicIntel Platform</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Agency Compliance v4.2</span>
+</div>
+</div>
+<!-- Action Button CTA -->
+<div class="px-space-xs">
+<button class="w-full h-10 px-space-md bg-primary-container hover:bg-primary text-on-primary font-label-md text-label-md rounded-lg flex items-center justify-center gap-space-xs shadow-sm transition-colors duration-150">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+<span>New Document Ingestion</span>
+</button>
+</div>
+<!-- Navigation Tabs (8 Tabs from JSON) -->
+<nav class="flex flex-col gap-1 mt-space-xs">
+<!-- Dashboard (Active Tab) -->
+<a class="flex items-center gap-space-sm bg-surface-container text-primary border-l-2 border-primary font-title-md text-title-md px-space-md py-space-sm rounded-r-lg transition-colors duration-150" href="#dashboard">
+<span class="material-symbols-outlined" data-icon="dashboard" data-weight="fill">dashboard</span>
+<span>Dashboard</span>
+</a>
+<!-- Departments -->
+<a class="flex items-center gap-space-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary font-label-md text-label-md px-space-md py-space-sm rounded-lg transition-colors duration-150" href="#departments">
+<span class="material-symbols-outlined" data-icon="account_balance">account_balance</span>
+<span>Departments</span>
+</a>
+<!-- URLs -->
+<a class="flex items-center gap-space-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary font-label-md text-label-md px-space-md py-space-sm rounded-lg transition-colors duration-150" href="#urls">
+<span class="material-symbols-outlined" data-icon="link">link</span>
+<span>URLs</span>
+</a>
+<!-- OCR -->
+<a class="flex items-center gap-space-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary font-label-md text-label-md px-space-md py-space-sm rounded-lg transition-colors duration-150" href="#ocr">
+<span class="material-symbols-outlined" data-icon="document_scanner">document_scanner</span>
+<span>OCR</span>
+</a>
+<!-- Orchestration -->
+<a class="flex items-center gap-space-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary font-label-md text-label-md px-space-md py-space-sm rounded-lg transition-colors duration-150" href="#orchestration">
+<span class="material-symbols-outlined" data-icon="account_tree">account_tree</span>
+<span>Orchestration</span>
+</a>
+<!-- Logs -->
+<a class="flex items-center gap-space-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary font-label-md text-label-md px-space-md py-space-sm rounded-lg transition-colors duration-150" href="#logs">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+<span>Logs</span>
+</a>
+<!-- Manage Templates -->
+<a class="flex items-center gap-space-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary font-label-md text-label-md px-space-md py-space-sm rounded-lg transition-colors duration-150" href="#templates">
+<span class="material-symbols-outlined" data-icon="topic">topic</span>
+<span>Manage Templates</span>
+</a>
+<!-- Help & Support -->
+<a class="flex items-center gap-space-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary font-label-md text-label-md px-space-md py-space-sm rounded-lg transition-colors duration-150" href="#help">
+<span class="material-symbols-outlined" data-icon="support">support</span>
+<span>Help & Support</span>
+</a>
+</nav>
+</div>
+<!-- Footer System Status & Settings -->
+<div class="flex flex-col gap-1 pt-space-md border-t border-outline-variant">
+<a class="flex items-center gap-space-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary font-label-md text-label-md px-space-md py-space-sm rounded-lg transition-colors duration-150" href="#health">
+<span class="material-symbols-outlined" data-icon="verified_user">verified_user</span>
+<span>System Health</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant hover:bg-surface-container-low hover:text-primary font-label-md text-label-md px-space-md py-space-sm rounded-lg transition-colors duration-150" href="#compliance">
+<span class="material-symbols-outlined" data-icon="tune">tune</span>
+<span>Compliance Settings</span>
+</a>
+</div>
+</aside>
+<!-- Main Viewport Container (Offset by Sidebar on md+) -->
+<div class="flex flex-col flex-1 md:pl-64">
+<!-- TopNavBar Anchor (Shared Component) -->
+<header class="flex justify-between items-center h-14 px-gutter w-full sticky top-0 z-40 bg-surface-container-lowest border-b border-outline-variant shadow-sm">
+<!-- Search on Left & Product Brand -->
+<div class="flex items-center gap-space-lg w-1/2 max-w-md">
+<span class="text-headline-sm font-headline-sm font-bold text-primary shrink-0 md:hidden">DocGov</span>
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" data-icon="search">search</span>
+<input class="w-full h-9 pl-9 pr-4 bg-surface text-on-surface border border-outline-variant rounded-lg font-body-sm text-body-sm focus:border-secondary-container focus:ring-1 focus:ring-secondary-container outline-none transition-all placeholder:text-outline" placeholder="Search documents, hash, application IDs..." type="search"/>
+</div>
+</div>
+<!-- Trailing Icon Actions & Officer Profile Badge -->
+<div class="flex items-center gap-space-sm">
+<button class="w-9 h-9 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors duration-150" title="Notifications">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="w-9 h-9 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors duration-150" title="Help">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<button class="w-9 h-9 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors duration-150" title="Settings">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="h-5 w-px bg-outline-variant mx-1"></div>
+<!-- Officer User Avatar Badge -->
+<div class="flex items-center gap-space-xs pl-1">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-label-md text-label-md">
+            OS
+          </div>
+<div class="hidden lg:flex flex-col text-left">
+<span class="font-label-md text-label-md text-on-surface leading-tight">Off. Sharma</span>
+<span class="font-label-sm text-label-sm text-outline">Lead Verifier</span>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 p-gutter md:p-margin space-y-space-lg max-w-7xl w-full mx-auto">
+<!-- Welcoming Banner & Live Status Bar -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-lg p-space-lg shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
+<div class="space-y-1">
+<div class="flex items-center gap-2">
+<span class="font-headline-lg text-headline-lg text-on-surface">Document Intelligence Overview</span>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-label-sm font-label-sm bg-surface-container text-primary border border-outline-variant">
+              Live
+            </span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">
+            Welcome back, Officer Sharma • Department of Revenue & Land Records
+          </p>
+<div class="flex items-center gap-space-sm pt-1">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-container-low text-secondary border border-outline-variant font-label-sm text-label-sm">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+              All Services Operational (Paddle, Surya, Qwen Online)
+            </span>
+<span class="font-body-sm text-body-sm text-outline">Throughput Target: 99.2%</span>
+</div>
+</div>
+<div class="flex items-center gap-space-sm shrink-0">
+<button class="h-10 px-4 bg-surface-container-lowest border border-outline-variant text-on-surface hover:bg-surface-container-low font-label-md text-label-md rounded-lg flex items-center gap-2 shadow-sm transition-colors duration-150">
+<span class="material-symbols-outlined text-[18px]" data-icon="file_download">file_download</span>
+<span>Audit Export</span>
+</button>
+<a class="h-10 px-4 bg-primary-container hover:bg-primary text-on-primary font-label-md text-label-md rounded-lg flex items-center gap-2 shadow-sm transition-colors duration-150" href="#ocr">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+<span>+ Process New Document</span>
+</a>
+</div>
+</section>
+<!-- 4 Summary KPI Cards Bento Grid -->
+<section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md">
+<!-- Card 1: Documents Processed -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-space-md shadow-sm relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-center justify-between text-outline">
+<span class="font-label-md text-label-md text-on-surface-variant">Documents Processed</span>
+<span class="material-symbols-outlined text-primary" data-icon="description">description</span>
+</div>
+<div class="my-space-sm">
+<span class="font-display-lg text-display-lg text-on-surface tracking-tight">128,490</span>
+</div>
+<div class="flex items-center gap-1 font-label-sm text-label-sm text-secondary">
+<span class="material-symbols-outlined text-[16px]" data-icon="trending_up">trending_up</span>
+<span>+12.4% this month</span>
+</div>
+<div class="absolute bottom-0 left-0 right-0 h-1 bg-primary"></div>
+</div>
+<!-- Card 2: Processing Completed -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-space-md shadow-sm relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-center justify-between text-outline">
+<span class="font-label-md text-label-md text-on-surface-variant">Processing Completed</span>
+<span class="material-symbols-outlined text-secondary" data-icon="task_alt">task_alt</span>
+</div>
+<div class="my-space-sm">
+<span class="font-display-lg text-display-lg text-on-surface tracking-tight">124,180</span>
+</div>
+<div class="flex items-center gap-1 font-label-sm text-label-sm text-secondary">
+<span class="material-symbols-outlined text-[16px]" data-icon="check_circle">check_circle</span>
+<span>96.6% success rate</span>
+</div>
+<div class="absolute bottom-0 left-0 right-0 h-1 bg-secondary"></div>
+</div>
+<!-- Card 3: Needs Review / Low Conf -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-space-md shadow-sm relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-center justify-between text-outline">
+<span class="font-label-md text-label-md text-on-surface-variant">Needs Review / Low Conf</span>
+<span class="material-symbols-outlined text-on-tertiary-fixed-variant" data-icon="warning">warning</span>
+</div>
+<div class="my-space-sm">
+<span class="font-display-lg text-display-lg text-on-surface tracking-tight">3,420</span>
+</div>
+<div class="flex items-center gap-1 font-label-sm text-label-sm text-tertiary">
+<span class="material-symbols-outlined text-[16px]" data-icon="pending">pending</span>
+<span>2.7% flagged for officer</span>
+</div>
+<div class="absolute bottom-0 left-0 right-0 h-1 bg-tertiary"></div>
+</div>
+<!-- Card 4: Failed Ingestion -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-space-md shadow-sm relative overflow-hidden flex flex-col justify-between">
+<div class="flex items-center justify-between text-outline">
+<span class="font-label-md text-label-md text-on-surface-variant">Failed Ingestion</span>
+<span class="material-symbols-outlined text-error" data-icon="error">error</span>
+</div>
+<div class="my-space-sm">
+<span class="font-display-lg text-display-lg text-on-surface tracking-tight">890</span>
+</div>
+<div class="flex items-center gap-1 font-label-sm text-label-sm text-error">
+<span class="material-symbols-outlined text-[16px]" data-icon="report">report</span>
+<span>0.7% error rate</span>
+</div>
+<div class="absolute bottom-0 left-0 right-0 h-1 bg-error"></div>
+</div>
+</section>
+<!-- Processing Activity Section (Hourly Volume Bar Chart) -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-lg p-space-lg shadow-sm">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm pb-space-md border-b border-outline-variant">
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Processing Activity & Pipeline Throughput</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Hourly OCR tokenization and multimodal entity extraction volume (Last 24 Hours)</p>
+</div>
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center gap-1.5 font-label-sm text-label-sm text-on-surface-variant">
+<span class="w-3 h-3 bg-primary rounded-sm"></span> Successful
+            </span>
+<span class="inline-flex items-center gap-1.5 font-label-sm text-label-sm text-on-surface-variant">
+<span class="w-3 h-3 bg-secondary rounded-sm"></span> Under Verification
+            </span>
+<span class="inline-flex items-center gap-1.5 font-label-sm text-label-sm text-on-surface-variant">
+<span class="w-3 h-3 bg-outline rounded-sm"></span> Benchmark (4.2k/hr)
+            </span>
+</div>
+</div>
+<!-- Custom Visual Bar Chart Grid -->
+<div class="pt-space-lg">
+<div class="h-44 w-full flex items-end justify-between gap-2 border-b border-outline-variant pb-2 relative">
+<!-- Benchmark line -->
+<div class="absolute top-10 left-0 right-0 border-b border-dashed border-outline-variant flex justify-end">
+<span class="bg-surface-container-lowest px-2 font-label-sm text-label-sm text-outline -translate-y-2">Peak Capacity: 5,000 docs/hr</span>
+</div>
+<!-- Bar Hours -->
+<div class="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group">
+<div class="w-full max-w-[28px] bg-primary rounded-t transition-all group-hover:brightness-110" style="height: 38%;"></div>
+<span class="font-label-sm text-label-sm text-outline">06:00</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group">
+<div class="w-full max-w-[28px] bg-primary rounded-t transition-all group-hover:brightness-110" style="height: 52%;"></div>
+<span class="font-label-sm text-label-sm text-outline">08:00</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group">
+<div class="w-full max-w-[28px] bg-primary rounded-t transition-all group-hover:brightness-110" style="height: 82%;"></div>
+<span class="font-label-sm text-label-sm text-outline">10:00</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group">
+<div class="w-full max-w-[28px] bg-primary rounded-t transition-all group-hover:brightness-110" style="height: 94%;"></div>
+<span class="font-label-sm text-label-sm text-outline">12:00</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group">
+<div class="w-full max-w-[28px] bg-primary rounded-t transition-all group-hover:brightness-110" style="height: 88%;"></div>
+<span class="font-label-sm text-label-sm text-outline">14:00</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group">
+<div class="w-full max-w-[28px] bg-primary rounded-t transition-all group-hover:brightness-110" style="height: 76%;"></div>
+<span class="font-label-sm text-label-sm text-outline">16:00</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group">
+<div class="w-full max-w-[28px] bg-primary rounded-t transition-all group-hover:brightness-110" style="height: 64%;"></div>
+<span class="font-label-sm text-label-sm text-outline">18:00</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group">
+<div class="w-full max-w-[28px] bg-secondary rounded-t transition-all group-hover:brightness-110" style="height: 48%;"></div>
+<span class="font-label-sm text-label-sm text-outline">20:00</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group">
+<div class="w-full max-w-[28px] bg-secondary rounded-t transition-all group-hover:brightness-110" style="height: 30%;"></div>
+<span class="font-label-sm text-label-sm text-outline">Now</span>
+</div>
+</div>
+<div class="flex items-center justify-between pt-space-sm font-body-sm text-body-sm text-on-surface-variant">
+<span>Average OCR Ingestion Latency: <strong class="text-on-surface">312ms / page</strong></span>
+<span>Cluster Model: <strong class="text-on-surface">Surya-Paddle-Hybrid v2</strong></span>
+</div>
+</div>
+</section>
+<!-- Department Overview Breakdown Grid -->
+<section class="space-y-space-sm">
+<div class="flex items-center justify-between">
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Department Overview</h2>
+<a class="font-label-md text-label-md text-secondary hover:underline flex items-center gap-1" href="#departments">
+<span>Manage All Agencies</span>
+<span class="material-symbols-outlined text-[16px]" data-icon="chevron_right">chevron_right</span>
+</a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+<!-- Department 1 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-space-md shadow-sm hover:border-primary transition-all">
+<div class="flex items-start justify-between pb-space-sm border-b border-outline-variant">
+<div>
+<h3 class="font-title-md text-title-md text-on-surface">Department of Revenue</h3>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Taxation & Excise Records</span>
+</div>
+<span class="px-2 py-0.5 rounded text-label-sm font-label-sm bg-surface-container text-primary">Priority 1</span>
+</div>
+<div class="grid grid-cols-2 gap-space-sm py-space-sm">
+<div>
+<span class="font-label-sm text-label-sm text-outline block">Active Documents</span>
+<span class="font-title-md text-title-md text-on-surface font-semibold">54,120</span>
+</div>
+<div>
+<span class="font-label-sm text-label-sm text-outline block">Active Templates</span>
+<span class="font-title-md text-title-md text-on-surface font-semibold">18 Verified</span>
+</div>
+</div>
+<div class="pt-space-xs flex items-center justify-between text-body-sm font-body-sm text-on-surface-variant">
+<span>Throughput</span>
+<span class="font-semibold text-primary">98.4% Match</span>
+</div>
+</div>
+<!-- Department 2 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-space-md shadow-sm hover:border-primary transition-all">
+<div class="flex items-start justify-between pb-space-sm border-b border-outline-variant">
+<div>
+<h3 class="font-title-md text-title-md text-on-surface">Urban Development Authority</h3>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Permits, Deeds & Zoning</span>
+</div>
+<span class="px-2 py-0.5 rounded text-label-sm font-label-sm bg-surface-container text-primary">Priority 2</span>
+</div>
+<div class="grid grid-cols-2 gap-space-sm py-space-sm">
+<div>
+<span class="font-label-sm text-label-sm text-outline block">Active Documents</span>
+<span class="font-title-md text-title-md text-on-surface font-semibold">42,890</span>
+</div>
+<div>
+<span class="font-label-sm text-label-sm text-outline block">Active Templates</span>
+<span class="font-title-md text-title-md text-on-surface font-semibold">12 Verified</span>
+</div>
+</div>
+<div class="pt-space-xs flex items-center justify-between text-body-sm font-body-sm text-on-surface-variant">
+<span>Throughput</span>
+<span class="font-semibold text-primary">95.8% Match</span>
+</div>
+</div>
+<!-- Department 3 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-space-md shadow-sm hover:border-primary transition-all">
+<div class="flex items-start justify-between pb-space-sm border-b border-outline-variant">
+<div>
+<h3 class="font-title-md text-title-md text-on-surface">Department of Civil Supplies</h3>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Identity & Ration Allotment</span>
+</div>
+<span class="px-2 py-0.5 rounded text-label-sm font-label-sm bg-surface-container text-primary">Priority 1</span>
+</div>
+<div class="grid grid-cols-2 gap-space-sm py-space-sm">
+<div>
+<span class="font-label-sm text-label-sm text-outline block">Active Documents</span>
+<span class="font-title-md text-title-md text-on-surface font-semibold">31,480</span>
+</div>
+<div>
+<span class="font-label-sm text-label-sm text-outline block">Active Templates</span>
+<span class="font-title-md text-title-md text-on-surface font-semibold">9 Verified</span>
+</div>
+</div>
+<div class="pt-space-xs flex items-center justify-between text-body-sm font-body-sm text-on-surface-variant">
+<span>Throughput</span>
+<span class="font-semibold text-primary">97.1% Match</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Recent Documents Section (Clean Enterprise Table) -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-lg shadow-sm overflow-hidden">
+<div class="p-space-md border-b border-outline-variant flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm">
+<div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Recent Ingestion Queue</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Real-time verification log across active federated ingestion pipelines</p>
+</div>
+<div class="flex items-center gap-space-sm">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-outline text-[16px]" data-icon="filter_list">filter_list</span>
+<select class="h-8 pl-8 pr-6 bg-surface text-on-surface border border-outline-variant rounded font-label-md text-label-md outline-none">
+<option>All Statuses</option>
+<option>Completed</option>
+<option>In Review</option>
+<option>Processing</option>
+<option>Failed</option>
+</select>
+</div>
+<button class="h-8 px-3 border border-outline-variant text-on-surface hover:bg-surface-container-low font-label-md text-label-md rounded flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="refresh">refresh</span>
+<span>Refresh</span>
+</button>
+</div>
+</div>
+<!-- Table Container -->
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface border-b border-outline-variant h-9">
+<th class="px-space-md font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Document Name</th>
+<th class="px-space-md font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Department</th>
+<th class="px-space-md font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Template</th>
+<th class="px-space-md font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Status</th>
+<th class="px-space-md font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Processed At</th>
+<th class="px-space-md font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant font-body-md text-body-md">
+<!-- Row 1: Deed Conveyance -->
+<tr class="hover:bg-surface-container-low transition-colors duration-150">
+<td class="px-space-md py-3 font-medium text-on-surface">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="picture_as_pdf">picture_as_pdf</span>
+<span class="font-data-mono text-data-mono hover:text-primary cursor-pointer">Deed_Conveyance_2024_08.pdf</span>
+</div>
+</td>
+<td class="px-space-md py-3 text-on-surface-variant">Land Records</td>
+<td class="px-space-md py-3 text-on-surface-variant">Land Deed v2.1</td>
+<td class="px-space-md py-3">
+<!-- Completed Badge (High Confidence >95%) -->
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">
+<span class="material-symbols-outlined text-[14px]" data-icon="check_circle">check_circle</span>
+<span>Completed (99.4%)</span>
+</span>
+</td>
+<td class="px-space-md py-3 text-outline text-body-sm font-body-sm">2 mins ago</td>
+<td class="px-space-md py-3 text-right whitespace-nowrap">
+<div class="flex items-center justify-end gap-2">
+<button class="px-2.5 py-1 text-primary hover:bg-surface-container font-label-md text-label-md rounded border border-outline-variant transition-colors">
+                      View Results
+                    </button>
+<button class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded" title="Download JSON">
+<span class="material-symbols-outlined text-[18px]" data-icon="download">download</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2: Form 16A Tax Return -->
+<tr class="hover:bg-surface-container-low transition-colors duration-150">
+<td class="px-space-md py-3 font-medium text-on-surface">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="picture_as_pdf">picture_as_pdf</span>
+<span class="font-data-mono text-data-mono hover:text-primary cursor-pointer">Form_16A_TaxReturn_Q3.pdf</span>
+</div>
+</td>
+<td class="px-space-md py-3 text-on-surface-variant">Revenue & Taxation</td>
+<td class="px-space-md py-3 text-on-surface-variant">Standard Form 16</td>
+<td class="px-space-md py-3">
+<!-- In Review Badge (70-94%) -->
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm bg-[#FFFBEB] text-[#92400E] border border-[#FDE68A]">
+<span class="material-symbols-outlined text-[14px]" data-icon="warning">warning</span>
+<span>In Review (84.1%)</span>
+</span>
+</td>
+<td class="px-space-md py-3 text-outline text-body-sm font-body-sm">14 mins ago</td>
+<td class="px-space-md py-3 text-right whitespace-nowrap">
+<div class="flex items-center justify-end gap-2">
+<button class="px-2.5 py-1 text-primary hover:bg-surface-container font-label-md text-label-md rounded border border-outline-variant transition-colors">
+                      Review Fields
+                    </button>
+<button class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded" title="Download JSON">
+<span class="material-symbols-outlined text-[18px]" data-icon="download">download</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3: Property Permit Application -->
+<tr class="hover:bg-surface-container-low transition-colors duration-150">
+<td class="px-space-md py-3 font-medium text-on-surface">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="picture_as_pdf">picture_as_pdf</span>
+<span class="font-data-mono text-data-mono hover:text-primary cursor-pointer">Property_Permit_App_441.pdf</span>
+</div>
+</td>
+<td class="px-space-md py-3 text-on-surface-variant">Civil Registry</td>
+<td class="px-space-md py-3 text-on-surface-variant">Commercial Permit</td>
+<td class="px-space-md py-3">
+<!-- Processing Badge -->
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-label-sm font-label-sm bg-[#F5F3FF] text-[#5B21B6] border border-[#DDD6FE]">
+<span class="w-1.5 h-1.5 rounded-full bg-[#5B21B6] animate-pulse"></span>
+<span>Processing</span>
+</span>
+</td>
+<td class="px-space-md py-3 text-outline text-body-sm font-body-sm">1 hr ago</td>
+<td class="px-space-md py-3 text-right whitespace-nowrap">
+<div class="flex items-center justify-end gap-2">
+<button class="px-2.5 py-1 text-outline font-label-md text-label-md rounded border border-outline-variant cursor-not-allowed opacity-60">
+                      Processing...
+                    </button>
+<button class="p-1 text-outline opacity-40 cursor-not-allowed rounded" disabled="">
+<span class="material-symbols-outlined text-[18px]" data-icon="download">download</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 4: Citizen ID Verification -->
+<tr class="hover:bg-surface-container-low transition-colors duration-150">
+<td class="px-space-md py-3 font-medium text-on-surface">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="picture_as_pdf">picture_as_pdf</span>
+<span class="font-data-mono text-data-mono hover:text-primary cursor-pointer">Citizen_ID_Verification_902.pdf</span>
+</div>
+</td>
+<td class="px-space-md py-3 text-on-surface-variant">Civil Registry</td>
+<td class="px-space-md py-3 text-on-surface-variant">ID Card v1</td>
+<td class="px-space-md py-3">
+<!-- Failed Ingestion Badge -->
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm bg-[#FEF2F2] text-[#991B1B] border border-[#FECACA]">
+<span class="material-symbols-outlined text-[14px]" data-icon="error">error</span>
+<span>Failed (OCR Parity)</span>
+</span>
+</td>
+<td class="px-space-md py-3 text-outline text-body-sm font-body-sm">3 hrs ago</td>
+<td class="px-space-md py-3 text-right whitespace-nowrap">
+<div class="flex items-center justify-end gap-2">
+<button class="px-2.5 py-1 text-error hover:bg-error-container font-label-md text-label-md rounded border border-error transition-colors">
+                      Retry Ingestion
+                    </button>
+<button class="p-1 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded" title="View Error Log">
+<span class="material-symbols-outlined text-[18px]" data-icon="bug_report">bug_report</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Pagination Footer -->
+<div class="px-space-md py-space-sm border-t border-outline-variant flex items-center justify-between text-body-sm font-body-sm text-on-surface-variant">
+<span>Showing 4 of 128,490 document records</span>
+<div class="flex items-center gap-1">
+<button class="p-1 rounded hover:bg-surface-container border border-outline-variant text-outline disabled:opacity-40" disabled="">
+<span class="material-symbols-outlined text-[18px]" data-icon="chevron_left">chevron_left</span>
+</button>
+<span class="px-2 py-0.5 text-label-sm font-label-sm font-semibold bg-surface-container rounded text-primary">1</span>
+<span class="px-2 py-0.5 text-label-sm font-label-sm text-outline">2</span>
+<span class="px-2 py-0.5 text-label-sm font-label-sm text-outline">3</span>
+<span class="px-1 text-outline">...</span>
+<span class="px-2 py-0.5 text-label-sm font-label-sm text-outline">850</span>
+<button class="p-1 rounded hover:bg-surface-container border border-outline-variant text-on-surface">
+<span class="material-symbols-outlined text-[18px]" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+</div>
+<!-- BottomNavBar for Mobile (Responsive Shell Rule) -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface-container-lowest border-t border-outline-variant flex items-center justify-around z-50 px-2 shadow-lg">
+<a class="flex flex-col items-center justify-center text-primary gap-0.5" href="#dashboard">
+<span class="material-symbols-outlined text-[20px]" data-icon="dashboard" data-weight="fill">dashboard</span>
+<span class="text-label-sm font-label-sm">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant gap-0.5" href="#ocr">
+<span class="material-symbols-outlined text-[20px]" data-icon="document_scanner">document_scanner</span>
+<span class="text-label-sm font-label-sm">OCR</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant gap-0.5" href="#departments">
+<span class="material-symbols-outlined text-[20px]" data-icon="account_balance">account_balance</span>
+<span class="text-label-sm font-label-sm">Depts</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant gap-0.5" href="#logs">
+<span class="material-symbols-outlined text-[20px]" data-icon="receipt_long">receipt_long</span>
+<span class="text-label-sm font-label-sm">Logs</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant gap-0.5" href="#settings">
+<span class="material-symbols-outlined text-[20px]" data-icon="tune">tune</span>
+<span class="text-label-sm font-label-sm">Settings</span>
+</a>
+</nav>
+</body></html>

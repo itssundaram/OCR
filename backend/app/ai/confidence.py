@@ -61,18 +61,21 @@ class ConfidenceEngine:
 
             # For primitive values, try to find them in the text
             val_str = str(value).lower()
+            val_clean = re.sub(r'[\W_]+', '', val_str)
+            text_clean = re.sub(r'[\W_]+', '', full_text_lower)
             
             # If the LLM completely hallucinated or heavily modified it, we might not find it
             if val_str in full_text_lower:
-                # Try to map it to specific words (rough estimation)
-                # In a robust implementation, we would use Needleman-Wunsch or Smith-Waterman
-                # For this implementation, we use a basic heuristic: 
-                # If we find it, confidence is generally high (0.9), but we'd average actual OCR confidences.
-                # Since Surya often gives line-level, we just return a base high confidence if found.
                 confidences.append(FieldConfidence(
                     field_name=key,
                     confidence_score=0.95,
                     reasoning="Exact match found in OCR text."
+                ))
+            elif val_clean and val_clean in text_clean:
+                confidences.append(FieldConfidence(
+                    field_name=key,
+                    confidence_score=0.90,
+                    reasoning="Match found in OCR text ignoring formatting/punctuation."
                 ))
             else:
                 # Value was inferred, modified, or hallucinated

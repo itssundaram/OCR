@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Orchestration Consensus &amp; Comparison - DocGov CivicIntel</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-background": "#0b1c30",
+            "tertiary-fixed-dim": "#d0bcff",
+            "surface-container-low": "#eff4ff",
+            "on-tertiary-fixed": "#23005c",
+            "primary-container": "#1e3a8a",
+            "secondary-fixed-dim": "#89ceff",
+            "on-tertiary-fixed-variant": "#5516be",
+            "surface-variant": "#d3e4fe",
+            "outline": "#757682",
+            "secondary-container": "#39b8fd",
+            "primary-fixed": "#dce1ff",
+            "on-surface-variant": "#444651",
+            "tertiary-container": "#4e03b8",
+            "secondary-fixed": "#c9e6ff",
+            "surface-container-high": "#dce9ff",
+            "on-secondary": "#ffffff",
+            "on-tertiary-container": "#b89cff",
+            "on-surface": "#0b1c30",
+            "surface-container-lowest": "#ffffff",
+            "surface": "#f8f9ff",
+            "surface-container": "#e5eeff",
+            "error": "#ba1a1a",
+            "surface-container-highest": "#d3e4fe",
+            "on-primary-fixed": "#00164e",
+            "secondary": "#006591",
+            "inverse-primary": "#b6c4ff",
+            "inverse-surface": "#213145",
+            "on-secondary-fixed-variant": "#004c6e",
+            "on-error-container": "#93000a",
+            "primary-fixed-dim": "#b6c4ff",
+            "surface-dim": "#cbdbf5",
+            "on-error": "#ffffff",
+            "on-secondary-fixed": "#001e2f",
+            "outline-variant": "#c5c5d3",
+            "primary": "#00236f",
+            "inverse-on-surface": "#eaf1ff",
+            "surface-tint": "#4059aa",
+            "on-primary": "#ffffff",
+            "tertiary": "#340081",
+            "tertiary-fixed": "#e9ddff",
+            "on-tertiary": "#ffffff",
+            "on-primary-fixed-variant": "#264191",
+            "surface-bright": "#f8f9ff",
+            "on-primary-container": "#90a8ff",
+            "background": "#f8f9ff",
+            "on-secondary-container": "#004666",
+            "error-container": "#ffdad6"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-lg": "1.5rem",
+            "space-xl": "2rem",
+            "margin": "1.5rem",
+            "space-sm": "0.5rem",
+            "space-xs": "0.25rem",
+            "space-md": "1rem",
+            "gutter": "1.25rem"
+          },
+          "fontFamily": {
+            "data-mono": ["Inter"],
+            "body-md": ["Inter"],
+            "display-lg": ["Inter"],
+            "body-lg": ["Inter"],
+            "headline-sm": ["Inter"],
+            "label-md": ["Inter"],
+            "headline-md": ["Inter"],
+            "body-sm": ["Inter"],
+            "headline-lg": ["Inter"],
+            "display-lg-mobile": ["Inter"],
+            "label-sm": ["Inter"],
+            "title-md": ["Inter"]
+          },
+          "fontSize": {
+            "data-mono": ["13px", {"lineHeight": "18px", "letterSpacing": "0em", "fontWeight": "500"}],
+            "body-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400"}],
+            "display-lg": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "body-lg": ["16px", {"lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400"}],
+            "headline-sm": ["18px", {"lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600"}],
+            "label-md": ["13px", {"lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+            "headline-md": ["22px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+            "body-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "400"}],
+            "headline-lg": ["28px", {"lineHeight": "36px", "letterSpacing": "-0.015em", "fontWeight": "600"}],
+            "display-lg-mobile": ["28px", {"lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+            "label-sm": ["11px", {"lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600"}],
+            "title-md": ["16px", {"lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "600"}]
+          }
+        },
+      },
+    }
+  </script>
+</head>
+<body class="bg-background text-on-surface font-body-md min-h-screen flex antialiased selection:bg-surface-variant selection:text-primary">
+<!-- Side Navigation Bar (Anchored from JSON) -->
+<aside class="flex flex-col justify-between h-full w-64 shrink-0 py-space-md px-space-sm fixed left-0 top-0 z-30 bg-surface-container-lowest border-r border-outline-variant shadow-sm">
+<div class="flex flex-col gap-y-4">
+<!-- Agency Header -->
+<div class="flex items-center gap-space-sm px-space-sm pb-space-sm border-b border-outline-variant">
+<div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-2xl" data-icon="account_balance">account_balance</span>
+</div>
+<div class="flex flex-col overflow-hidden">
+<span class="text-title-md font-title-md font-bold text-primary truncate">CivicIntel Platform</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant truncate">Agency Compliance v4.2</span>
+</div>
+</div>
+<!-- Action CTA -->
+<div class="px-space-xs">
+<button class="w-full flex items-center justify-center gap-2 bg-primary-container text-on-primary h-9 rounded-lg font-label-md text-label-md hover:bg-primary transition-colors duration-150">
+<span class="material-symbols-outlined text-lg" data-icon="add_circle">add_circle</span>
+<span>New Document Ingestion</span>
+</button>
+</div>
+<!-- Primary Navigation Links (8 Tabs from JSON) -->
+<nav class="flex flex-col space-y-1">
+<!-- 1. Dashboard -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<!-- 2. Departments -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="account_balance">account_balance</span>
+<span>Departments</span>
+</a>
+<!-- 3. URLs -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="link">link</span>
+<span>URLs</span>
+</a>
+<!-- 4. OCR -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="document_scanner">document_scanner</span>
+<span>OCR</span>
+</a>
+<!-- 5. Orchestration (Active Tab) -->
+<a class="flex items-center gap-space-sm bg-surface-container text-primary border-l-2 border-primary font-title-md text-title-md px-space-md py-space-sm rounded-r-lg transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="account_tree">account_tree</span>
+<span>Orchestration</span>
+</a>
+<!-- 6. Logs -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="receipt_long">receipt_long</span>
+<span>Logs</span>
+</a>
+<!-- 7. Manage Templates -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="topic">topic</span>
+<span>Manage Templates</span>
+</a>
+<!-- 8. Help & Support -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-xl" data-icon="support">support</span>
+<span>Help &amp; Support</span>
+</a>
+</nav>
+</div>
+<!-- Secondary Footer Tabs -->
+<div class="pt-space-sm border-t border-outline-variant flex flex-col space-y-1">
+<a class="flex items-center gap-space-sm text-on-surface-variant font-body-sm text-body-sm px-space-md py-2 rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-lg text-secondary" data-icon="verified_user">verified_user</span>
+<span>System Health</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant font-body-sm text-body-sm px-space-md py-2 rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="tune">tune</span>
+<span>Compliance Settings</span>
+</a>
+<div class="mt-2 px-space-md py-1 bg-surface-container-low rounded flex items-center justify-between text-[11px] text-outline">
+<span>Worker Pool: Healthy</span>
+<span class="w-2 h-2 rounded-full bg-secondary-container animate-pulse"></span>
+</div>
+</div>
+</aside>
+<!-- Main Shell Content Canvas (Offset for SideNavBar) -->
+<div class="flex-1 ml-64 flex flex-col min-w-0 bg-background pb-20">
+<!-- Top Navigation Bar (Docked full-width, anchored from JSON) -->
+<header class="flex justify-between items-center h-14 px-gutter w-full sticky top-0 z-40 bg-surface-container-lowest border-b border-outline-variant shadow-sm">
+<div class="flex items-center gap-4">
+<!-- Logo Text -->
+<span class="text-headline-sm font-headline-sm font-bold text-primary tracking-tight">DocGov CivicIntel</span>
+<!-- Search bar on left -->
+<div class="relative w-80">
+<span class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-outline">
+<span class="material-symbols-outlined text-lg" data-icon="search">search</span>
+</span>
+<input class="w-full pl-9 pr-3 py-1 bg-surface text-on-surface font-body-sm text-body-sm border border-outline-variant rounded focus:border-secondary focus:ring-1 focus:ring-secondary outline-none transition-colors" placeholder="Search field, document metadata, or hash..." type="text"/>
+</div>
+</div>
+<!-- Trailing Action Icons & Avatar -->
+<div class="flex items-center gap-2">
+<button class="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-lg transition-colors duration-150 relative" title="Notifications">
+<span class="material-symbols-outlined text-xl" data-icon="notifications">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-lg transition-colors duration-150" title="Help">
+<span class="material-symbols-outlined text-xl" data-icon="help">help</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-lg transition-colors duration-150" title="Settings">
+<span class="material-symbols-outlined text-xl" data-icon="settings">settings</span>
+</button>
+<div class="h-6 w-px bg-outline-variant mx-1"></div>
+<!-- Officer User Avatar Badge -->
+<div class="flex items-center gap-2 pl-1 cursor-pointer">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-title-md text-title-md border border-outline-variant shadow-sm">
+            OV
+          </div>
+<div class="hidden lg:flex flex-col text-left leading-none">
+<span class="text-label-md font-label-md font-semibold text-on-surface">Officer V. Vance</span>
+<span class="text-label-sm font-label-sm text-outline">Compliance Lead</span>
+</div>
+</div>
+</div>
+</header>
+<!-- Phase 4 Subheader Banner -->
+<div class="bg-surface-container-lowest border-b border-outline-variant px-gutter py-space-md">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div>
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-surface-container text-primary border border-outline-variant">Phase 4 Active</span>
+<h1 class="text-headline-md font-headline-md font-bold text-primary tracking-tight">Multi-Pipeline Comparison &amp; Consensus Resolution</h1>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-1">
+            Document: <span class="font-data-mono font-medium text-on-surface">Land_Title_Deed_Registry_2024_08B.pdf</span> • Processed across 3 AI OCR Models • <span class="font-semibold text-primary">42 Total Fields Extracted</span>
+</p>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<span class="text-label-sm font-label-sm px-2.5 py-1 bg-surface-container-low text-secondary border border-outline-variant rounded flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm text-secondary" data-icon="schedule">schedule</span>
+            Batch Ingested: 14m ago
+          </span>
+<button class="h-9 px-3 bg-surface border border-outline-variant hover:bg-surface-container-low text-on-surface font-label-md text-label-md rounded flex items-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-base" data-icon="visibility">visibility</span>
+<span>Raw JSON Diff</span>
+</button>
+</div>
+</div>
+<!-- KPI Executive Metric Cards (Bento-style summary) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 mt-space-md">
+<!-- KPI 1: Consensus Agreement -->
+<div class="p-3 bg-surface border border-outline-variant rounded-lg flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Consensus Agreement</span>
+<span class="material-symbols-outlined text-lg text-secondary" data-icon="check_circle">check_circle</span>
+</div>
+<div class="mt-2">
+<div class="flex items-baseline gap-2">
+<span class="text-headline-md font-headline-md font-bold text-primary">38 / 42</span>
+<span class="text-label-md font-label-md font-semibold text-[#065F46] bg-[#ECFDF5] border border-[#A7F3D0] px-1.5 py-0.2 rounded">90.5% Complete</span>
+</div>
+<p class="text-body-sm font-body-sm text-outline mt-1 leading-snug">Full tri-model unanimous match across Surya, Paddle, and Qwen.</p>
+</div>
+</div>
+<!-- KPI 2: Model Agreement Matrix -->
+<div class="p-3 bg-surface border border-outline-variant rounded-lg flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Model Win Breakdown</span>
+<span class="material-symbols-outlined text-lg text-primary" data-icon="insights">insights</span>
+</div>
+<div class="mt-2 flex flex-col space-y-1 text-label-sm font-label-sm">
+<div class="flex justify-between items-center">
+<span class="text-on-surface">Surya v2.4 (96.4% avg)</span>
+<span class="font-bold text-primary">29 wins</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-on-surface">PaddleOCR v2.7 (93.8% avg)</span>
+<span class="font-medium text-on-surface-variant">8 wins</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-on-surface">Qwen2-VL (95.1% avg)</span>
+<span class="font-medium text-tertiary">5 wins (tables)</span>
+</div>
+</div>
+</div>
+<!-- KPI 3: Exceptions / Discrepancies -->
+<div class="p-3 bg-surface border border-[#FDE68A] bg-[#FFFDF7] rounded-lg flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="text-label-sm font-label-sm text-[#92400E] uppercase tracking-wider">Flagged Discrepancies</span>
+<span class="material-symbols-outlined text-lg text-[#92400E]" data-icon="warning">warning</span>
+</div>
+<div class="mt-2">
+<div class="flex items-baseline gap-2">
+<span class="text-headline-md font-headline-md font-bold text-[#92400E]">4 Fields</span>
+<span class="text-label-sm font-label-sm font-semibold text-[#991B1B] bg-[#FEF2F2] border border-[#FECACA] px-1.5 py-0.2 rounded">Verification Needed</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-1 leading-snug">Requires officer signoff before registry ingestion commit.</p>
+</div>
+</div>
+<!-- KPI 4: Automated Resolution Rule -->
+<div class="p-3 bg-surface border border-outline-variant rounded-lg flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">Resolution Rule Policy</span>
+<span class="material-symbols-outlined text-lg text-primary" data-icon="gavel">gavel</span>
+</div>
+<div class="mt-2">
+<span class="text-title-md font-title-md text-primary font-bold">2-of-3 Model Quorum</span>
+<div class="text-body-sm font-body-sm text-outline mt-1 flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span>Fallback: Dynamic Highest Conf.</span>
+</div>
+<div class="text-[11px] text-on-surface-variant mt-1 font-mono">Reg Standard: SEC-DOC-V4</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Interactive Navigation Tabs -->
+<div class="px-gutter bg-surface-container-lowest border-b border-outline-variant flex items-center justify-between">
+<div class="flex space-x-6">
+<button class="py-3 px-1 border-b-2 border-primary text-primary font-title-md text-title-md flex items-center gap-2">
+<span class="material-symbols-outlined text-lg" data-icon="table_view">table_view</span>
+<span>Field Comparison Table (Active)</span>
+<span class="ml-1 px-1.5 py-0.5 rounded text-[11px] bg-primary text-on-primary">42</span>
+</button>
+<button class="py-3 px-1 border-b-2 border-transparent text-on-surface-variant hover:text-primary font-label-md text-label-md flex items-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="sync_problem">sync_problem</span>
+<span>Discrepancy Matrix</span>
+<span class="ml-1 px-1.5 py-0.5 rounded text-[11px] bg-[#FFFBEB] text-[#92400E] border border-[#FDE68A]">4</span>
+</button>
+<button class="py-3 px-1 border-b-2 border-transparent text-on-surface-variant hover:text-primary font-label-md text-label-md flex items-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="output">output</span>
+<span>Final Consensus Export</span>
+</button>
+<button class="py-3 px-1 border-b-2 border-transparent text-on-surface-variant hover:text-primary font-label-md text-label-md flex items-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="history">history</span>
+<span>Audit Log</span>
+</button>
+</div>
+<div class="hidden lg:flex items-center gap-2 text-label-sm font-label-sm text-outline">
+<span class="material-symbols-outlined text-base" data-icon="bolt">bolt</span>
+<span>Consensus Engine: Auto-Resolve Enabled</span>
+</div>
+</div>
+<!-- Main Dual Panel: Table + Side Inspector -->
+<div class="px-gutter pt-space-md grid grid-cols-1 xl:grid-cols-12 gap-space-md">
+<!-- LEFT COLUMN: Filter Bar & Comparison Table (xl:col-span-8) -->
+<section class="xl:col-span-8 flex flex-col gap-3">
+<!-- Filter Bar -->
+<div class="bg-surface-container-lowest p-3 border border-outline-variant rounded-lg flex flex-wrap items-center justify-between gap-3 shadow-sm">
+<div class="flex items-center gap-2 flex-wrap">
+<div class="relative w-64">
+<span class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-outline">
+<span class="material-symbols-outlined text-base" data-icon="filter_alt">filter_alt</span>
+</span>
+<input class="w-full pl-8 pr-3 py-1 bg-surface border border-outline-variant rounded text-body-sm font-body-sm focus:border-secondary outline-none" placeholder="Filter fields by name..." type="text"/>
+</div>
+<!-- Filter Badges -->
+<button class="h-8 px-2.5 bg-surface-container text-primary font-label-sm text-label-sm rounded flex items-center gap-1.5 border border-outline-variant">
+<span>All Fields</span>
+<span class="font-bold">42</span>
+</button>
+<button class="h-8 px-2.5 bg-surface text-on-surface-variant hover:bg-surface-container-low font-label-sm text-label-sm rounded flex items-center gap-1.5 border border-outline-variant transition-colors">
+<span class="w-2 h-2 rounded-full bg-[#10B981]"></span>
+<span>Unanimous Agreement (38)</span>
+</button>
+<button class="h-8 px-2.5 bg-[#FFFBEB] text-[#92400E] font-label-sm text-label-sm rounded flex items-center gap-1.5 border border-[#FDE68A]">
+<span class="w-2 h-2 rounded-full bg-[#F59E0B]"></span>
+<span>Discrepancy (4)</span>
+</button>
+<button class="h-8 px-2.5 bg-surface text-on-surface-variant hover:bg-surface-container-low font-label-sm text-label-sm rounded flex items-center gap-1.5 border border-outline-variant transition-colors">
+<span>Low Confidence (&lt;85%)</span>
+</button>
+</div>
+<div class="flex items-center gap-1.5 text-label-sm font-label-sm text-outline">
+<span>Sort by:</span>
+<select class="bg-surface border border-outline-variant rounded py-1 px-2 text-body-sm font-body-sm text-on-surface outline-none">
+<option>Discrepancies First</option>
+<option>Document Order</option>
+<option>Lowest Confidence First</option>
+</select>
+</div>
+</div>
+<!-- Field Comparison Table -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden shadow-sm">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface text-on-surface-variant font-label-sm text-label-sm border-b border-outline-variant h-9">
+<th class="py-2 px-3 font-semibold uppercase tracking-wider w-44">Target Field Name</th>
+<th class="py-2 px-3 font-semibold uppercase tracking-wider">Surya v2.4</th>
+<th class="py-2 px-3 font-semibold uppercase tracking-wider">PaddleOCR v2.7</th>
+<th class="py-2 px-3 font-semibold uppercase tracking-wider">Qwen2-VL</th>
+<th class="py-2 px-3 font-semibold uppercase tracking-wider">Consensus Value &amp; Rule</th>
+<th class="py-2 px-2 text-center uppercase tracking-wider w-16">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant text-body-sm font-body-sm">
+<!-- Row 1: Unanimous Field (Grantor / Seller Name) -->
+<tr class="hover:bg-surface transition-colors">
+<td class="py-3 px-3">
+<div class="font-semibold text-on-surface">Grantor / Seller Name</div>
+<div class="text-[11px] text-outline font-data-mono">party.seller.legal_name</div>
+</td>
+<td class="py-3 px-3">
+<div class="font-data-mono text-on-surface font-medium">Raj Kumar Verma</div>
+<span class="inline-flex items-center px-1.5 py-0.2 rounded text-[11px] font-semibold bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">
+                      96.4%
+                    </span>
+</td>
+<td class="py-3 px-3">
+<div class="font-data-mono text-on-surface">Raj Kumar Verma</div>
+<span class="inline-flex items-center px-1.5 py-0.2 rounded text-[11px] font-semibold bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">
+                      94.8%
+                    </span>
+</td>
+<td class="py-3 px-3">
+<div class="font-data-mono text-on-surface">Raj Kumar Verma</div>
+<span class="inline-flex items-center px-1.5 py-0.2 rounded text-[11px] font-semibold bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">
+                      95.9%
+                    </span>
+</td>
+<td class="py-3 px-3">
+<div class="font-data-mono font-semibold text-primary">Raj Kumar Verma</div>
+<div class="inline-flex items-center gap-1 text-[11px] text-[#065F46] bg-[#ECFDF5] px-1.5 py-0.5 rounded border border-[#A7F3D0] mt-0.5" title="Unanimous 3/3 consensus reached">
+<span class="material-symbols-outlined text-[12px]" data-icon="check">check</span>
+<span>3/3 Match • Surya (Highest Conf)</span>
+</div>
+</td>
+<td class="py-3 px-2 text-center">
+<button class="p-1 hover:bg-surface-container rounded text-outline hover:text-primary transition-colors" title="View details">
+<span class="material-symbols-outlined text-base" data-icon="chevron_right">chevron_right</span>
+</button>
+</td>
+</tr>
+<!-- Row 2: DISCREPANCY HIGHLIGHTED IN SUBTLE AMBER (Stamp Duty Registration ID) -->
+<tr class="bg-[#FFFDF7] border-l-4 border-l-[#F59E0B] hover:bg-[#FFFBEB] transition-colors">
+<td class="py-3 px-3">
+<div class="font-semibold text-on-surface flex items-center gap-1">
+<span>Stamp Duty ID</span>
+<span class="material-symbols-outlined text-sm text-[#D97706]" data-icon="warning">warning</span>
+</div>
+<div class="text-[11px] text-outline font-data-mono">tax.stamp_duty_number</div>
+</td>
+<td class="py-3 px-3 bg-[#FEF2F2]/40 rounded-sm">
+<div class="font-data-mono font-semibold text-on-surface">SD-881290-X</div>
+<div class="flex items-center gap-1 mt-0.5">
+<span class="inline-flex items-center px-1.5 py-0.2 rounded text-[11px] font-semibold bg-[#FFFBEB] text-[#92400E] border border-[#FDE68A]">
+                        82.5%
+                      </span>
+<span class="text-[10px] text-error flex items-center" title="OCR optical blur detected">
+<span class="material-symbols-outlined text-[11px]" data-icon="blur_on">blur_on</span> Blur
+                      </span>
+</div>
+</td>
+<td class="py-3 px-3 bg-[#FEF2F2]/60 rounded-sm">
+<div class="font-data-mono font-semibold text-[#991B1B] line-through decoration-[#991B1B]">SD-881290-K</div>
+<div class="flex items-center gap-1 mt-0.5">
+<span class="inline-flex items-center px-1.5 py-0.2 rounded text-[11px] font-semibold bg-[#FFFBEB] text-[#92400E] border border-[#FDE68A]">
+                        89.1%
+                      </span>
+<span class="text-[10px] text-error font-medium">Character 'K' diff</span>
+</div>
+</td>
+<td class="py-3 px-3 bg-[#ECFDF5]/50 rounded-sm">
+<div class="font-data-mono font-semibold text-primary">SD-881290-X</div>
+<div class="flex items-center gap-1 mt-0.5">
+<span class="inline-flex items-center px-1.5 py-0.2 rounded text-[11px] font-semibold bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">
+                        94.6%
+                      </span>
+<span class="text-[10px] text-secondary font-medium">Vision Disambig</span>
+</div>
+</td>
+<td class="py-3 px-3">
+<div class="font-data-mono font-bold text-primary text-[14px]">SD-881290-X</div>
+<div class="inline-flex items-center gap-1 text-[11px] text-[#92400E] bg-[#FEF3C7] px-1.5 py-0.5 rounded border border-[#FDE68A] mt-0.5 font-medium">
+<span class="material-symbols-outlined text-[12px]" data-icon="handshake">handshake</span>
+<span>2/3 Quorum (Qwen + Surya)</span>
+</div>
+</td>
+<td class="py-3 px-2 text-center">
+<button class="px-2 py-1 bg-primary text-on-primary font-label-sm text-label-sm rounded hover:bg-primary-container shadow-xs transition-colors" title="Accept Quorum or Override">
+                      Accept
+                    </button>
+</td>
+</tr>
+<!-- Row 3: Deed Consideration Value -->
+<tr class="hover:bg-surface transition-colors">
+<td class="py-3 px-3">
+<div class="font-semibold text-on-surface">Deed Consideration Value</div>
+<div class="text-[11px] text-outline font-data-mono">financial.deed_amount_inr</div>
+</td>
+<td class="py-3 px-3">
+<div class="font-data-mono text-on-surface font-medium">₹ 14,850,000</div>
+<span class="inline-flex items-center px-1.5 py-0.2 rounded text-[11px] font-semibold bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">
+                      97.1%
+                    </span>
+</td>
+<td class="py-3 px-3">
+<div class="font-data-mono text-on-surface">₹ 14,850,000</div>
+<span class="inline-flex items-center px-1.5 py-0.2 rounded text-[11px] font-semibold bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">
+                      96.8%
+                    </span>
+</td>
+<td class="py-3 px-3">
+<div class="font-data-mono text-on-surface">₹ 14,850,000</div>
+<span class="inline-flex items-center px-1.5 py-0.2 rounded text-[11px] font-semibold bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">
+                      98.2%
+                    </span>
+</td>
+<td class="py-3 px-3">
+<div class="font-data-mono font-semibold text-primary">₹ 14,850,000</div>
+<div class="inline-flex items-center gap-1 text-[11px] text-[#065F46] bg-[#ECFDF5] px-1.5 py-0.5 rounded border border-[#A7F3D0] mt-0.5">
+<span class="material-symbols-outlined text-[12px]" data-icon="check">check</span>
+<span>3/3 Match • Qwen2-VL (Highest Conf)</span>
+</div>
+</td>
+<td class="py-3 px-2 text-center">
+<button class="p-1 hover:bg-surface-container rounded text-outline hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-base" data-icon="chevron_right">chevron_right</span>
+</button>
+</td>
+</tr>
+<!-- Row 4: Parcel ID Number -->
+<tr class="hover:bg-surface transition-colors">
+<td class="py-3 px-3">
+<div class="font-semibold text-on-surface">Parcel ID Number</div>
+<div class="text-[11px] text-outline font-data-mono">cadastral.survey_parcel_no</div>
+</td>
+<td class="py-3 px-3">
+<div class="font-data-mono text-on-surface font-medium">BLK-409/Sec-12B</div>
+<span class="inline-flex items-center px-1.5 py-0.2 rounded text-[11px] font-semibold bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">
+                      95.2%
+                    </span>
+</td>
+<td class="py-3 px-3">
+<div class="font-data-mono text-on-surface">BLK-409/Sec-12B</div>
+<span class="inline-flex items-center px-1.5 py-0.2 rounded text-[11px] font-semibold bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">
+                      93.4%
+                    </span>
+</td>
+<td class="py-3 px-3">
+<div class="font-data-mono text-on-surface">BLK-409/Sec-12B</div>
+<span class="inline-flex items-center px-1.5 py-0.2 rounded text-[11px] font-semibold bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">
+                      94.9%
+                    </span>
+</td>
+<td class="py-3 px-3">
+<div class="font-data-mono font-semibold text-primary">BLK-409/Sec-12B</div>
+<div class="inline-flex items-center gap-1 text-[11px] text-[#065F46] bg-[#ECFDF5] px-1.5 py-0.5 rounded border border-[#A7F3D0] mt-0.5">
+<span class="material-symbols-outlined text-[12px]" data-icon="check">check</span>
+<span>3/3 Match • Surya (Highest Conf)</span>
+</div>
+</td>
+<td class="py-3 px-2 text-center">
+<button class="p-1 hover:bg-surface-container rounded text-outline hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-base" data-icon="chevron_right">chevron_right</span>
+</button>
+</td>
+</tr>
+<!-- Row 5: Execution Date -->
+<tr class="hover:bg-surface transition-colors">
+<td class="py-3 px-3">
+<div class="font-semibold text-on-surface">Execution Date</div>
+<div class="text-[11px] text-outline font-data-mono">legal.execution_date</div>
+</td>
+<td class="py-3 px-3">
+<div class="font-data-mono text-on-surface font-medium">2024-07-19</div>
+<span class="inline-flex items-center px-1.5 py-0.2 rounded text-[11px] font-semibold bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">
+                      98.9%
+                    </span>
+</td>
+<td class="py-3 px-3">
+<div class="font-data-mono text-on-surface">2024-07-19</div>
+<span class="inline-flex items-center px-1.5 py-0.2 rounded text-[11px] font-semibold bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">
+                      97.4%
+                    </span>
+</td>
+<td class="py-3 px-3">
+<div class="font-data-mono text-on-surface">2024-07-19</div>
+<span class="inline-flex items-center px-1.5 py-0.2 rounded text-[11px] font-semibold bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">
+                      98.1%
+                    </span>
+</td>
+<td class="py-3 px-3">
+<div class="font-data-mono font-semibold text-primary">2024-07-19</div>
+<div class="inline-flex items-center gap-1 text-[11px] text-[#065F46] bg-[#ECFDF5] px-1.5 py-0.5 rounded border border-[#A7F3D0] mt-0.5">
+<span class="material-symbols-outlined text-[12px]" data-icon="check">check</span>
+<span>3/3 Match • Surya (Highest Conf)</span>
+</div>
+</td>
+<td class="py-3 px-2 text-center">
+<button class="p-1 hover:bg-surface-container rounded text-outline hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-base" data-icon="chevron_right">chevron_right</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Pagination Footer -->
+<div class="p-3 bg-surface border-t border-outline-variant flex items-center justify-between text-body-sm font-body-sm text-on-surface-variant">
+<span>Showing 1–5 of 42 parsed fields</span>
+<div class="flex items-center gap-1">
+<button class="px-2.5 py-1 bg-surface-container-lowest border border-outline-variant rounded hover:bg-surface text-on-surface transition-colors disabled:opacity-50" disabled="">
+                Previous
+              </button>
+<button class="px-2.5 py-1 bg-primary text-on-primary rounded font-medium">1</button>
+<button class="px-2.5 py-1 bg-surface-container-lowest border border-outline-variant rounded hover:bg-surface text-on-surface transition-colors">2</button>
+<button class="px-2.5 py-1 bg-surface-container-lowest border border-outline-variant rounded hover:bg-surface text-on-surface transition-colors">3</button>
+<button class="px-2.5 py-1 bg-surface-container-lowest border border-outline-variant rounded hover:bg-surface text-on-surface transition-colors">
+                Next
+              </button>
+</div>
+</div>
+</div>
+</section>
+<!-- RIGHT COLUMN: Evidence Comparison & Discrepancy Inspector (xl:col-span-4) -->
+<aside class="xl:col-span-4 flex flex-col gap-3">
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-space-md shadow-sm flex flex-col gap-4">
+<!-- Inspector Header -->
+<div class="flex items-center justify-between pb-2 border-b border-outline-variant">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl" data-icon="find_in_page">find_in_page</span>
+<div>
+<h3 class="text-title-md font-title-md font-bold text-primary">Inspection Evidence Panel</h3>
+<span class="text-label-sm font-label-sm text-outline">Target: Stamp Duty Registration ID</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]">Active Review</span>
+</div>
+<!-- Document Canvas Inspection Area -->
+<div class="relative bg-surface-container-low border border-outline-variant rounded-lg overflow-hidden p-2">
+<div class="flex items-center justify-between text-label-sm font-label-sm pb-1.5 text-outline">
+<span>Source Document Crop • Page 3, Zone B</span>
+<div class="flex items-center gap-1">
+<button class="p-1 hover:bg-surface-container rounded" title="Zoom In">
+<span class="material-symbols-outlined text-sm" data-icon="zoom_in">zoom_in</span>
+</button>
+<button class="p-1 hover:bg-surface-container rounded" title="Zoom Out">
+<span class="material-symbols-outlined text-sm" data-icon="zoom_out">zoom_out</span>
+</button>
+<button class="p-1 hover:bg-surface-container rounded" title="Reset View">
+<span class="material-symbols-outlined text-sm" data-icon="crop_free">crop_free</span>
+</button>
+</div>
+</div>
+<!-- Stylized Rendered OCR Snippet Canvas -->
+<div class="bg-white border border-outline-variant rounded p-3 relative flex items-center justify-center min-h-[110px] shadow-inner overflow-hidden">
+<!-- Simulated official stamp watermark -->
+<div class="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
+<span class="text-4xl font-extrabold uppercase tracking-widest text-primary">OFFICIAL REGISTRY DEED</span>
+</div>
+<!-- Simulated Document Text with Character Highlight -->
+<div class="font-mono text-xl tracking-wider text-slate-800 relative z-10 flex items-center select-none">
+<span class="text-slate-600">SD-881290-</span>
+<!-- Disputed Character Bounding Box -->
+<span class="relative border-2 border-[#0EA5E9] bg-[#0EA5E9]/20 px-1 rounded text-primary font-bold">
+                  X
+                  <span class="absolute -top-3.5 -right-2 bg-secondary text-white text-[9px] px-1 rounded font-sans tracking-normal shadow">
+                    Char 11
+                  </span>
+</span>
+</div>
+<!-- OCR Bounding Box overlay annotations -->
+<div class="absolute bottom-1 left-2 text-[10px] text-outline font-data-mono">
+                BBox: [x: 412, y: 780, w: 184, h: 28]
+              </div>
+</div>
+</div>
+<!-- Tri-Model Crop & Bounding Comparison Tabs -->
+<div class="space-y-2.5">
+<span class="text-label-sm font-label-sm uppercase tracking-wider text-on-surface-variant font-semibold">
+              Pipeline Model Attention &amp; Predictions
+            </span>
+<!-- Surya Comparison Card -->
+<div class="p-2.5 bg-surface border border-outline-variant rounded-lg flex flex-col gap-1.5 hover:border-outline transition-colors">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-2.5 rounded-full bg-[#8B5CF6]"></span>
+<span class="text-label-md font-label-md font-semibold text-on-surface">Surya v2.4 (Geometric OCR)</span>
+</div>
+<span class="text-label-sm font-label-sm text-[#92400E] font-medium bg-[#FFFBEB] px-1.5 rounded border border-[#FDE68A]">82.5% Conf</span>
+</div>
+<div class="flex items-center justify-between text-body-sm font-body-sm pl-4">
+<span class="font-data-mono font-medium text-on-surface">Parsed: 'SD-881290-X'</span>
+<span class="text-[11px] text-outline">Segment: Box overlap 0.88</span>
+</div>
+</div>
+<!-- PaddleOCR Comparison Card (Discrepancy) -->
+<div class="p-2.5 bg-[#FFFBEB]/60 border border-[#FDE68A] rounded-lg flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-2.5 rounded-full bg-[#F59E0B]"></span>
+<span class="text-label-md font-label-md font-semibold text-[#92400E]">PaddleOCR v2.7 (Recurrent)</span>
+</div>
+<span class="text-label-sm font-label-sm text-[#92400E] font-medium bg-white px-1.5 rounded border border-[#FDE68A]">89.1% Conf</span>
+</div>
+<div class="flex items-center justify-between text-body-sm font-body-sm pl-4">
+<span class="font-data-mono font-medium text-[#991B1B]">Parsed: 'SD-881290-K'</span>
+<span class="text-[11px] text-[#991B1B] font-medium">Stroke Misclassification</span>
+</div>
+</div>
+<!-- Qwen2-VL Card (Attention Heatmap Winner) -->
+<div class="p-2.5 bg-[#EFF6FF] border border-[#BFDBFE] rounded-lg flex flex-col gap-1.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-2.5 rounded-full bg-secondary"></span>
+<span class="text-label-md font-label-md font-semibold text-primary">Qwen2-VL (Multimodal Vision)</span>
+</div>
+<span class="text-label-sm font-label-sm text-[#065F46] font-bold bg-[#ECFDF5] px-1.5 rounded border border-[#A7F3D0]">94.6% Conf</span>
+</div>
+<div class="flex items-center justify-between text-body-sm font-body-sm pl-4">
+<span class="font-data-mono font-bold text-primary">Parsed: 'SD-881290-X'</span>
+<span class="text-[11px] text-secondary font-medium">Cross-Attention Winner</span>
+</div>
+</div>
+</div>
+<!-- Character-Level Diff Highlight -->
+<div class="p-3 bg-surface-container rounded-lg border border-outline-variant flex flex-col gap-2">
+<span class="text-label-sm font-label-sm text-on-surface-variant font-semibold">Character Level Diff Matrix (Token 11)</span>
+<div class="grid grid-cols-3 gap-2 text-center font-data-mono text-body-sm">
+<div class="p-1.5 bg-surface-container-lowest rounded border border-outline-variant">
+<span class="text-[10px] text-outline block">Surya</span>
+<span class="text-base font-bold text-primary">X</span>
+</div>
+<div class="p-1.5 bg-[#FEF2F2] rounded border border-[#FECACA]">
+<span class="text-[10px] text-[#991B1B] block">Paddle</span>
+<span class="text-base font-bold text-[#991B1B]">K</span>
+</div>
+<div class="p-1.5 bg-[#ECFDF5] rounded border border-[#A7F3D0]">
+<span class="text-[10px] text-[#065F46] block">Qwen2</span>
+<span class="text-base font-bold text-[#065F46]">X</span>
+</div>
+</div>
+<p class="text-[11px] text-on-surface-variant leading-relaxed">
+              Consensus Rule Evaluation: <strong>2/3 Quorum Match</strong> on token 'X'. Paddle classified diagonal stroke as vertical terminal.
+            </p>
+</div>
+<!-- Officer Manual Override / Action Panel -->
+<div class="pt-2 border-t border-outline-variant flex flex-col gap-2">
+<label class="text-label-sm font-label-sm text-on-surface font-semibold">Officer Direct Resolution:</label>
+<div class="flex gap-2">
+<input class="flex-1 px-3 py-1.5 text-body-sm font-data-mono bg-surface border border-outline-variant rounded focus:border-secondary outline-none font-bold text-primary" type="text" value="SD-881290-X"/>
+<button class="px-3 py-1.5 bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md rounded transition-colors flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-base" data-icon="check">check</span>
+<span>Lock Field</span>
+</button>
+</div>
+<div class="flex justify-between items-center text-[11px] text-outline pt-1">
+<span>Audited by Vance (ID: #4409)</span>
+<button class="text-secondary hover:underline">Re-examine crop</button>
+</div>
+</div>
+</div>
+</aside>
+</div>
+<!-- Pinned Bottom Action Bar for Phase 4 Resolution -->
+<div class="fixed bottom-0 right-0 left-64 bg-surface-container-lowest border-t border-outline-variant px-gutter py-2.5 z-20 flex items-center justify-between shadow-lg">
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-[#10B981] animate-pulse"></span>
+<span class="text-label-md font-label-md font-semibold text-primary">Consensus Ready</span>
+</div>
+<span class="text-outline">|</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant">38 Auto-Resolved • 1 Verified by Officer • 3 Pending Officer Touch</span>
+</div>
+<div class="flex items-center gap-3">
+<!-- Download Comparison Report -->
+<div class="relative inline-block">
+<button class="h-9 px-3 bg-surface hover:bg-surface-container-low text-on-surface border border-outline-variant rounded font-label-md text-label-md flex items-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-base" data-icon="download">download</span>
+<span>Download Comparison Report (CSV / JSON)</span>
+</button>
+</div>
+<!-- Rerun Pipeline -->
+<button class="h-9 px-3 bg-surface hover:bg-surface-container-low text-on-surface border border-outline-variant rounded font-label-md text-label-md flex items-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-base" data-icon="refresh">refresh</span>
+<span>Rerun Pipeline</span>
+</button>
+<!-- Final Approval CTA Button -->
+<button class="h-9 px-5 bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md rounded flex items-center gap-2 shadow-sm transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="task_alt">task_alt</span>
+<span>Approve &amp; Push to Ingestion Queue</span>
+</button>
+</div>
+</div>
+</div>
+</body></html>

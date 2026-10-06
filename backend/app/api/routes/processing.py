@@ -10,6 +10,7 @@ from app.db.database import get_db
 from app.db.models import ProcessingJob, ProcessingResult
 from app.schemas.common import APIResponse
 from app.core.exceptions import DocIntError
+from app.repositories.job_repo import JobRepository
 
 router = APIRouter(tags=["Processing Jobs"], prefix="/processing")
 
@@ -20,7 +21,8 @@ def get_processing_job(job_id: str, db: Session = Depends(get_db)):
     Get the status of a processing job.
     If completed, also returns the extracted results.
     """
-    job = db.get(ProcessingJob, job_id)
+    repo = JobRepository(db)
+    job = repo.get_by_id(job_id)
     if not job:
         raise DocIntError(f"Processing job {job_id} not found.", "JOB_NOT_FOUND")
         
@@ -36,7 +38,10 @@ def get_processing_job(job_id: str, db: Session = Depends(get_db)):
         "overall_confidence": job.overall_confidence
     }
     
-    if job.status == "COMPLETED":
+    # Phase 10 introduced "WARNING" as a real completion state (finished, but
+    # with fields needing review) — must still surface its result, same fix
+    # as app/api/routes/extract.py's own status endpoint.
+    if job.status in ("COMPLETED", "WARNING"):
         stmt_result = select(ProcessingResult).where(ProcessingResult.job_id == job_id)
         result = db.execute(stmt_result).scalars().first()
         if result:
@@ -58,13 +63,12 @@ def list_processing_jobs(
     """
     List processing jobs, optionally filtered by document_id.
     """
-    stmt = select(ProcessingJob)
+    repo = JobRepository(db)
+    filters = {}
     if document_id:
-        stmt = stmt.where(ProcessingJob.document_id == document_id)
+        filters["document_id"] = document_id
         
-    stmt = stmt.order_by(ProcessingJob.created_at.desc()).offset(skip).limit(limit)
-    
-    jobs = db.execute(stmt).scalars().all()
+    jobs = repo.list_all(filters=filters, skip=skip, limit=limit)
     
     data = []
     for job in jobs:

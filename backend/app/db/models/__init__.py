@@ -4,6 +4,14 @@ from app.db.models.core import (
     Template,
     ProcessingJob,
     ProcessingResult,
+    DocumentPage,
+    Asset,
+    PipelineRun,
+    FieldExtraction,
+    TableExtraction,
+    ProcessingEvent,
+    DepartmentUrl,
+    TemplateField,
 )
 
 __all__ = [
@@ -12,4 +20,12 @@ __all__ = [
     "Document",
     "ProcessingJob",
     "ProcessingResult",
+    "DocumentPage",
+    "Asset",
+    "PipelineRun",
+    "FieldExtraction",
+    "TableExtraction",
+    "ProcessingEvent",
+    "DepartmentUrl",
+    "TemplateField",
 ]

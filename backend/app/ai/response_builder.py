@@ -125,6 +125,7 @@ class ResponseBuilder:
         pages_processed: int,
         overall_confidence: float,
         ocr_method: str = "unknown",
+        field_confidences: list[Any] | None = None,
     ) -> dict[str, Any]:
         """
         Build response envelope from raw LLM-extracted JSON.
@@ -133,6 +134,13 @@ class ResponseBuilder:
         """
         from app.ai.field_normalizer import FieldNormalizer
         fields = schema.get("fields", [])
+        
+        # Map field confidences for quick lookup
+        conf_map = {}
+        if field_confidences:
+            for fc in field_confidences:
+                conf_map[fc.field_name] = fc.confidence_score
+                
         match_results: dict[str, Any] = {}
         llm_tables: list[dict[str, Any]] = []
 
@@ -152,9 +160,11 @@ class ResponseBuilder:
                 known_values = field.get("known_values", [])
                 normalized_value = FieldNormalizer.normalize(raw_value, field_type, known_values)
                 
+                field_conf = conf_map.get(name, overall_confidence) if normalized_value is not None else 0.0
+                
                 match_results[name] = {
                     "value": normalized_value,
-                    "confidence": overall_confidence if normalized_value is not None else 0.0,
+                    "confidence": field_conf,
                     "found": normalized_value is not None,
                     "match_strategy": "llm",
                     "source_page": None,

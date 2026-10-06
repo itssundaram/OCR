@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DocGov CivicIntel - OCR Results & Extracted Values Workspace</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "inverse-primary": "#b6c4ff",
+            "primary": "#00236f",
+            "on-secondary-fixed": "#001e2f",
+            "on-error": "#ffffff",
+            "surface-container-lowest": "#ffffff",
+            "on-tertiary": "#ffffff",
+            "inverse-surface": "#213145",
+            "on-background": "#0b1c30",
+            "surface": "#f8f9ff",
+            "tertiary-fixed-dim": "#d0bcff",
+            "surface-dim": "#cbdbf5",
+            "on-surface-variant": "#444651",
+            "on-secondary-container": "#004666",
+            "on-primary-fixed-variant": "#264191",
+            "tertiary-container": "#4e03b8",
+            "surface-container": "#e5eeff",
+            "tertiary": "#340081",
+            "inverse-on-surface": "#eaf1ff",
+            "surface-variant": "#d3e4fe",
+            "secondary": "#006591",
+            "surface-container-high": "#dce9ff",
+            "secondary-fixed": "#c9e6ff",
+            "outline": "#757682",
+            "on-primary": "#ffffff",
+            "on-secondary": "#ffffff",
+            "on-tertiary-fixed-variant": "#5516be",
+            "on-tertiary-fixed": "#23005c",
+            "secondary-container": "#39b8fd",
+            "outline-variant": "#c5c5d3",
+            "tertiary-fixed": "#e9ddff",
+            "on-error-container": "#93000a",
+            "primary-fixed": "#dce1ff",
+            "surface-tint": "#4059aa",
+            "on-primary-fixed": "#00164e",
+            "secondary-fixed-dim": "#89ceff",
+            "primary-fixed-dim": "#b6c4ff",
+            "on-primary-container": "#90a8ff",
+            "primary-container": "#1e3a8a",
+            "surface-bright": "#f8f9ff",
+            "error-container": "#ffdad6",
+            "surface-container-highest": "#d3e4fe",
+            "on-tertiary-container": "#b89cff",
+            "surface-container-low": "#eff4ff",
+            "on-surface": "#0b1c30",
+            "error": "#ba1a1a",
+            "on-secondary-fixed-variant": "#004c6e",
+            "background": "#f8f9ff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-xl": "2rem",
+            "space-sm": "0.5rem",
+            "gutter": "1.25rem",
+            "space-xs": "0.25rem",
+            "space-md": "1rem",
+            "margin": "1.5rem",
+            "space-lg": "1.5rem"
+          },
+          "fontFamily": {
+            "data-mono": ["Inter"],
+            "headline-lg": ["Inter"],
+            "display-lg-mobile": ["Inter"],
+            "title-md": ["Inter"],
+            "headline-sm": ["Inter"],
+            "body-md": ["Inter"],
+            "headline-md": ["Inter"],
+            "display-lg": ["Inter"],
+            "label-sm": ["Inter"],
+            "label-md": ["Inter"],
+            "body-sm": ["Inter"],
+            "body-lg": ["Inter"]
+          },
+          "fontSize": {
+            "data-mono": ["13px", { "lineHeight": "18px", "letterSpacing": "0em", "fontWeight": "500" }],
+            "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.015em", "fontWeight": "600" }],
+            "display-lg-mobile": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+            "title-md": ["16px", { "lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "600" }],
+            "headline-sm": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600" }],
+            "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "display-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }],
+            "label-md": ["13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-background text-on-surface antialiased min-h-screen flex flex-col font-body-md selection:bg-surface-container-high selection:text-primary">
+<!-- ================= TOP APP BAR ================= -->
+<!-- Shared Component JSON: TopNavBar -->
+<header class="flex justify-between items-center h-14 px-gutter w-full sticky top-0 z-40 bg-surface-container-lowest border-b border-outline-variant shadow-sm">
+<div class="flex items-center gap-space-md">
+<!-- Mobile hamburger toggle -->
+<button aria-label="Open Navigation Menu" class="md:hidden text-on-surface-variant hover:text-primary p-1 focus:outline-none">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<!-- Brand Logo / Product Name -->
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="policy" data-weight="fill" style="font-variation-settings: 'FILL' 1;">policy</span>
+<span class="text-headline-sm font-headline-sm font-bold text-primary tracking-tight">DocGov CivicIntel</span>
+</div>
+<!-- Quick Global Search Bar (on_left) -->
+<div class="hidden sm:flex items-center bg-surface border border-outline-variant rounded px-2.5 py-1 w-64 md:w-80 gap-2 focus-within:border-secondary transition-colors">
+<span class="material-symbols-outlined text-outline text-body-md" data-icon="search">search</span>
+<input class="bg-transparent border-none text-body-sm font-body-sm text-on-surface focus:ring-0 p-0 w-full placeholder:text-outline" placeholder="Search deeds, stamps, parcel IDs..." type="text"/>
+<span class="text-label-sm font-label-sm text-outline border border-outline-variant px-1 rounded bg-surface-container-lowest">⌘K</span>
+</div>
+</div>
+<!-- Trailing Actions & Officer Avatar -->
+<div class="flex items-center gap-space-sm">
+<button class="w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out relative" title="Notifications">
+<span class="material-symbols-outlined text-[20px]" data-icon="notifications">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 bg-secondary-container rounded-full"></span>
+</button>
+<button class="w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" title="Help & Documentation">
+<span class="material-symbols-outlined text-[20px]" data-icon="help">help</span>
+</button>
+<button class="w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" title="Settings">
+<span class="material-symbols-outlined text-[20px]" data-icon="settings">settings</span>
+</button>
+<div class="h-5 w-px bg-outline-variant mx-1"></div>
+<!-- Officer user avatar badge -->
+<div class="flex items-center gap-2 pl-1 cursor-pointer">
+<div class="w-8 h-8 rounded bg-primary-container text-on-primary flex items-center justify-center font-title-md text-label-md">
+          CR
+        </div>
+<div class="hidden lg:flex flex-col text-left">
+<span class="font-label-md text-label-md font-semibold text-on-surface leading-tight">Insp. C. Roy</span>
+<span class="font-label-sm text-label-sm text-outline">Revenue Officer #409</span>
+</div>
+</div>
+</div>
+</header>
+<!-- ================= MAIN APPLICATION WRAPPER (SIDEBAR + WORKSPACE) ================= -->
+<div class="flex flex-1 overflow-hidden">
+<!-- ================= SIDEBAR NAVIGATION ================= -->
+<!-- Shared Component JSON: SideNavBar (Active: OCR) -->
+<aside class="hidden md:flex flex-col justify-between w-64 shrink-0 py-space-md px-space-sm bg-surface-container-lowest border-r border-outline-variant shadow-sm z-30">
+<div class="flex flex-col gap-space-sm">
+<!-- Header emblem badge -->
+<div class="flex items-center gap-space-sm px-space-md py-space-xs mb-2">
+<div class="w-9 h-9 rounded bg-surface-container-high border border-outline-variant flex items-center justify-center text-primary shadow-sm">
+<span class="material-symbols-outlined" data-icon="verified" data-weight="fill" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<div class="flex flex-col overflow-hidden">
+<span class="text-title-md font-title-md font-bold text-primary truncate">CivicIntel Platform</span>
+<span class="text-body-sm font-body-sm text-outline truncate">Agency Compliance v4.2</span>
+</div>
+</div>
+<!-- Primary CTA Button -->
+<button class="w-full bg-primary-container text-on-primary hover:bg-primary font-label-md text-label-md font-semibold py-2 px-space-md rounded flex items-center justify-center gap-2 shadow-sm transition-colors duration-150 mb-3">
+<span class="material-symbols-outlined text-[18px]" data-icon="add_circle">add_circle</span>
+<span>New Document Ingestion</span>
+</button>
+<!-- Navigation Tabs List (8 tabs from JSON) -->
+<nav class="flex flex-col gap-1">
+<!-- Tab 1: Dashboard -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<!-- Tab 2: Departments -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="account_balance">account_balance</span>
+<span>Departments</span>
+</a>
+<!-- Tab 3: URLs -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="link">link</span>
+<span>URLs</span>
+</a>
+<!-- Tab 4: OCR (ACTIVE STATE LOCK) -->
+<a class="flex items-center gap-space-sm bg-surface-container text-primary border-l-2 border-primary font-title-md text-title-md px-space-md py-space-sm rounded-r-lg shadow-sm" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="document_scanner" data-weight="fill" style="font-variation-settings: 'FILL' 1;">document_scanner</span>
+<span>OCR</span>
+</a>
+<!-- Tab 5: Orchestration -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="account_tree">account_tree</span>
+<span>Orchestration</span>
+</a>
+<!-- Tab 6: Logs -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="receipt_long">receipt_long</span>
+<span>Logs</span>
+</a>
+<!-- Tab 7: Manage Templates -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="topic">topic</span>
+<span>Manage Templates</span>
+</a>
+<!-- Tab 8: Help & Support -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="support">support</span>
+<span>Help & Support</span>
+</a>
+</nav>
+</div>
+<!-- Footer Tab Items -->
+<div class="pt-3 border-t border-outline-variant flex flex-col gap-1">
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="verified_user">verified_user</span>
+<span>System Health</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="tune">tune</span>
+<span>Compliance Settings</span>
+</a>
+</div>
+</aside>
+<!-- ================= MAIN CONTENT WORKSPACE ================= -->
+<main class="flex-1 flex flex-col overflow-y-auto bg-surface">
+<!-- TOP HEADER BANNER (Status Banner + Document Meta + Action Toolbar) -->
+<section class="bg-surface-container-lowest border-b border-outline-variant px-margin py-space-md">
+<!-- Success Banner / Overall Confidence Chip -->
+<div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-surface-container-high">
+<div class="inline-flex items-center gap-2 bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0] rounded-full px-3 py-1 font-label-sm text-label-sm font-semibold tracking-wide">
+<span class="w-2 h-2 rounded-full bg-[#10B981] animate-pulse"></span>
+<span>Extraction Complete • 18 of 18 Fields Identified (96.2% Overall Confidence)</span>
+</div>
+<!-- Processing Time & Mode -->
+<div class="flex items-center gap-4 text-outline font-label-sm text-label-sm">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-secondary" data-icon="timer">timer</span>
+<span>Total Processing Time: <strong>6.4s (6 pages)</strong></span>
+</span>
+<span class="h-3 w-px bg-outline-variant"></span>
+<span class="flex items-center gap-1 text-[#065F46]">
+<span class="material-symbols-outlined text-[16px]" data-icon="check_circle">check_circle</span>
+<span>Auto-Validated Against Land Registry Schema</span>
+</span>
+</div>
+</div>
+<!-- Document Metadata & Action Bar -->
+<div class="pt-3 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+<div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-title-md" data-icon="description">description</span>
+<h1 class="text-headline-md font-headline-md text-primary tracking-tight">Land_Title_Deed_Registry_2024_08B.pdf</h1>
+<span class="bg-surface-container text-on-secondary-container font-label-sm text-label-sm px-2 py-0.5 rounded border border-outline-variant">
+                BATCH-2024-Q4-DL
+              </span>
+</div>
+<div class="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-on-surface-variant font-body-sm text-body-sm">
+<span>Department: <strong class="text-on-surface">Revenue & Land Records</strong></span>
+<span class="text-outline-variant">•</span>
+<span>Template: <strong class="text-on-surface">Deed of Conveyance v2.1</strong></span>
+<span class="text-outline-variant">•</span>
+<span>Ingested: <strong class="text-on-surface">Oct 24, 2024 14:32 UTC</strong></span>
+</div>
+</div>
+<!-- Action Bar Buttons -->
+<div class="flex flex-wrap items-center gap-2 shrink-0">
+<button class="bg-surface-container-lowest border border-outline-variant hover:bg-surface-container text-on-surface font-label-md text-label-md px-3 py-1.5 rounded flex items-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="table_view">table_view</span>
+<span>Export to CSV</span>
+</button>
+<button class="bg-surface-container-lowest border border-outline-variant hover:bg-surface-container text-on-surface font-label-md text-label-md px-3 py-1.5 rounded flex items-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="data_object">data_object</span>
+<span>Download Audit JSON</span>
+</button>
+<button class="bg-primary hover:bg-[#172554] text-on-primary font-label-md text-label-md font-semibold px-4 py-1.5 rounded flex items-center gap-2 shadow-sm transition-colors focus:ring-2 focus:ring-secondary-container">
+<span class="material-symbols-outlined text-[18px]" data-icon="verified">verified</span>
+<span>Approve & Commit to Registry</span>
+</button>
+</div>
+</div>
+</section>
+<!-- NAVIGATION TABS -->
+<div class="bg-surface-container-lowest border-b border-outline-variant px-margin flex items-center justify-between">
+<nav aria-label="Tabs" class="flex items-center gap-6">
+<!-- Active Tab -->
+<button class="border-b-2 border-primary text-primary font-title-md text-title-md py-3 px-1 flex items-center gap-2">
+<span>Extracted Values</span>
+<span class="bg-surface-container text-primary font-label-sm text-label-sm px-2 py-0.5 rounded-full font-bold">18</span>
+</button>
+<!-- Inactive Tab -->
+<button class="border-b-2 border-transparent text-on-surface-variant hover:text-primary font-body-md text-body-md py-3 px-1 flex items-center gap-2 transition-colors">
+<span>Field Evidence & Document View</span>
+</button>
+<!-- Inactive Tab -->
+<button class="border-b-2 border-transparent text-on-surface-variant hover:text-primary font-body-md text-body-md py-3 px-1 flex items-center gap-2 transition-colors">
+<span>Raw OCR Text</span>
+</button>
+<!-- Inactive Tab -->
+<button class="border-b-2 border-transparent text-on-surface-variant hover:text-primary font-body-md text-body-md py-3 px-1 flex items-center gap-2 transition-colors">
+<span>Payload JSON</span>
+</button>
+</nav>
+<div class="hidden lg:flex items-center gap-2 text-label-sm font-label-sm text-outline">
+<span class="w-2 h-2 rounded-full bg-[#10B981]"></span>
+<span>OCR Pipeline Ready</span>
+<span class="mx-1">•</span>
+<span>Dual Split View Active</span>
+</div>
+</div>
+<!-- ================= SPLIT VIEW AREA ================= -->
+<div class="flex-1 flex flex-col xl:flex-row p-margin gap-margin overflow-y-auto">
+<!-- ================= LEFT 60% EXTRACTED VALUES TABLE ================= -->
+<div class="xl:w-[60%] flex flex-col bg-surface-container-lowest border border-outline-variant rounded shadow-sm overflow-hidden">
+<!-- Table Controls: Search & Confidence Filters -->
+<div class="p-space-md border-b border-outline-variant bg-surface flex flex-wrap items-center justify-between gap-space-sm">
+<div class="flex items-center gap-2 flex-1 min-w-[240px]">
+<div class="relative w-full max-w-sm">
+<span class="material-symbols-outlined absolute left-2.5 top-2 text-outline text-body-md" data-icon="filter_alt">filter_alt</span>
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded pl-8 pr-3 py-1.5 text-body-sm font-body-sm text-on-surface focus:border-secondary focus:ring-0" placeholder="Search extracted field or value..." type="text"/>
+</div>
+</div>
+<!-- Filter by Confidence Buttons -->
+<div class="flex items-center gap-1 text-label-sm font-label-sm">
+<span class="text-outline mr-1">Confidence:</span>
+<button class="px-2.5 py-1 rounded bg-primary-container text-on-primary font-semibold shadow-xs">
+                All (18)
+              </button>
+<button class="px-2.5 py-1 rounded bg-surface border border-outline-variant text-on-surface hover:bg-surface-container-low transition-colors">
+                High (>90%)
+              </button>
+<button class="px-2.5 py-1 rounded bg-surface border border-outline-variant text-[#92400E] hover:bg-[#FFFBEB] transition-colors flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-[#D97706]"></span>
+                Needs Review (<85%)
+              </button>
+</div>
+</div>
+<!-- Structured Enterprise Data Table -->
+<div class="overflow-x-auto flex-1">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface border-b border-outline-variant text-label-sm font-label-sm text-on-surface-variant uppercase tracking-wider">
+<th class="py-2.5 px-4 font-semibold">Field Name</th>
+<th class="py-2.5 px-4 font-semibold">Extracted Value</th>
+<th class="py-2.5 px-4 font-semibold text-right">Confidence</th>
+<th class="py-2.5 px-4 font-semibold">Source Page</th>
+<th class="py-2.5 px-4 font-semibold text-center">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant text-body-sm font-body-sm">
+<!-- ROW 1 (SELECTED / HIGHLIGHTED) -->
+<tr class="bg-[#EFF6FF] border-l-4 border-l-primary hover:bg-[#EFF6FF] transition-colors cursor-pointer">
+<td class="py-3 px-4 font-semibold text-primary flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px] text-primary" data-icon="person" data-weight="fill" style="font-variation-settings: 'FILL' 1;">person</span>
+<span>Grantor / Seller Name</span>
+</td>
+<td class="py-3 px-4 font-data-mono text-data-mono font-medium text-on-surface">
+                    Raj Kumar Verma
+                  </td>
+<td class="py-3 px-4 text-right">
+<span class="inline-flex items-center gap-1 bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0] rounded-full px-2 py-0.5 text-label-sm font-label-sm font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>
+                      96.4% High
+                    </span>
+</td>
+<td class="py-3 px-4 text-outline font-data-mono text-body-sm">
+                    Page 1, Sec 2
+                  </td>
+<td class="py-3 px-4 text-center">
+<button class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-primary text-on-primary font-label-sm text-label-sm font-medium shadow-xs hover:bg-[#172554] transition-colors">
+<span class="material-symbols-outlined text-[14px]" data-icon="search_check">search_check</span>
+<span>Inspect Evidence</span>
+</button>
+</td>
+</tr>
+<!-- ROW 2 -->
+<tr class="hover:bg-surface transition-colors cursor-pointer">
+<td class="py-3 px-4 font-medium text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px] text-outline" data-icon="person_outline">person_outline</span>
+<span>Grantee / Buyer Name</span>
+</td>
+<td class="py-3 px-4 font-data-mono text-data-mono text-on-surface">
+                    Suresh Chandra Sharma
+                  </td>
+<td class="py-3 px-4 text-right">
+<span class="inline-flex items-center gap-1 bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0] rounded-full px-2 py-0.5 text-label-sm font-label-sm font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>
+                      94.8% High
+                    </span>
+</td>
+<td class="py-3 px-4 text-outline font-data-mono text-body-sm">
+                    Page 1, Sec 3
+                  </td>
+<td class="py-3 px-4 text-center">
+<button class="text-secondary hover:text-primary font-label-sm text-label-sm font-medium p-1 rounded hover:bg-surface-container transition-colors">
+                      Inspect
+                    </button>
+</td>
+</tr>
+<!-- ROW 3 -->
+<tr class="hover:bg-surface transition-colors cursor-pointer">
+<td class="py-3 px-4 font-medium text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px] text-outline" data-icon="pin_drop">pin_drop</span>
+<span>Property Parcel Number</span>
+</td>
+<td class="py-3 px-4 font-data-mono text-data-mono font-semibold text-primary">
+                    REV-DL-2024-9981
+                  </td>
+<td class="py-3 px-4 text-right">
+<span class="inline-flex items-center gap-1 bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0] rounded-full px-2 py-0.5 text-label-sm font-label-sm font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>
+                      98.1% High
+                    </span>
+</td>
+<td class="py-3 px-4 text-outline font-data-mono text-body-sm">
+                    Page 2, Box A
+                  </td>
+<td class="py-3 px-4 text-center">
+<button class="text-secondary hover:text-primary font-label-sm text-label-sm font-medium p-1 rounded hover:bg-surface-container transition-colors">
+                      Inspect
+                    </button>
+</td>
+</tr>
+<!-- ROW 4 -->
+<tr class="hover:bg-surface transition-colors cursor-pointer">
+<td class="py-3 px-4 font-medium text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px] text-outline" data-icon="payments">payments</span>
+<span>Consideration Amount</span>
+</td>
+<td class="py-3 px-4 font-data-mono text-data-mono text-on-surface">
+                    ₹ 45,50,000 / USD $54,600
+                  </td>
+<td class="py-3 px-4 text-right">
+<span class="inline-flex items-center gap-1 bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0] rounded-full px-2 py-0.5 text-label-sm font-label-sm font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>
+                      92.3% High
+                    </span>
+</td>
+<td class="py-3 px-4 text-outline font-data-mono text-body-sm">
+                    Page 2, Sec 4
+                  </td>
+<td class="py-3 px-4 text-center">
+<button class="text-secondary hover:text-primary font-label-sm text-label-sm font-medium p-1 rounded hover:bg-surface-container transition-colors">
+                      Inspect
+                    </button>
+</td>
+</tr>
+<!-- ROW 5 (NEEDS REVIEW) -->
+<tr class="bg-[#FFFBEB]/40 hover:bg-[#FFFBEB] transition-colors cursor-pointer">
+<td class="py-3 px-4 font-medium text-[#92400E] flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px] text-[#D97706]" data-icon="warning">warning</span>
+<span>Stamp Duty Registration ID</span>
+</td>
+<td class="py-3 px-4 font-data-mono text-data-mono text-on-surface font-semibold bg-white/70 px-1 py-0.5 rounded border border-[#FDE68A] inline-block">
+                    SD-881290-X
+                  </td>
+<td class="py-3 px-4 text-right">
+<span class="inline-flex items-center gap-1 bg-[#FFFBEB] text-[#92400E] border border-[#FDE68A] rounded-full px-2 py-0.5 text-label-sm font-label-sm font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-[#D97706]"></span>
+                      82.5% Review
+                    </span>
+</td>
+<td class="py-3 px-4 text-outline font-data-mono text-body-sm">
+                    Page 3, Stamp
+                  </td>
+<td class="py-3 px-4 text-center">
+<button class="text-[#92400E] hover:text-on-surface font-label-sm text-label-sm font-medium p-1 rounded hover:bg-[#FDE68A] transition-colors">
+                      Inspect
+                    </button>
+</td>
+</tr>
+<!-- ROW 6 -->
+<tr class="hover:bg-surface transition-colors cursor-pointer">
+<td class="py-3 px-4 font-medium text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px] text-outline" data-icon="calendar_today">calendar_today</span>
+<span>Execution Date</span>
+</td>
+<td class="py-3 px-4 font-data-mono text-data-mono text-on-surface">
+                    18/10/2024
+                  </td>
+<td class="py-3 px-4 text-right">
+<span class="inline-flex items-center gap-1 bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0] rounded-full px-2 py-0.5 text-label-sm font-label-sm font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>
+                      97.6% High
+                    </span>
+</td>
+<td class="py-3 px-4 text-outline font-data-mono text-body-sm">
+                    Page 4
+                  </td>
+<td class="py-3 px-4 text-center">
+<button class="text-secondary hover:text-primary font-label-sm text-label-sm font-medium p-1 rounded hover:bg-surface-container transition-colors">
+                      Inspect
+                    </button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Footer Pagination/Status -->
+<div class="px-space-md py-2 border-t border-outline-variant bg-surface flex items-center justify-between text-body-sm font-body-sm text-outline">
+<span>Showing 6 of 18 key entities</span>
+<div class="flex items-center gap-2">
+<button class="px-2 py-1 rounded border border-outline-variant bg-surface-container-lowest text-on-surface disabled:opacity-50" disabled="">Previous</button>
+<span class="text-label-sm font-label-sm text-on-surface font-semibold">1 of 3</span>
+<button class="px-2 py-1 rounded border border-outline-variant bg-surface-container-lowest text-on-surface hover:bg-surface-container">Next</button>
+</div>
+</div>
+</div>
+<!-- ================= RIGHT 40% DEDICATED FIELD EVIDENCE PANEL ================= -->
+<div class="xl:w-[40%] flex flex-col bg-surface-container-lowest border border-outline-variant rounded shadow-sm overflow-hidden">
+<!-- Panel Header -->
+<div class="px-space-md py-3 border-b border-outline-variant bg-surface flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="manage_search">manage_search</span>
+<h2 class="text-title-md font-title-md text-primary">Field Evidence & Source Region</h2>
+</div>
+<div class="flex items-center gap-1">
+<button class="w-7 h-7 flex items-center justify-center rounded text-outline hover:text-on-surface hover:bg-surface-container-low" title="Dock Side Drawer">
+<span class="material-symbols-outlined text-[18px]" data-icon="dock_to_right">dock_to_right</span>
+</button>
+<button class="w-7 h-7 flex items-center justify-center rounded text-outline hover:text-on-surface hover:bg-surface-container-low" title="Close Inspection">
+<span class="material-symbols-outlined text-[18px]" data-icon="close">close</span>
+</button>
+</div>
+</div>
+<!-- Drawer Content Body -->
+<div class="p-space-md flex-1 overflow-y-auto space-y-4">
+<!-- Field Meta & Extracted Value Card -->
+<div class="bg-surface border border-outline-variant rounded p-3 space-y-2">
+<div class="flex items-center justify-between">
+<span class="text-label-sm font-label-sm text-outline uppercase tracking-wider">Inspected Entity</span>
+<span class="inline-flex items-center gap-1 text-label-sm font-label-sm font-semibold text-[#065F46] bg-[#ECFDF5] px-2 py-0.5 rounded border border-[#A7F3D0]">
+<span class="material-symbols-outlined text-[14px]" data-icon="check_circle">check_circle</span>
+                  Verified by OCR Engine
+                </span>
+</div>
+<div class="flex items-baseline justify-between">
+<h3 class="font-headline-sm text-headline-sm text-primary">Grantor / Seller Name</h3>
+<span class="text-body-sm font-body-sm text-outline">Section 2.1</span>
+</div>
+<!-- Value Input / Editable Row -->
+<div class="pt-1">
+<label class="text-label-sm font-label-sm text-outline block mb-1">Extracted Value</label>
+<div class="flex items-center gap-2">
+<div class="flex-1 bg-surface-container-lowest border border-outline-variant rounded px-3 py-1.5 font-data-mono text-title-md font-bold text-on-surface flex items-center justify-between focus-within:border-secondary">
+<span>Raj Kumar Verma</span>
+<span class="text-outline text-label-sm font-label-sm">UTF-8 String</span>
+</div>
+<button class="p-2 border border-outline-variant rounded bg-surface-container-lowest hover:bg-surface-container text-on-surface-variant hover:text-primary transition-colors" title="Edit Extracted String">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+</button>
+</div>
+</div>
+<!-- Confidence Progress Metric -->
+<div class="pt-2">
+<div class="flex items-center justify-between text-body-sm font-body-sm mb-1">
+<span class="text-outline">Engine Certainty Score:</span>
+<span class="font-bold text-[#065F46] font-data-mono">96.4% High Confidence</span>
+</div>
+<div class="w-full bg-[#E2E8F0] h-2 rounded-full overflow-hidden">
+<div class="bg-[#10B981] h-full rounded-full" style="width: 96.4%;"></div>
+</div>
+</div>
+<!-- Engine & Source Stamp -->
+<div class="flex items-center justify-between text-label-sm font-label-sm text-outline pt-1">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-tertiary" data-icon="smart_toy">smart_toy</span>
+<span>Engine: <strong>Surya v2.4 (Multimodal OCR)</strong></span>
+</span>
+<span>Page: <strong>Page 1 of 6</strong></span>
+</div>
+</div>
+<!-- Visual Bounding Box Crop Container -->
+<div class="border border-outline-variant rounded bg-surface-container-lowest overflow-hidden">
+<div class="px-3 py-2 bg-surface border-b border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-1.5 text-label-md font-label-md font-semibold text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="crop">crop</span>
+<span>Document Source Region (Bounding Box)</span>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant" title="Zoom In (+)">
+<span class="material-symbols-outlined text-[16px]" data-icon="zoom_in">zoom_in</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant" title="Zoom Out (-)">
+<span class="material-symbols-outlined text-[16px]" data-icon="zoom_out">zoom_out</span>
+</button>
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant" title="Reset Zoom">
+<span class="material-symbols-outlined text-[16px]" data-icon="restart_alt">restart_alt</span>
+</button>
+</div>
+</div>
+<!-- Visual Document Canvas & High-Resolution Bounding Box Snippet -->
+<div class="relative bg-[#F1F5F9] p-4 flex items-center justify-center min-h-[220px] overflow-hidden select-none">
+<!-- Stylized Mock Document Canvas with Stamp and Bounding Box -->
+<div class="relative bg-[#FFFDF7] w-full max-w-md p-4 rounded shadow-sm border border-[#E2E8F0] font-serif text-[#1E293B]">
+<!-- Watermark / Official Header Artifact -->
+<div class="text-center border-b border-dashed border-[#CBD5E1] pb-2 mb-3">
+<span class="text-[9px] font-sans font-bold tracking-widest text-[#64748B] uppercase block">
+                      Government of National Capital Territory • Revenue Department
+                    </span>
+<span class="text-[8px] font-sans text-[#94A3B8]">Form V-B [Deed of Absolute Sale / Conveyance]</span>
+</div>
+<p class="text-[11px] leading-relaxed text-[#334155]">
+                    This INDENTURE OF CONVEYANCE is made on this 18th day of October, 2024 between the vendor hereinafter designated as the Grantor, 
+                  </p>
+<!-- Bounding Box Target Area with Glowing Indicator -->
+<div class="my-2 p-1.5 relative border-2 border-[#0EA5E9] bg-[#0EA5E9]/15 rounded">
+<!-- Bounding Box Corner Badges -->
+<span class="absolute -top-1 -left-1 w-2 h-2 bg-[#0EA5E9]"></span>
+<span class="absolute -top-1 -right-1 w-2 h-2 bg-[#0EA5E9]"></span>
+<span class="absolute -bottom-1 -left-1 w-2 h-2 bg-[#0EA5E9]"></span>
+<span class="absolute -bottom-1 -right-1 w-2 h-2 bg-[#0EA5E9]"></span>
+<!-- Label Pill Attached to Box -->
+<div class="absolute -top-3 left-2 bg-[#0EA5E9] text-white text-[9px] font-sans font-bold px-1.5 py-0.2 rounded shadow-xs flex items-center gap-1">
+<span>Raj Kumar Verma</span>
+<span class="text-[8px] opacity-80">(0.96)</span>
+</div>
+<p class="text-[13px] font-semibold tracking-wide text-[#0F172A] font-serif bg-white/60 px-1 rounded">
+                      "SHRI RAJ KUMAR VERMA", Son of Late Mohan Lal Verma,
+                    </p>
+</div>
+<p class="text-[11px] leading-relaxed text-[#334155]">
+                    resident of Sector 14, Rohini, New Delhi-110085 (First Party), AND Suresh Chandra Sharma (Second Party).
+                  </p>
+<!-- Official Purple Ink Stamp Graphic -->
+<div class="absolute bottom-2 right-3 w-16 h-16 border-2 border-dashed border-[#7C3AED]/40 rounded-full flex flex-col items-center justify-center rotate-[-12deg] pointer-events-none">
+<span class="text-[7px] text-[#7C3AED] font-sans font-bold uppercase">Sub-Registrar</span>
+<span class="text-[8px] text-[#7C3AED] font-sans font-extrabold">DELHI-VI</span>
+<span class="text-[6px] text-[#7C3AED] font-sans">OCT 2024</span>
+</div>
+</div>
+<!-- Bounding Box Coordinate Overlay Floating Badge -->
+<div class="absolute bottom-2 left-2 bg-inverse-surface/80 backdrop-blur-xs text-inverse-on-surface font-data-mono text-[10px] px-2 py-0.5 rounded shadow">
+                  bbox: [x: 142, y: 388, w: 284, h: 42] • dpi: 300
+                </div>
+</div>
+<!-- Full Page Modal Trigger -->
+<div class="p-2 bg-surface border-t border-outline-variant flex justify-center">
+<button class="text-secondary hover:text-primary font-label-sm text-label-sm font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="fullscreen">fullscreen</span>
+<span>View Full Page in Modal</span>
+</button>
+</div>
+</div>
+<!-- Officer Override & Action Verification Panel -->
+<div class="bg-surface border border-outline-variant rounded p-3 space-y-3">
+<span class="text-label-sm font-label-sm font-semibold text-outline uppercase tracking-wider block">
+                Officer Override Controls
+              </span>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+<!-- Mark as Verified -->
+<button class="bg-[#ECFDF5] hover:bg-[#D1FAE5] text-[#065F46] border border-[#A7F3D0] rounded py-2 px-2 flex flex-col items-center justify-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[18px]" data-icon="check_box" data-weight="fill" style="font-variation-settings: 'FILL' 1;">check_box</span>
+<span class="text-label-sm font-label-sm font-semibold">Mark as Verified</span>
+</button>
+<!-- Edit Value -->
+<button class="bg-surface-container-lowest hover:bg-surface-container border border-outline-variant text-on-surface rounded py-2 px-2 flex flex-col items-center justify-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant" data-icon="edit_note">edit_note</span>
+<span class="text-label-sm font-label-sm font-medium">Edit Value</span>
+</button>
+<!-- Flag for Supervisor Review -->
+<button class="bg-[#FFFBEB] hover:bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A] rounded py-2 px-2 flex flex-col items-center justify-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[18px] text-[#D97706]" data-icon="flag">flag</span>
+<span class="text-label-sm font-label-sm font-medium">Flag Supervisor</span>
+</button>
+</div>
+<!-- Audit Trail Log Snippet -->
+<div class="pt-2 border-t border-outline-variant flex items-center justify-between text-body-sm font-body-sm text-outline">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="history">history</span>
+<span>Rule Engine Validation: <strong>PASSED (PAN/Aadhaar format)</strong></span>
+</span>
+<span class="text-label-sm font-label-sm text-primary font-semibold cursor-pointer hover:underline">View History</span>
+</div>
+</div>
+</div>
+<!-- Drawer Footer -->
+<div class="p-space-md border-t border-outline-variant bg-surface flex items-center justify-between">
+<button class="text-outline hover:text-on-surface font-label-md text-label-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="arrow_back">arrow_back</span>
+<span>Previous Field</span>
+</button>
+<button class="bg-primary hover:bg-[#172554] text-on-primary font-label-md text-label-md font-semibold px-3 py-1.5 rounded flex items-center gap-1 shadow-xs transition-colors">
+<span>Next: Buyer Name</span>
+<span class="material-symbols-outlined text-[16px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

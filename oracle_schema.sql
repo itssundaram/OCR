@@ -66,6 +66,11 @@ END;
 CREATE SEQUENCE departments_id_seq START WITH 1 INCREMENT BY 1 NOCACHE;
 CREATE SEQUENCE doc_templates_id_seq START WITH 1 INCREMENT BY 1 NOCACHE;
 CREATE SEQUENCE proc_results_id_seq START WITH 1 INCREMENT BY 1 NOCACHE;
+CREATE SEQUENCE field_ext_id_seq START WITH 1 INCREMENT BY 1 NOCACHE;
+CREATE SEQUENCE table_ext_id_seq START WITH 1 INCREMENT BY 1 NOCACHE;
+CREATE SEQUENCE proc_event_id_seq START WITH 1 INCREMENT BY 1 NOCACHE;
+CREATE SEQUENCE dept_urls_id_seq START WITH 1 INCREMENT BY 1 NOCACHE;
+CREATE SEQUENCE tmpl_fields_id_seq START WITH 1 INCREMENT BY 1 NOCACHE;
 
 
 -- ==========================================
@@ -125,13 +130,14 @@ CREATE TABLE DOCUMENTS (
     file_path VARCHAR2(2000) NOT NULL,
     file_type VARCHAR2(50) NOT NULL,
     file_size_bytes NUMBER NOT NULL,
+    page_count NUMBER,
     template_id NUMBER NOT NULL,
     status VARCHAR2(50) DEFAULT 'PENDING' NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     CONSTRAINT pk_documents PRIMARY KEY (id),
     CONSTRAINT fk_doc_template FOREIGN KEY (template_id) REFERENCES TEMPLATES(id),
-    CONSTRAINT ck_doc_status CHECK (status IN ('PENDING', 'QUEUED', 'PROCESSING', 'COMPLETED', 'FAILED'))
+    CONSTRAINT ck_doc_status CHECK (status IN ('PENDING', 'QUEUED', 'PROCESSING', 'COMPLETED', 'WARNING', 'FAILED'))
 );
 
 CREATE INDEX idx_doc_template ON DOCUMENTS(template_id);
@@ -145,6 +151,8 @@ CREATE TABLE PROCESSING_JOBS (
     document_id VARCHAR2(36) NOT NULL,
     template_id NUMBER NOT NULL,
     template_version NUMBER NOT NULL,
+    pipeline_mode VARCHAR2(50),
+    page_count NUMBER,
     status VARCHAR2(50) DEFAULT 'QUEUED' NOT NULL,
     started_at TIMESTAMP WITH TIME ZONE,
     completed_at TIMESTAMP WITH TIME ZONE,
@@ -161,7 +169,7 @@ CREATE TABLE PROCESSING_JOBS (
     CONSTRAINT pk_processing_jobs PRIMARY KEY (id),
     CONSTRAINT fk_pj_document FOREIGN KEY (document_id) REFERENCES DOCUMENTS(id) ON DELETE CASCADE,
     CONSTRAINT fk_pj_template FOREIGN KEY (template_id) REFERENCES TEMPLATES(id),
-    CONSTRAINT ck_pj_status CHECK (status IN ('QUEUED', 'PROCESSING', 'OCR_PROCESSING', 'AI_PROCESSING', 'VALIDATING', 'COMPLETED', 'FAILED'))
+    CONSTRAINT ck_pj_status CHECK (status IN ('QUEUED', 'PROCESSING', 'OCR_PROCESSING', 'AI_PROCESSING', 'VALIDATING', 'COMPLETED', 'WARNING', 'FAILED'))
 );
 
 CREATE INDEX idx_pj_document ON PROCESSING_JOBS(document_id);
@@ -185,6 +193,149 @@ CREATE TABLE PROCESSING_RESULTS (
     CONSTRAINT ck_pr_ext_json CHECK (extracted_json IS JSON),
     CONSTRAINT ck_pr_conf_json CHECK (confidence_json IS JSON),
     CONSTRAINT ck_pr_ocr_json CHECK (ocr_metadata_json IS JSON)
+);
+
+-- DOCUMENT_PAGES
+CREATE TABLE DOCUMENT_PAGES (
+    id VARCHAR2(36) NOT NULL,
+    document_id VARCHAR2(36) NOT NULL,
+    page_number NUMBER NOT NULL,
+    width NUMBER,
+    height NUMBER,
+    image_asset_id VARCHAR2(36),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT pk_document_pages PRIMARY KEY (id),
+    CONSTRAINT fk_dp_document FOREIGN KEY (document_id) REFERENCES DOCUMENTS(id) ON DELETE CASCADE
+);
+
+-- ASSETS
+CREATE TABLE ASSETS (
+    id VARCHAR2(36) NOT NULL,
+    asset_type VARCHAR2(50) NOT NULL,
+    file_path VARCHAR2(2000) NOT NULL,
+    mime_type VARCHAR2(100) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT pk_assets PRIMARY KEY (id)
+);
+
+-- PIPELINE_RUNS
+CREATE TABLE PIPELINE_RUNS (
+    id VARCHAR2(36) NOT NULL,
+    job_id VARCHAR2(36) NOT NULL,
+    pipeline_name VARCHAR2(100) NOT NULL,
+    status VARCHAR2(50) DEFAULT 'QUEUED',
+    started_at TIMESTAMP WITH TIME ZONE,
+    completed_at TIMESTAMP WITH TIME ZONE,
+    error_message CLOB,
+    overall_confidence NUMBER,
+    metadata_json CLOB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT pk_pipeline_runs PRIMARY KEY (id),
+    CONSTRAINT fk_pr_job2 FOREIGN KEY (job_id) REFERENCES PROCESSING_JOBS(id) ON DELETE CASCADE,
+    CONSTRAINT ck_pr_metadata_json CHECK (metadata_json IS JSON)
+);
+
+-- FIELD_EXTRACTIONS
+CREATE TABLE FIELD_EXTRACTIONS (
+    id NUMBER NOT NULL,
+    job_id VARCHAR2(36) NOT NULL,
+    pipeline_run_id VARCHAR2(36),
+    page_id VARCHAR2(36),
+    field_name VARCHAR2(500) NOT NULL,
+    field_value CLOB,
+    normalized_value CLOB,
+    confidence NUMBER,
+    extraction_method VARCHAR2(100),
+    fallback_method VARCHAR2(100),
+    bbox_json CLOB,
+    crop_asset_id VARCHAR2(36),
+    is_final NUMBER DEFAULT 0 NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT pk_field_extractions PRIMARY KEY (id),
+    CONSTRAINT fk_fe_job FOREIGN KEY (job_id) REFERENCES PROCESSING_JOBS(id) ON DELETE CASCADE,
+    CONSTRAINT fk_fe_pr FOREIGN KEY (pipeline_run_id) REFERENCES PIPELINE_RUNS(id) ON DELETE SET NULL,
+    CONSTRAINT fk_fe_page FOREIGN KEY (page_id) REFERENCES DOCUMENT_PAGES(id) ON DELETE SET NULL,
+    CONSTRAINT fk_fe_asset FOREIGN KEY (crop_asset_id) REFERENCES ASSETS(id) ON DELETE SET NULL,
+    CONSTRAINT ck_fe_bbox_json CHECK (bbox_json IS JSON)
+);
+
+-- TABLE_EXTRACTIONS
+CREATE TABLE TABLE_EXTRACTIONS (
+    id NUMBER NOT NULL,
+    job_id VARCHAR2(36) NOT NULL,
+    pipeline_run_id VARCHAR2(36),
+    page_id VARCHAR2(36),
+    table_index NUMBER DEFAULT 0,
+    extraction_method VARCHAR2(100),
+    confidence NUMBER,
+    bbox_json CLOB,
+    crop_asset_id VARCHAR2(36),
+    headers_json CLOB,
+    rows_json CLOB,
+    markdown CLOB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT pk_table_extractions PRIMARY KEY (id),
+    CONSTRAINT fk_te_job FOREIGN KEY (job_id) REFERENCES PROCESSING_JOBS(id) ON DELETE CASCADE,
+    CONSTRAINT fk_te_pr FOREIGN KEY (pipeline_run_id) REFERENCES PIPELINE_RUNS(id) ON DELETE SET NULL,
+    CONSTRAINT fk_te_page FOREIGN KEY (page_id) REFERENCES DOCUMENT_PAGES(id) ON DELETE SET NULL,
+    CONSTRAINT fk_te_asset FOREIGN KEY (crop_asset_id) REFERENCES ASSETS(id) ON DELETE SET NULL,
+    CONSTRAINT ck_te_bbox_json CHECK (bbox_json IS JSON),
+    CONSTRAINT ck_te_headers_json CHECK (headers_json IS JSON),
+    CONSTRAINT ck_te_rows_json CHECK (rows_json IS JSON)
+);
+
+-- PROCESSING_EVENTS
+CREATE TABLE PROCESSING_EVENTS (
+    id NUMBER NOT NULL,
+    job_id VARCHAR2(36) NOT NULL,
+    pipeline_run_id VARCHAR2(36),
+    page_id VARCHAR2(36),
+    event_type VARCHAR2(100) NOT NULL,
+    status VARCHAR2(50),
+    message VARCHAR2(2000),
+    metadata_json CLOB,
+    duration_ms NUMBER,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT pk_processing_events PRIMARY KEY (id),
+    CONSTRAINT fk_pe_job FOREIGN KEY (job_id) REFERENCES PROCESSING_JOBS(id) ON DELETE CASCADE,
+    CONSTRAINT ck_pe_metadata_json CHECK (metadata_json IS JSON)
+);
+CREATE INDEX idx_pe_job ON PROCESSING_EVENTS(job_id);
+CREATE INDEX idx_pe_created ON PROCESSING_EVENTS(created_at);
+
+-- DEPARTMENT_URLS
+CREATE TABLE DEPARTMENT_URLS (
+    id NUMBER NOT NULL,
+    department_id NUMBER NOT NULL,
+    url VARCHAR2(2000) NOT NULL,
+    label VARCHAR2(500),
+    template_id NUMBER,
+    is_active NUMBER DEFAULT 1,
+    last_checked_at TIMESTAMP WITH TIME ZONE,
+    last_status VARCHAR2(50),
+    last_status_code NUMBER,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT pk_department_urls PRIMARY KEY (id),
+    CONSTRAINT fk_du_dept FOREIGN KEY (department_id) REFERENCES DEPARTMENTS(id) ON DELETE CASCADE,
+    CONSTRAINT fk_du_tmpl FOREIGN KEY (template_id) REFERENCES TEMPLATES(id) ON DELETE SET NULL
+);
+
+-- TEMPLATE_FIELDS
+CREATE TABLE TEMPLATE_FIELDS (
+    id NUMBER NOT NULL,
+    template_id NUMBER NOT NULL,
+    field_name VARCHAR2(500) NOT NULL,
+    field_type VARCHAR2(100),
+    is_required NUMBER DEFAULT 0,
+    confidence_threshold NUMBER DEFAULT 0.7,
+    validation_regex VARCHAR2(2000),
+    description CLOB,
+    extraction_hint CLOB,
+    field_order NUMBER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT pk_template_fields PRIMARY KEY (id),
+    CONSTRAINT fk_tf_tmpl FOREIGN KEY (template_id) REFERENCES TEMPLATES(id) ON DELETE CASCADE
 );
 
 -- ==========================================

@@ -1,5 +1,6 @@
 @import './variables.css';
 @import './utilities.css';
+@import './animations.css';
 
 * {
   box-sizing: border-box;

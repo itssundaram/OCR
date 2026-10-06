@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Manage Templates - DocGov CivicIntel</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "error-container": "#ffdad6",
+            "on-primary-container": "#90a8ff",
+            "on-error": "#ffffff",
+            "inverse-on-surface": "#eaf1ff",
+            "surface-container-lowest": "#ffffff",
+            "inverse-surface": "#213145",
+            "primary-container": "#1e3a8a",
+            "on-error-container": "#93000a",
+            "on-background": "#0b1c30",
+            "on-primary-fixed-variant": "#264191",
+            "tertiary": "#340081",
+            "outline": "#757682",
+            "on-secondary": "#ffffff",
+            "inverse-primary": "#b6c4ff",
+            "secondary": "#006591",
+            "on-tertiary-fixed-variant": "#5516be",
+            "error": "#ba1a1a",
+            "primary-fixed-dim": "#b6c4ff",
+            "on-tertiary": "#ffffff",
+            "on-surface": "#0b1c30",
+            "surface-bright": "#f8f9ff",
+            "surface-variant": "#d3e4fe",
+            "surface-container-high": "#dce9ff",
+            "surface-container-highest": "#d3e4fe",
+            "on-tertiary-fixed": "#23005c",
+            "primary-fixed": "#dce1ff",
+            "surface-container": "#e5eeff",
+            "on-primary": "#ffffff",
+            "secondary-fixed-dim": "#89ceff",
+            "secondary-fixed": "#c9e6ff",
+            "tertiary-container": "#4e03b8",
+            "on-secondary-container": "#004666",
+            "surface-dim": "#cbdbf5",
+            "on-tertiary-container": "#b89cff",
+            "on-secondary-fixed-variant": "#004c6e",
+            "on-surface-variant": "#444651",
+            "tertiary-fixed": "#e9ddff",
+            "on-primary-fixed": "#00164e",
+            "background": "#f8f9ff",
+            "primary": "#00236f",
+            "surface": "#f8f9ff",
+            "outline-variant": "#c5c5d3",
+            "tertiary-fixed-dim": "#d0bcff",
+            "secondary-container": "#39b8fd",
+            "surface-container-low": "#eff4ff",
+            "on-secondary-fixed": "#001e2f",
+            "surface-tint": "#4059aa"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-sm": "0.5rem",
+            "space-xs": "0.25rem",
+            "space-md": "1rem",
+            "space-xl": "2rem",
+            "gutter": "1.25rem",
+            "space-lg": "1.5rem",
+            "margin": "1.5rem"
+          },
+          "fontFamily": {
+            "body-md": ["Inter"],
+            "title-md": ["Inter"],
+            "headline-sm": ["Inter"],
+            "display-lg-mobile": ["Inter"],
+            "body-lg": ["Inter"],
+            "label-sm": ["Inter"],
+            "data-mono": ["Inter"],
+            "headline-md": ["Inter"],
+            "display-lg": ["Inter"],
+            "headline-lg": ["Inter"],
+            "label-md": ["Inter"],
+            "body-sm": ["Inter"]
+          },
+          "fontSize": {
+            "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "title-md": ["16px", { "lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "600" }],
+            "headline-sm": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600" }],
+            "display-lg-mobile": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }],
+            "data-mono": ["13px", { "lineHeight": "18px", "letterSpacing": "0em", "fontWeight": "500" }],
+            "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "display-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.015em", "fontWeight": "600" }],
+            "label-md": ["13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-background text-on-surface antialiased min-h-screen flex flex-col font-body-md text-body-md selection:bg-surface-variant">
+<!-- Side Navigation Bar (Shared Component Anchored) -->
+<aside class="flex flex-col justify-between h-full w-64 shrink-0 py-space-md px-space-sm fixed left-0 top-0 z-30 bg-surface-container-lowest dark:bg-inverse-surface border-r border-outline-variant dark:border-outline shadow-sm dark:shadow-none">
+<!-- Top Identity & Navigation Cluster -->
+<div class="flex flex-col gap-space-md">
+<!-- Agency Header -->
+<div class="flex items-center gap-space-sm px-space-sm py-space-xs">
+<div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-on-primary shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-headline-sm" data-icon="account_balance">account_balance</span>
+</div>
+<div class="flex flex-col overflow-hidden">
+<span class="text-title-md font-title-md font-bold text-primary dark:text-primary-fixed truncate">CivicIntel Platform</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant dark:text-outline-variant truncate">Agency Compliance v4.2</span>
+</div>
+</div>
+<!-- Quick Action CTA -->
+<div class="px-space-xs">
+<button class="w-full flex items-center justify-center gap-space-xs py-2 px-3 bg-surface-container hover:bg-surface-container-high text-primary border border-outline-variant/60 rounded-lg transition-colors duration-150 ease-in-out font-label-md text-label-md">
+<span class="material-symbols-outlined text-[18px]" data-icon="add_circle">add_circle</span>
+<span>New Document Ingestion</span>
+</button>
+</div>
+<!-- Navigation Tabs -->
+<nav class="flex flex-col gap-1 mt-space-xs">
+<!-- 1. Dashboard -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary dark:hover:text-primary-fixed transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<!-- 2. Departments -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary dark:hover:text-primary-fixed transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="account_balance">account_balance</span>
+<span>Departments</span>
+</a>
+<!-- 3. URLs -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary dark:hover:text-primary-fixed transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="link">link</span>
+<span>URLs</span>
+</a>
+<!-- 4. OCR -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary dark:hover:text-primary-fixed transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="document_scanner">document_scanner</span>
+<span>OCR</span>
+</a>
+<!-- 5. Orchestration -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary dark:hover:text-primary-fixed transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="account_tree">account_tree</span>
+<span>Orchestration</span>
+</a>
+<!-- 6. Logs -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary dark:hover:text-primary-fixed transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="receipt_long">receipt_long</span>
+<span>Logs</span>
+</a>
+<!-- 7. Manage Templates (ACTIVE) -->
+<a class="flex items-center gap-space-sm bg-surface-container dark:bg-surface-container-high text-primary dark:text-primary-fixed border-l-2 border-primary dark:border-primary-fixed font-title-md text-title-md px-space-md py-space-sm rounded-r-lg transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[20px] text-primary" data-icon="topic" data-weight="fill" style="font-variation-settings: 'FILL' 1;">topic</span>
+<span>Manage Templates</span>
+</a>
+<!-- 8. Help & Support -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary dark:hover:text-primary-fixed transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="support">support</span>
+<span>Help & Support</span>
+</a>
+</nav>
+</div>
+<!-- Footer System Status & Regulatory Audit Links -->
+<div class="flex flex-col gap-1 pt-space-sm border-t border-outline-variant/50">
+<a class="flex items-center justify-between text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-2 rounded-lg hover:bg-surface-container-low transition-colors duration-150 ease-in-out" href="#">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-[18px] text-secondary" data-icon="verified_user">verified_user</span>
+<span>System Health</span>
+</div>
+<span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-2 rounded-lg hover:bg-surface-container-low transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="tune">tune</span>
+<span>Compliance Settings</span>
+</a>
+</div>
+</aside>
+<!-- Top App Bar Navigation (Shared Component Anchored) -->
+<header class="flex justify-between items-center h-14 px-gutter w-full sticky top-0 z-40 bg-surface-container-lowest dark:bg-inverse-surface border-b border-outline-variant dark:border-outline shadow-sm dark:shadow-none pl-72">
+<!-- Brand / Search Bar Cluster (on_left) -->
+<div class="flex items-center gap-space-lg flex-1 max-w-xl">
+<div class="text-headline-sm font-headline-sm font-bold text-primary dark:text-primary-fixed hidden lg:block tracking-tight">
+        DocGov CivicIntel
+      </div>
+<!-- Omni Search Box -->
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]" data-icon="search">search</span>
+<input class="w-full h-9 pl-9 pr-4 bg-surface-container-low border border-outline-variant/70 rounded-lg text-body-md font-body-md text-on-surface placeholder:text-outline focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-colors duration-150" placeholder="Search template name, code, or field..." type="text"/>
+</div>
+</div>
+<!-- Trailing Action Icons & Avatar -->
+<div class="flex items-center gap-space-sm">
+<!-- Notification Icon with Unread Badge -->
+<button aria-label="Notifications" class="relative p-2 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out">
+<span class="material-symbols-outlined text-[20px]" data-icon="notifications">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full ring-2 ring-surface-container-lowest"></span>
+</button>
+<!-- Help Icon -->
+<button aria-label="Help" class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out">
+<span class="material-symbols-outlined text-[20px]" data-icon="help">help</span>
+</button>
+<!-- Settings Cog -->
+<button aria-label="Settings" class="p-2 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out">
+<span class="material-symbols-outlined text-[20px]" data-icon="settings">settings</span>
+</button>
+<div class="h-5 w-[1px] bg-outline-variant mx-1"></div>
+<!-- Officer User Avatar Badge -->
+<div class="flex items-center gap-space-sm pl-1">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-title-md text-title-md font-bold ring-1 ring-outline-variant">
+          CO
+        </div>
+<div class="hidden xl:flex flex-col text-left">
+<span class="font-label-md text-label-md font-semibold text-on-surface leading-tight">Capt. J. Vance</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Chief Ingestion Officer</span>
+</div>
+</div>
+</div>
+</header>
+<!-- Primary Canvas Viewport -->
+<main class="flex-1 pl-64 bg-background">
+<div class="max-w-[1600px] mx-auto p-gutter space-y-space-md">
+<!-- Page Header Banner & Top CTAs -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-space-md pb-2 border-b border-outline-variant/40">
+<div>
+<div class="flex items-center gap-space-xs text-secondary font-label-md text-label-md mb-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="schema">schema</span>
+<span>Document Architecture & Extraction Policy</span>
+</div>
+<h1 class="text-headline-lg font-headline-lg text-primary tracking-tight">
+            Document Schema & OCR Templates
+          </h1>
+<p class="text-body-md font-body-md text-on-surface-variant mt-0.5">
+            Standardize extraction schemas, bounding box anchors, and field validation rules across jurisdictional departments.
+          </p>
+</div>
+<!-- Call to Actions -->
+<div class="flex items-center gap-space-sm shrink-0">
+<button class="h-9 px-4 rounded-lg bg-surface-container-lowest border border-outline-variant hover:bg-surface-container-low text-on-surface font-label-md text-label-md flex items-center gap-1.5 transition-colors duration-150 ease-in-out shadow-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="file_upload">file_upload</span>
+<span>Import Schema (.JSON)</span>
+</button>
+<button class="h-9 px-4 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md flex items-center gap-1.5 transition-colors duration-150 ease-in-out shadow-sm ring-1 ring-primary/20">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+<span>+ Create New Template</span>
+</button>
+</div>
+</div>
+<!-- Stats Bar (Bento-style Grid) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md">
+<!-- Stat 1: Total Active Templates -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl border border-outline-variant/60 shadow-sm flex items-center justify-between">
+<div>
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-semibold">Total Active Templates</span>
+<div class="text-headline-md font-headline-md font-bold text-primary mt-1">72 schemas</div>
+<span class="font-body-sm text-body-sm text-emerald-700 flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[14px]" data-icon="arrow_upward">arrow_upward</span>
+              +4 added this week
+            </span>
+</div>
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[24px]" data-icon="topic">topic</span>
+</div>
+</div>
+<!-- Stat 2: Assigned Departments -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl border border-outline-variant/60 shadow-sm flex items-center justify-between">
+<div>
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-semibold">Assigned Departments</span>
+<div class="text-headline-md font-headline-md font-bold text-primary mt-1">14 agencies</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-0.5">
+              Across State & County levels
+            </span>
+</div>
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[24px]" data-icon="corporate_fare">corporate_fare</span>
+</div>
+</div>
+<!-- Stat 3: Automated Pass Rate -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl border border-outline-variant/60 shadow-sm flex items-center justify-between">
+<div>
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-semibold">Automated Pass Rate</span>
+<div class="text-headline-md font-headline-md font-bold text-emerald-700 mt-1">98.2%</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-0.5">
+              Above 95% threshold target
+            </span>
+</div>
+<div class="w-12 h-12 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
+<span class="material-symbols-outlined text-[24px]" data-icon="verified">verified</span>
+</div>
+</div>
+<!-- Stat 4: Avg OCR Speed -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl border border-outline-variant/60 shadow-sm flex items-center justify-between">
+<div>
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-semibold">Avg OCR Speed</span>
+<div class="text-headline-md font-headline-md font-bold text-primary mt-1">320ms <span class="text-body-md font-body-md font-normal text-on-surface-variant">/ page</span></div>
+<span class="font-body-sm text-body-sm text-secondary flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[14px]" data-icon="bolt">bolt</span>
+              Distributed GPU clusters
+            </span>
+</div>
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[24px]" data-icon="speed">speed</span>
+</div>
+</div>
+</div>
+<!-- Search, Filtering, and View Controls Filter Bar -->
+<div class="bg-surface-container-lowest p-space-sm rounded-xl border border-outline-variant/60 shadow-sm flex flex-col lg:flex-row items-center justify-between gap-space-sm">
+<!-- Search filter input -->
+<div class="relative w-full lg:w-96">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px]" data-icon="search">search</span>
+<input class="w-full h-9 pl-9 pr-3 bg-surface-container-low border border-outline-variant/70 rounded-lg text-body-md font-body-md text-on-surface placeholder:text-outline focus:outline-none focus:border-secondary transition-colors" placeholder="Search template name, code, or field..." type="text"/>
+</div>
+<!-- Dropdowns and Sort Controls -->
+<div class="flex flex-wrap items-center gap-space-sm w-full lg:w-auto justify-end">
+<!-- Department Dropdown -->
+<div class="relative min-w-[200px]">
+<select class="w-full h-9 pl-3 pr-8 bg-surface-container-lowest border border-outline-variant/70 rounded-lg text-label-md font-label-md text-on-surface focus:outline-none focus:border-secondary transition-colors appearance-none cursor-pointer">
+<option>All Departments (REV, BLDG, TAX, CIV...)</option>
+<option>Revenue & Land Records (REV)</option>
+<option>Urban Development Authority (BLDG)</option>
+<option>Revenue & Taxation Bureau (TAX)</option>
+<option>Civil Registry & Statistics (CIV)</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-outline text-[18px] pointer-events-none" data-icon="expand_more">expand_more</span>
+</div>
+<!-- Status Dropdown -->
+<div class="relative min-w-[180px]">
+<select class="w-full h-9 pl-3 pr-8 bg-surface-container-lowest border border-outline-variant/70 rounded-lg text-label-md font-label-md text-on-surface focus:outline-none focus:border-secondary transition-colors appearance-none cursor-pointer">
+<option>All Statuses (Active, Draft, Deprecated)</option>
+<option>Active Only</option>
+<option>Draft Only</option>
+<option>Deprecated</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-outline text-[18px] pointer-events-none" data-icon="expand_more">expand_more</span>
+</div>
+<!-- Sort Dropdown -->
+<div class="relative min-w-[170px]">
+<select class="w-full h-9 pl-3 pr-8 bg-surface-container-lowest border border-outline-variant/70 rounded-lg text-label-md font-label-md text-on-surface focus:outline-none focus:border-secondary transition-colors appearance-none cursor-pointer">
+<option>Last Updated (Newest)</option>
+<option>Name (A - Z)</option>
+<option>Version (Highest)</option>
+<option>Pass Rate</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-outline text-[18px] pointer-events-none" data-icon="swap_vert">swap_vert</span>
+</div>
+<!-- Quick Filters Reset/Action Button -->
+<button class="h-9 w-9 flex items-center justify-center rounded-lg border border-outline-variant/70 bg-surface-container-lowest hover:bg-surface-container-low text-on-surface-variant transition-colors" title="Reset Filters">
+<span class="material-symbols-outlined text-[18px]" data-icon="filter_alt_off">filter_alt_off</span>
+</button>
+</div>
+</div>
+<!-- Regulatory Schema Registry Data Table -->
+<div class="bg-surface-container-lowest rounded-xl border border-outline-variant/70 shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface border-b border-outline-variant/60 h-9">
+<th class="py-2 px-4 font-label-sm text-label-sm font-semibold text-on-surface-variant uppercase tracking-wider w-8">
+<input class="rounded border-outline text-primary focus:ring-secondary w-4 h-4 cursor-pointer" type="checkbox"/>
+</th>
+<th class="py-2 px-4 font-label-sm text-label-sm font-semibold text-on-surface-variant uppercase tracking-wider">Template Identification</th>
+<th class="py-2 px-4 font-label-sm text-label-sm font-semibold text-on-surface-variant uppercase tracking-wider">Department Agency</th>
+<th class="py-2 px-4 font-label-sm text-label-sm font-semibold text-on-surface-variant uppercase tracking-wider">Version</th>
+<th class="py-2 px-4 font-label-sm text-label-sm font-semibold text-on-surface-variant uppercase tracking-wider">Extraction Payload</th>
+<th class="py-2 px-4 font-label-sm text-label-sm font-semibold text-on-surface-variant uppercase tracking-wider">Status</th>
+<th class="py-2 px-4 font-label-sm text-label-sm font-semibold text-on-surface-variant uppercase tracking-wider">Last Modified</th>
+<th class="py-2 px-4 font-label-sm text-label-sm font-semibold text-on-surface-variant uppercase tracking-wider text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/40">
+<!-- Row 1: Deed of Conveyance -->
+<tr class="hover:bg-surface-container-low/50 transition-colors duration-150">
+<td class="py-3 px-4">
+<input class="rounded border-outline text-primary focus:ring-secondary w-4 h-4 cursor-pointer" type="checkbox"/>
+</td>
+<td class="py-3 px-4">
+<div class="flex items-start gap-3">
+<div class="p-2 bg-surface-container rounded-lg text-primary mt-0.5">
+<span class="material-symbols-outlined text-[20px]" data-icon="description">description</span>
+</div>
+<div>
+<div class="font-title-md text-title-md text-primary font-semibold hover:underline cursor-pointer">
+                        Deed of Conveyance & Title Transfer
+                      </div>
+<div class="font-data-mono text-data-mono text-on-surface-variant flex items-center gap-1.5 mt-0.5">
+<span class="px-1.5 py-0.5 bg-surface-container-high rounded text-[11px]">TPL-DEED-CONV-v2.1</span>
+<span class="text-outline">•</span>
+<span class="text-[12px]">Bounding box anchor set (v2)</span>
+</div>
+</div>
+</div>
+</td>
+<td class="py-3 px-4">
+<div class="font-body-md text-body-md text-on-surface font-medium">Department of Revenue & Land Records</div>
+<span class="font-label-sm text-label-sm text-outline tracking-wider">REV-01</span>
+</td>
+<td class="py-3 px-4">
+<span class="font-data-mono text-data-mono px-2 py-0.5 bg-surface-container rounded text-on-surface border border-outline-variant/50">v2.1</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex flex-col text-body-sm font-body-sm">
+<span class="font-medium text-on-surface">18 extracted fields</span>
+<span class="text-on-surface-variant">2 structured tables</span>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-label-sm font-label-sm font-semibold bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">
+<span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>
+                    Active
+                  </span>
+</td>
+<td class="py-3 px-4 font-body-sm text-body-sm text-on-surface-variant">
+                  2 hours ago
+                </td>
+<td class="py-3 px-4 text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="h-8 px-2.5 rounded bg-surface-container-low hover:bg-surface-container border border-outline-variant/60 text-primary font-label-md text-label-md flex items-center gap-1 transition-colors" title="Edit Template">
+<span class="material-symbols-outlined text-[16px]" data-icon="edit">edit</span>
+<span>Edit</span>
+</button>
+<button class="h-8 px-2 rounded bg-surface-container-lowest hover:bg-surface-container-low border border-outline-variant/60 text-on-surface font-label-md text-label-md transition-colors" title="Duplicate">
+<span class="material-symbols-outlined text-[16px]" data-icon="content_copy">content_copy</span>
+</button>
+<button class="h-8 px-2 rounded bg-surface-container-lowest hover:bg-surface-container-low border border-outline-variant/60 text-on-surface font-label-md text-label-md transition-colors" title="Version History">
+<span class="material-symbols-outlined text-[16px]" data-icon="history">history</span>
+</button>
+<button class="h-8 w-8 flex items-center justify-center rounded hover:bg-surface-container text-on-surface-variant transition-colors" title="More Options">
+<span class="material-symbols-outlined text-[18px]" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2: Commercial Building Permit Application -->
+<tr class="hover:bg-surface-container-low/50 transition-colors duration-150">
+<td class="py-3 px-4">
+<input class="rounded border-outline text-primary focus:ring-secondary w-4 h-4 cursor-pointer" type="checkbox"/>
+</td>
+<td class="py-3 px-4">
+<div class="flex items-start gap-3">
+<div class="p-2 bg-surface-container rounded-lg text-primary mt-0.5">
+<span class="material-symbols-outlined text-[20px]" data-icon="apartment">apartment</span>
+</div>
+<div>
+<div class="font-title-md text-title-md text-primary font-semibold hover:underline cursor-pointer">
+                        Commercial Building Permit Application
+                      </div>
+<div class="font-data-mono text-data-mono text-on-surface-variant flex items-center gap-1.5 mt-0.5">
+<span class="px-1.5 py-0.5 bg-surface-container-high rounded text-[11px]">TPL-PERMIT-BLD-v3.0</span>
+<span class="text-outline">•</span>
+<span class="text-[12px]">Zoning code validation matrix</span>
+</div>
+</div>
+</div>
+</td>
+<td class="py-3 px-4">
+<div class="font-body-md text-body-md text-on-surface font-medium">Urban Development Authority</div>
+<span class="font-label-sm text-label-sm text-outline tracking-wider">URB-02</span>
+</td>
+<td class="py-3 px-4">
+<span class="font-data-mono text-data-mono px-2 py-0.5 bg-surface-container rounded text-on-surface border border-outline-variant/50">v3.0</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex flex-col text-body-sm font-body-sm">
+<span class="font-medium text-on-surface">24 extracted fields</span>
+<span class="text-on-surface-variant">1 structured table</span>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-label-sm font-label-sm font-semibold bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">
+<span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>
+                    Active
+                  </span>
+</td>
+<td class="py-3 px-4 font-body-sm text-body-sm text-on-surface-variant">
+                  Yesterday
+                </td>
+<td class="py-3 px-4 text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="h-8 px-2.5 rounded bg-surface-container-low hover:bg-surface-container border border-outline-variant/60 text-primary font-label-md text-label-md flex items-center gap-1 transition-colors" title="Edit Template">
+<span class="material-symbols-outlined text-[16px]" data-icon="edit">edit</span>
+<span>Edit</span>
+</button>
+<button class="h-8 px-2 rounded bg-surface-container-lowest hover:bg-surface-container-low border border-outline-variant/60 text-on-surface font-label-md text-label-md transition-colors" title="Duplicate">
+<span class="material-symbols-outlined text-[16px]" data-icon="content_copy">content_copy</span>
+</button>
+<button class="h-8 px-2 rounded bg-surface-container-lowest hover:bg-surface-container-low border border-outline-variant/60 text-on-surface font-label-md text-label-md transition-colors" title="Version History">
+<span class="material-symbols-outlined text-[16px]" data-icon="history">history</span>
+</button>
+<button class="h-8 w-8 flex items-center justify-center rounded hover:bg-surface-container text-on-surface-variant transition-colors" title="More Options">
+<span class="material-symbols-outlined text-[18px]" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3: Form 16A Withholding Tax Certificate -->
+<tr class="hover:bg-surface-container-low/50 transition-colors duration-150">
+<td class="py-3 px-4">
+<input class="rounded border-outline text-primary focus:ring-secondary w-4 h-4 cursor-pointer" type="checkbox"/>
+</td>
+<td class="py-3 px-4">
+<div class="flex items-start gap-3">
+<div class="p-2 bg-surface-container rounded-lg text-primary mt-0.5">
+<span class="material-symbols-outlined text-[20px]" data-icon="receipt">receipt</span>
+</div>
+<div>
+<div class="font-title-md text-title-md text-primary font-semibold hover:underline cursor-pointer">
+                        Form 16A Withholding Tax Certificate
+                      </div>
+<div class="font-data-mono text-data-mono text-on-surface-variant flex items-center gap-1.5 mt-0.5">
+<span class="px-1.5 py-0.5 bg-surface-container-high rounded text-[11px]">TPL-TAX-16A-v1.4</span>
+<span class="text-outline">•</span>
+<span class="text-[12px]">Quarterly deductor schema</span>
+</div>
+</div>
+</div>
+</td>
+<td class="py-3 px-4">
+<div class="font-body-md text-body-md text-on-surface font-medium">Revenue & Taxation Bureau</div>
+<span class="font-label-sm text-label-sm text-outline tracking-wider">TAX-FED</span>
+</td>
+<td class="py-3 px-4">
+<span class="font-data-mono text-data-mono px-2 py-0.5 bg-surface-container rounded text-on-surface border border-outline-variant/50">v1.4</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex flex-col text-body-sm font-body-sm">
+<span class="font-medium text-on-surface">12 extracted fields</span>
+<span class="text-on-surface-variant">3 structured tables</span>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-label-sm font-label-sm font-semibold bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">
+<span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>
+                    Active
+                  </span>
+</td>
+<td class="py-3 px-4 font-body-sm text-body-sm text-on-surface-variant">
+                  3 days ago
+                </td>
+<td class="py-3 px-4 text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="h-8 px-2.5 rounded bg-surface-container-low hover:bg-surface-container border border-outline-variant/60 text-primary font-label-md text-label-md flex items-center gap-1 transition-colors" title="Edit Template">
+<span class="material-symbols-outlined text-[16px]" data-icon="edit">edit</span>
+<span>Edit</span>
+</button>
+<button class="h-8 px-2 rounded bg-surface-container-lowest hover:bg-surface-container-low border border-outline-variant/60 text-on-surface font-label-md text-label-md transition-colors" title="Duplicate">
+<span class="material-symbols-outlined text-[16px]" data-icon="content_copy">content_copy</span>
+</button>
+<button class="h-8 px-2 rounded bg-surface-container-lowest hover:bg-surface-container-low border border-outline-variant/60 text-on-surface font-label-md text-label-md transition-colors" title="Version History">
+<span class="material-symbols-outlined text-[16px]" data-icon="history">history</span>
+</button>
+<button class="h-8 w-8 flex items-center justify-center rounded hover:bg-surface-container text-on-surface-variant transition-colors" title="More Options">
+<span class="material-symbols-outlined text-[18px]" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 4: Standard Vital Record Birth Certificate (Draft) -->
+<tr class="bg-surface/30 hover:bg-surface-container-low/50 transition-colors duration-150">
+<td class="py-3 px-4">
+<input class="rounded border-outline text-primary focus:ring-secondary w-4 h-4 cursor-pointer" type="checkbox"/>
+</td>
+<td class="py-3 px-4">
+<div class="flex items-start gap-3">
+<div class="p-2 bg-amber-50 rounded-lg text-amber-700 mt-0.5 border border-amber-200">
+<span class="material-symbols-outlined text-[20px]" data-icon="badge">badge</span>
+</div>
+<div>
+<div class="font-title-md text-title-md text-primary font-semibold hover:underline cursor-pointer">
+                        Standard Vital Record Birth Certificate
+                      </div>
+<div class="font-data-mono text-data-mono text-on-surface-variant flex items-center gap-1.5 mt-0.5">
+<span class="px-1.5 py-0.5 bg-surface-container-high rounded text-[11px]">TPL-CIV-BIRTH-v2.0</span>
+<span class="text-outline">•</span>
+<span class="text-amber-800 text-[12px] font-medium">Draft schema in modification</span>
+</div>
+</div>
+</div>
+</td>
+<td class="py-3 px-4">
+<div class="font-body-md text-body-md text-on-surface font-medium">Civil Registry & Statistics</div>
+<span class="font-label-sm text-label-sm text-outline tracking-wider">CIV-REG</span>
+</td>
+<td class="py-3 px-4">
+<span class="font-data-mono text-data-mono px-2 py-0.5 bg-surface-container rounded text-on-surface border border-outline-variant/50">v2.0</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex flex-col text-body-sm font-body-sm">
+<span class="font-medium text-on-surface">16 extracted fields</span>
+<span class="text-outline italic">No tabular extraction</span>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-label-sm font-label-sm font-semibold bg-[#FFFBEB] text-[#92400E] border border-[#FDE68A]">
+<span class="w-1.5 h-1.5 rounded-full bg-[#F59E0B]"></span>
+                    Draft
+                  </span>
+</td>
+<td class="py-3 px-4 font-body-sm text-body-sm text-on-surface-variant">
+                  Oct 20, 2024
+                </td>
+<td class="py-3 px-4 text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="h-8 px-2.5 rounded bg-primary-container text-on-primary font-label-md text-label-md flex items-center gap-1 transition-colors hover:bg-primary" title="Resume Draft">
+<span class="material-symbols-outlined text-[16px]" data-icon="edit_document">edit_document</span>
+<span>Resume Draft</span>
+</button>
+<button class="h-8 px-2 rounded bg-surface-container-lowest hover:bg-surface-container-low border border-outline-variant/60 text-on-surface font-label-md text-label-md transition-colors" title="Duplicate">
+<span class="material-symbols-outlined text-[16px]" data-icon="content_copy">content_copy</span>
+</button>
+<button class="h-8 px-2 rounded bg-surface-container-lowest hover:bg-error-container text-error font-label-md text-label-md transition-colors border border-outline-variant/60" title="Discard">
+<span class="material-symbols-outlined text-[16px]" data-icon="delete">delete</span>
+</button>
+<button class="h-8 w-8 flex items-center justify-center rounded hover:bg-surface-container text-on-surface-variant transition-colors" title="More Options">
+<span class="material-symbols-outlined text-[18px]" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 5: Notarial Real Estate Affidavit -->
+<tr class="hover:bg-surface-container-low/50 transition-colors duration-150">
+<td class="py-3 px-4">
+<input class="rounded border-outline text-primary focus:ring-secondary w-4 h-4 cursor-pointer" type="checkbox"/>
+</td>
+<td class="py-3 px-4">
+<div class="flex items-start gap-3">
+<div class="p-2 bg-surface-container rounded-lg text-primary mt-0.5">
+<span class="material-symbols-outlined text-[20px]" data-icon="gavel">gavel</span>
+</div>
+<div>
+<div class="font-title-md text-title-md text-primary font-semibold hover:underline cursor-pointer">
+                        Notarial Real Estate Affidavit
+                      </div>
+<div class="font-data-mono text-data-mono text-on-surface-variant flex items-center gap-1.5 mt-0.5">
+<span class="px-1.5 py-0.5 bg-surface-container-high rounded text-[11px]">TPL-AFFIDAVIT-NOTARY</span>
+<span class="text-outline">•</span>
+<span class="text-[12px]">Seal signature verification</span>
+</div>
+</div>
+</div>
+</td>
+<td class="py-3 px-4">
+<div class="font-body-md text-body-md text-on-surface font-medium">Department of Revenue & Land Records</div>
+<span class="font-label-sm text-label-sm text-outline tracking-wider">REV-01</span>
+</td>
+<td class="py-3 px-4">
+<span class="font-data-mono text-data-mono px-2 py-0.5 bg-surface-container rounded text-on-surface border border-outline-variant/50">v1.0</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex flex-col text-body-sm font-body-sm">
+<span class="font-medium text-on-surface">9 extracted fields</span>
+<span class="text-outline italic">No tabular extraction</span>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-label-sm font-label-sm font-semibold bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">
+<span class="w-1.5 h-1.5 rounded-full bg-[#10B981]"></span>
+                    Active
+                  </span>
+</td>
+<td class="py-3 px-4 font-body-sm text-body-sm text-on-surface-variant">
+                  Oct 18, 2024
+                </td>
+<td class="py-3 px-4 text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="h-8 px-2.5 rounded bg-surface-container-low hover:bg-surface-container border border-outline-variant/60 text-primary font-label-md text-label-md flex items-center gap-1 transition-colors" title="Edit Template">
+<span class="material-symbols-outlined text-[16px]" data-icon="edit">edit</span>
+<span>Edit</span>
+</button>
+<button class="h-8 px-2 rounded bg-surface-container-lowest hover:bg-surface-container-low border border-outline-variant/60 text-on-surface font-label-md text-label-md transition-colors" title="Duplicate">
+<span class="material-symbols-outlined text-[16px]" data-icon="content_copy">content_copy</span>
+</button>
+<button class="h-8 px-2 rounded bg-surface-container-lowest hover:bg-surface-container-low border border-outline-variant/60 text-on-surface font-label-md text-label-md transition-colors" title="Version History">
+<span class="material-symbols-outlined text-[16px]" data-icon="history">history</span>
+</button>
+<button class="h-8 w-8 flex items-center justify-center rounded hover:bg-surface-container text-on-surface-variant transition-colors" title="More Options">
+<span class="material-symbols-outlined text-[18px]" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination Footer -->
+<div class="p-space-sm bg-surface flex flex-col sm:flex-row items-center justify-between gap-space-sm border-t border-outline-variant/60">
+<div class="text-body-sm font-body-sm text-on-surface-variant">
+            Showing <span class="font-semibold text-on-surface">1 - 5</span> of <span class="font-semibold text-on-surface">72</span> schemas
+          </div>
+<!-- Pagination Controls -->
+<div class="flex items-center gap-1">
+<button class="h-8 px-2.5 rounded bg-surface-container-lowest border border-outline-variant/70 text-on-surface font-label-md text-label-md flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed" disabled="">
+<span class="material-symbols-outlined text-[16px]" data-icon="chevron_left">chevron_left</span>
+<span>Previous</span>
+</button>
+<button class="h-8 w-8 rounded bg-primary text-on-primary font-label-md text-label-md flex items-center justify-center font-semibold">
+              1
+            </button>
+<button class="h-8 w-8 rounded bg-surface-container-lowest hover:bg-surface-container border border-outline-variant/70 text-on-surface font-label-md text-label-md flex items-center justify-center">
+              2
+            </button>
+<button class="h-8 w-8 rounded bg-surface-container-lowest hover:bg-surface-container border border-outline-variant/70 text-on-surface font-label-md text-label-md flex items-center justify-center">
+              3
+            </button>
+<span class="px-1 text-outline font-label-md">...</span>
+<button class="h-8 w-8 rounded bg-surface-container-lowest hover:bg-surface-container border border-outline-variant/70 text-on-surface font-label-md text-label-md flex items-center justify-center">
+              15
+            </button>
+<button class="h-8 px-2.5 rounded bg-surface-container-lowest hover:bg-surface-container border border-outline-variant/70 text-on-surface font-label-md text-label-md flex items-center gap-1 transition-colors">
+<span>Next</span>
+<span class="material-symbols-outlined text-[16px]" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Quick Regulatory Documentation Banner -->
+<div class="p-space-md rounded-xl bg-surface-container-high/60 border border-outline-variant/80 flex flex-col md:flex-row items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-md">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[24px]" data-icon="policy">policy</span>
+</div>
+<div>
+<div class="font-title-md text-title-md font-semibold text-primary">Need Schema Migration Support?</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+              Federal schema versions strictly enforce NIST SP 800-53 security controls on OCR bounding coordinates. Review the compliance pipeline integration manual.
+            </p>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<button class="px-3 py-1.5 bg-surface-container-lowest border border-outline-variant/70 hover:bg-surface-container rounded-lg text-primary font-label-md text-label-md transition-colors">
+            View API Reference
+          </button>
+<button class="px-3 py-1.5 bg-primary hover:bg-primary-container text-on-primary rounded-lg font-label-md text-label-md transition-colors">
+            Contact Technical Architect
+          </button>
+</div>
+</div>
+</div>
+</main>
+</body></html>

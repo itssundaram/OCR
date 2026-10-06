@@ -1,0 +1,74 @@
+/* Small interactive animations added for the frontend rebuild.
+   Kept separate from the existing design-token files (variables.css,
+   utilities.css) so those stay untouched. */
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.35s ease-out both;
+}
+
+.hover-lift {
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+.hover-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Sidebar nav items fade/slide in on mount, staggered via inline animationDelay */
+.nav-link-animated {
+  animation: fadeInUp 0.3s ease-out both;
+}
+
+/* Confidence / progress bars filling in */
+@keyframes growWidth {
+  from { width: 0; }
+}
+.progress-fill {
+  animation: growWidth 0.6s ease-out;
+}
+
+/* Orchestration canvas custom nodes */
+.flow-node {
+  position: relative;
+  min-width: 150px;
+  padding: 0.6rem 0.9rem;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  transition: box-shadow var(--transition-normal), border-color var(--transition-normal);
+}
+.flow-node-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.2rem;
+}
+.flow-node-title {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+.flow-node-sub {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+@keyframes nodePulse {
+  0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+}
+.flow-node-pulse {
+  animation: nodePulse 1.6s infinite;
+}

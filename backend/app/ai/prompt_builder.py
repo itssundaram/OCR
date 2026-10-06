@@ -46,7 +46,7 @@ class PromptBuilder:
             example_output[field["name"]] = "<extracted string or null>"
         for field in table_fields:
             cols = field.get("columns", []) or []
-            example_row = {c: "<value>" for c in cols} if cols else {"column_a": "<value>", "column_b": "<value>"}
+            example_row = {c: "<value>" for c in cols} if cols else {"<actual_column_1_name>": "<value>", "<actual_column_2_name>": "<value>", "...": "<value>"}
             example_output[field["name"]] = [example_row, {"...": "ALL remaining rows"}]
 
         example_str = json.dumps(example_output, indent=2)
@@ -75,11 +75,13 @@ class PromptBuilder:
             "standalone labeled field in the document (e.g. 'Field Label: value'). "
             "If the value exists ONLY inside a table column and NOT as a separate labeled item, "
             "set it to null.\n"
-            "RULE 4 — Table fields: Extract EVERY SINGLE ROW from the table — not just one. "
+            "RULE 4 — Table fields: Identify the actual table in the document and use its exact column headers as the JSON keys for each row object (unless columns are strictly defined in the schema). "
+            "Extract EVERY SINGLE ROW from the table. "
             "Return a JSON array where each element is one row as a flat object. "
             "Include all rows visible in the document. Missing rows = incorrect output.\n"
             "RULE 5 — OCR correction: Fix obvious OCR character errors based on context.\n"
             "RULE 6 — All pages: Scan every page before marking a field as null.\n"
+            "RULE 7 — Exact Match: Extract all values EXACTLY as they appear in the raw text. Do not reformat dates, remove punctuation, or fix spelling errors unless explicitly requested.\n"
         )
 
     @staticmethod

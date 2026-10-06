@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DocGov CivicIntel - OCR Raw Text &amp; Payload JSON Inspector</title>
+<!-- Material Symbols Outlined Font -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 with Forms & Container Queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "inverse-primary": "#b6c4ff",
+            "primary": "#00236f",
+            "on-secondary-fixed": "#001e2f",
+            "on-error": "#ffffff",
+            "surface-container-lowest": "#ffffff",
+            "on-tertiary": "#ffffff",
+            "inverse-surface": "#213145",
+            "on-background": "#0b1c30",
+            "surface": "#f8f9ff",
+            "tertiary-fixed-dim": "#d0bcff",
+            "surface-dim": "#cbdbf5",
+            "on-surface-variant": "#444651",
+            "on-secondary-container": "#004666",
+            "on-primary-fixed-variant": "#264191",
+            "tertiary-container": "#4e03b8",
+            "surface-container": "#e5eeff",
+            "tertiary": "#340081",
+            "inverse-on-surface": "#eaf1ff",
+            "surface-variant": "#d3e4fe",
+            "secondary": "#006591",
+            "surface-container-high": "#dce9ff",
+            "secondary-fixed": "#c9e6ff",
+            "outline": "#757682",
+            "on-primary": "#ffffff",
+            "on-secondary": "#ffffff",
+            "on-tertiary-fixed-variant": "#5516be",
+            "on-tertiary-fixed": "#23005c",
+            "secondary-container": "#39b8fd",
+            "outline-variant": "#c5c5d3",
+            "tertiary-fixed": "#e9ddff",
+            "on-error-container": "#93000a",
+            "primary-fixed": "#dce1ff",
+            "surface-tint": "#4059aa",
+            "on-primary-fixed": "#00164e",
+            "secondary-fixed-dim": "#89ceff",
+            "primary-fixed-dim": "#b6c4ff",
+            "on-primary-container": "#90a8ff",
+            "primary-container": "#1e3a8a",
+            "surface-bright": "#f8f9ff",
+            "error-container": "#ffdad6",
+            "surface-container-highest": "#d3e4fe",
+            "on-tertiary-container": "#b89cff",
+            "surface-container-low": "#eff4ff",
+            "on-surface": "#0b1c30",
+            "error": "#ba1a1a",
+            "on-secondary-fixed-variant": "#004c6e",
+            "background": "#f8f9ff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-xl": "2rem",
+            "space-sm": "0.5rem",
+            "gutter": "1.25rem",
+            "space-xs": "0.25rem",
+            "space-md": "1rem",
+            "margin": "1.5rem",
+            "space-lg": "1.5rem"
+          },
+          "fontFamily": {
+            "data-mono": ["Inter", "monospace"],
+            "headline-lg": ["Inter", "sans-serif"],
+            "display-lg-mobile": ["Inter", "sans-serif"],
+            "title-md": ["Inter", "sans-serif"],
+            "headline-sm": ["Inter", "sans-serif"],
+            "body-md": ["Inter", "sans-serif"],
+            "headline-md": ["Inter", "sans-serif"],
+            "display-lg": ["Inter", "sans-serif"],
+            "label-sm": ["Inter", "sans-serif"],
+            "label-md": ["Inter", "sans-serif"],
+            "body-sm": ["Inter", "sans-serif"],
+            "body-lg": ["Inter", "sans-serif"]
+          },
+          "fontSize": {
+            "data-mono": ["13px", { "lineHeight": "18px", "letterSpacing": "0em", "fontWeight": "500" }],
+            "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.015em", "fontWeight": "600" }],
+            "display-lg-mobile": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+            "title-md": ["16px", { "lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "600" }],
+            "headline-sm": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.05em", "fontWeight": "600" }],
+            "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "display-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }],
+            "label-md": ["13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      display: inline-block;
+      vertical-align: middle;
+      font-size: 20px;
+      line-height: 1;
+    }
+    .line-number-gutter {
+      user-select: none;
+      -webkit-user-select: none;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface antialiased min-h-screen flex">
+<!-- SideNavBar Component -->
+<aside class="flex flex-col justify-between h-full w-64 shrink-0 py-space-md px-space-sm fixed left-0 top-0 z-30 bg-surface-container-lowest dark:bg-inverse-surface border-r border-outline-variant dark:border-outline shadow-sm dark:shadow-none">
+<!-- Top Branding & Ingestion CTA -->
+<div class="flex flex-col gap-space-md">
+<!-- Header Brand & Badge -->
+<div class="flex items-center gap-space-sm px-space-sm py-space-xs">
+<div class="w-9 h-9 rounded-lg bg-primary flex items-center justify-center text-on-primary shrink-0 shadow-sm">
+<span class="material-symbols-outlined text-primary-fixed" data-icon="account_balance">account_balance</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="text-title-md font-title-md font-bold text-primary dark:text-primary-fixed truncate">CivicIntel Platform</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant truncate">Agency Compliance v4.2</span>
+</div>
+</div>
+<!-- Action Button CTA -->
+<button class="w-full flex items-center justify-center gap-space-xs bg-primary hover:bg-primary-container text-on-primary py-2 px-space-md rounded-lg font-label-md text-label-md transition-colors duration-150 ease-in-out shadow-sm">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+<span>New Document Ingestion</span>
+</button>
+<!-- Primary Navigation Links (8 Tabs, OCR Active) -->
+<nav aria-label="Main Navigation" class="flex flex-col gap-1 mt-space-xs">
+<!-- 1. Dashboard -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary dark:hover:text-primary-fixed transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<!-- 2. Departments -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary dark:hover:text-primary-fixed transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance">account_balance</span>
+<span>Departments</span>
+</a>
+<!-- 3. URLs -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary dark:hover:text-primary-fixed transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="link">link</span>
+<span>URLs</span>
+</a>
+<!-- 4. OCR (Active Component Lock) -->
+<a aria-current="page" class="flex items-center gap-space-sm bg-surface-container dark:bg-surface-container-high text-primary dark:text-primary-fixed border-l-2 border-primary dark:border-primary-fixed font-title-md text-title-md px-space-md py-space-sm rounded-r-lg shadow-sm" href="#">
+<span class="material-symbols-outlined text-primary" data-icon="document_scanner" data-weight="fill" style="font-variation-settings: 'FILL' 1;">document_scanner</span>
+<span>OCR</span>
+</a>
+<!-- 5. Orchestration -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary dark:hover:text-primary-fixed transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="account_tree">account_tree</span>
+<span>Orchestration</span>
+</a>
+<!-- 6. Logs -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary dark:hover:text-primary-fixed transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+<span>Logs</span>
+</a>
+<!-- 7. Manage Templates -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary dark:hover:text-primary-fixed transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="topic">topic</span>
+<span>Manage Templates</span>
+</a>
+<!-- 8. Help & Support -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary dark:hover:text-primary-fixed transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="support">support</span>
+<span>Help &amp; Support</span>
+</a>
+</nav>
+</div>
+<!-- Sidebar Footer Utility Tabs -->
+<div class="flex flex-col gap-1 border-t border-outline-variant pt-space-sm">
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="verified_user">verified_user</span>
+<span>System Health</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="tune">tune</span>
+<span>Compliance Settings</span>
+</a>
+</div>
+</aside>
+<!-- Main View Canvas Content (Shifted for 260px fixed rail) -->
+<div class="flex-1 flex flex-col ml-64 min-w-0 bg-background min-h-screen">
+<!-- TopNavBar Component -->
+<header class="flex justify-between items-center h-14 px-gutter w-full sticky top-0 z-40 bg-surface-container-lowest dark:bg-inverse-surface border-b border-outline-variant dark:border-outline shadow-sm dark:shadow-none">
+<!-- Search Bar Left & Brand Title -->
+<div class="flex items-center gap-space-lg flex-1 max-w-xl">
+<span class="text-headline-sm font-headline-sm font-bold text-primary dark:text-primary-fixed tracking-tight">DocGov CivicIntel</span>
+<div class="relative w-full max-w-sm">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none" data-icon="search">search</span>
+<input class="w-full bg-surface text-on-surface placeholder:text-outline text-body-sm font-body-sm pl-9 pr-3 py-1.5 rounded-lg border border-outline-variant focus:outline-none focus:ring-1 focus:ring-secondary focus:border-secondary transition-all" placeholder="Search records, deeds, tokens, hashes..." type="search"/>
+</div>
+</div>
+<!-- Trailing Action Icons & User Avatar -->
+<div class="flex items-center gap-space-sm">
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-lg transition-colors duration-150 ease-in-out relative" title="Notifications">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-secondary ring-2 ring-surface-container-lowest"></span>
+</button>
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-lg transition-colors duration-150 ease-in-out" title="Help">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<button class="p-1.5 text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-lg transition-colors duration-150 ease-in-out" title="Settings">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="h-5 w-px bg-outline-variant mx-1"></div>
+<!-- Officer User Avatar Badge -->
+<div class="flex items-center gap-2 pl-1 cursor-pointer">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container font-label-md text-label-md flex items-center justify-center font-bold ring-1 ring-outline-variant" title="Officer user avatar badge">
+            CO
+          </div>
+<div class="flex flex-col">
+<span class="text-label-md font-label-md text-on-surface font-semibold leading-tight">Chief Officer Roy</span>
+<span class="text-label-sm font-label-sm text-outline leading-tight">Land Records Div</span>
+</div>
+</div>
+</div>
+</header>
+<!-- Top Header Banner & Document Meta -->
+<div class="bg-surface-container-lowest border-b border-outline-variant px-gutter py-space-md flex flex-col gap-space-md">
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
+<!-- Title and Document Status -->
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-space-sm flex-wrap">
+<span class="material-symbols-outlined text-primary" data-icon="description">description</span>
+<h1 class="text-headline-md font-headline-md text-primary font-bold tracking-tight">Land_Title_Deed_Registry_2024_08B.pdf</h1>
+<!-- Status Badge: Complete -->
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-label-sm font-label-sm font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              Extraction Complete
+            </span>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm bg-surface-container text-primary font-medium border border-outline-variant">
+<span class="material-symbols-outlined text-primary text-[14px]" data-icon="lock">lock</span>
+              Tamper Evident
+            </span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant flex items-center gap-2 mt-0.5">
+<span>Department of Revenue &amp; Land Records</span>
+<span>•</span>
+<span class="font-medium text-on-surface">Deed of Conveyance v2.1</span>
+<span>•</span>
+<span>6 Pages Processed</span>
+<span>•</span>
+<span class="text-outline">Ingested Oct 18, 2024 14:32:09 UTC</span>
+</p>
+</div>
+<!-- Global Action Toolbar -->
+<div class="flex items-center gap-2 flex-wrap">
+<a class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container-low text-on-surface text-label-md font-label-md transition-colors shadow-sm" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="arrow_back">arrow_back</span>
+            Back to Summary Table
+          </a>
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container-low text-on-surface text-label-md font-label-md transition-colors shadow-sm" onclick="navigator.clipboard?.writeText('Extraction complete for Land_Title_Deed_Registry_2024_08B.pdf')">
+<span class="material-symbols-outlined text-[18px]" data-icon="content_copy">content_copy</span>
+            Copy All
+          </button>
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container-low text-on-surface text-label-md font-label-md transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="download">download</span>
+            Download Raw .TXT
+          </button>
+<button class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-primary hover:bg-primary-container text-on-primary text-label-md font-label-md transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="data_object">data_object</span>
+            Download .JSON
+          </button>
+</div>
+</div>
+<!-- Navigation Hierarchy Tabs -->
+<div class="flex items-center justify-between border-t border-outline-variant/60 pt-space-sm -mb-2">
+<div class="flex items-center gap-6" role="tablist">
+<button aria-selected="false" class="pb-2.5 text-label-md font-label-md text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1.5 border-b-2 border-transparent" role="tab">
+<span class="material-symbols-outlined text-[18px]" data-icon="table_chart">table_chart</span>
+            Extracted Values
+            <span class="text-xs bg-surface-container px-1.5 py-0.2 rounded-full text-on-surface-variant">42</span>
+</button>
+<button aria-selected="false" class="pb-2.5 text-label-md font-label-md text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1.5 border-b-2 border-transparent" role="tab">
+<span class="material-symbols-outlined text-[18px]" data-icon="crop_free">crop_free</span>
+            Field Evidence
+          </button>
+<button aria-selected="true" class="pb-2.5 text-title-md font-title-md text-primary font-bold flex items-center gap-1.5 border-b-2 border-primary" role="tab">
+<span class="material-symbols-outlined text-primary text-[18px]" data-icon="article">article</span>
+            Raw OCR Text
+          </button>
+<button aria-selected="true" class="pb-2.5 text-title-md font-title-md text-primary font-bold flex items-center gap-1.5 border-b-2 border-primary" role="tab">
+<span class="material-symbols-outlined text-secondary text-[18px]" data-icon="code">code</span>
+            Payload JSON
+            <span class="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-secondary-fixed text-on-secondary-fixed">Live Schema</span>
+</button>
+</div>
+<!-- View Controls / Split Indicator Toggle -->
+<div class="flex items-center gap-2 text-label-sm font-label-sm text-outline">
+<span class="material-symbols-outlined text-[16px] text-secondary" data-icon="vertical_split">vertical_split</span>
+<span>Dual Split Audit Inspector Active</span>
+</div>
+</div>
+</div>
+<!-- Split Screen Main Inspector Canvas -->
+<main class="flex-1 p-gutter grid grid-cols-1 lg:grid-cols-2 gap-gutter items-stretch min-h-0 overflow-hidden">
+<!-- LEFT SIDE (50%): Raw Tokenized OCR Text Viewer -->
+<section class="flex flex-col bg-surface-container-lowest rounded-lg border border-outline-variant shadow-sm overflow-hidden min-h-[640px]">
+<!-- Raw Text Header Toolbar -->
+<div class="p-space-sm bg-surface border-b border-outline-variant flex flex-col gap-space-sm">
+<div class="flex items-center justify-between gap-2 flex-wrap">
+<!-- Page Switcher Tabs -->
+<div aria-label="Page Selection" class="flex items-center gap-1 bg-surface-container-low p-1 rounded-lg border border-outline-variant/60" role="tablist">
+<button class="px-2.5 py-1 text-label-sm font-label-sm rounded bg-primary text-on-primary font-bold shadow-xs">Page 1 (Active)</button>
+<button class="px-2.5 py-1 text-label-sm font-label-sm rounded text-on-surface-variant hover:text-primary hover:bg-surface transition-colors">Page 2</button>
+<button class="px-2.5 py-1 text-label-sm font-label-sm rounded text-on-surface-variant hover:text-primary hover:bg-surface transition-colors">Page 3</button>
+<button class="px-2.5 py-1 text-label-sm font-label-sm rounded text-on-surface-variant hover:text-primary hover:bg-surface transition-colors">Page 4</button>
+<button class="px-2.5 py-1 text-label-sm font-label-sm rounded text-on-surface-variant hover:text-primary hover:bg-surface transition-colors">Page 5</button>
+<button class="px-2.5 py-1 text-label-sm font-label-sm rounded text-on-surface-variant hover:text-primary hover:bg-surface transition-colors">Page 6</button>
+</div>
+<!-- Token & Accuracy Stats -->
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center gap-1.5 px-2 py-1 rounded text-label-sm font-label-sm bg-surface-container text-on-surface font-semibold border border-outline-variant/80">
+<span class="material-symbols-outlined text-[16px] text-secondary" data-icon="pin">pin</span>
+                1,420 tokens
+              </span>
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded text-label-sm font-label-sm bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold">
+<span class="material-symbols-outlined text-[14px] text-emerald-700" data-icon="verified">verified</span>
+                94.2% character confidence
+              </span>
+</div>
+</div>
+<!-- Token Filter & Search Bar -->
+<div class="flex items-center justify-between gap-2">
+<div class="relative flex-1">
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-outline text-[16px] pointer-events-none" data-icon="search">search</span>
+<input class="w-full bg-surface-container-lowest text-on-surface placeholder:text-outline text-body-sm font-body-sm pl-8 pr-16 py-1.5 rounded border border-outline-variant focus:border-secondary focus:ring-1 focus:ring-secondary" placeholder="Find token or regex... (e.g. 'DW-44', 'VERMA', '/[0-9]{4}/')" type="text"/>
+<span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-label-sm font-label-sm text-outline">Match 2/2</span>
+</div>
+<!-- Filter low confidence toggle -->
+<button class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded border border-amber-200 bg-amber-50 hover:bg-amber-100 text-amber-900 text-label-sm font-label-sm font-medium transition-colors">
+<span class="material-symbols-outlined text-[16px] text-amber-700" data-icon="warning">warning</span>
+              Highlight Low Confidence Words
+            </button>
+</div>
+</div>
+<!-- Raw Text Box Viewport with Line Numbers -->
+<div class="flex-1 bg-surface-container-lowest overflow-y-auto p-4 font-mono text-data-mono font-data-mono leading-relaxed select-text border-b border-outline-variant">
+<div class="space-y-1 text-on-surface">
+<!-- Line 1 -->
+<div class="flex hover:bg-surface-container-low px-1 py-0.5 rounded transition-colors group">
+<span class="line-number-gutter w-10 text-right pr-4 text-outline select-none font-semibold text-label-sm">01</span>
+<span class="text-primary font-bold tracking-wide">GOVERNMENT OF NCT OF DELHI - DEPARTMENT OF REVENUE</span>
+</div>
+<!-- Line 2 -->
+<div class="flex hover:bg-surface-container-low px-1 py-0.5 rounded transition-colors group">
+<span class="line-number-gutter w-10 text-right pr-4 text-outline select-none font-semibold text-label-sm">02</span>
+<span class="font-semibold text-on-surface">DEED OF ABSOLUTE CONVEYANCE &amp; PERPETUAL LEASE</span>
+</div>
+<!-- Line 3 -->
+<div class="flex hover:bg-surface-container-low px-1 py-0.5 rounded transition-colors group">
+<span class="line-number-gutter w-10 text-right pr-4 text-outline select-none font-semibold text-label-sm">03</span>
+<span>This deed of transfer executed on this 18th day of October 2024 at Sub-Registrar Office IX.</span>
+</div>
+<!-- Line 4 -->
+<div class="flex hover:bg-surface-container-low px-1 py-0.5 rounded transition-colors group bg-surface-container/40">
+<span class="line-number-gutter w-10 text-right pr-4 text-outline select-none font-semibold text-label-sm">04</span>
+<span>BETWEEN: <span class="bg-blue-100 text-primary font-bold px-1 rounded">SHRI RAJ KUMAR VERMA</span> S/O LATE M. L. VERMA, RESIDING AT D-42 CONNAUGHT PLACE (Grantor)...</span>
+</div>
+<!-- Line 5 -->
+<div class="flex hover:bg-surface-container-low px-1 py-0.5 rounded transition-colors group bg-surface-container/40">
+<span class="line-number-gutter w-10 text-right pr-4 text-outline select-none font-semibold text-label-sm">05</span>
+<span>AND: <span class="bg-blue-100 text-primary font-bold px-1 rounded">SHRI SURESH CHANDRA SHARMA</span> S/O RAMESHWAR SHARMA, RESIDING AT B-12 ROHINI (Grantee)...</span>
+</div>
+<!-- Line 6 -->
+<div class="flex hover:bg-surface-container-low px-1 py-0.5 rounded transition-colors group">
+<span class="line-number-gutter w-10 text-right pr-4 text-outline select-none font-semibold text-label-sm">06</span>
+<span>PROPERTY SCHEDULE: <span class="border-b border-secondary text-secondary font-semibold">Plot No. 44-B, Sector 12, Dwarka</span>, New Delhi 110078, measuring 320 sq. meters.</span>
+</div>
+<!-- Line 7 -->
+<div class="flex hover:bg-surface-container-low px-1 py-0.5 rounded transition-colors group">
+<span class="line-number-gutter w-10 text-right pr-4 text-outline select-none font-semibold text-label-sm">07</span>
+<span>PARCEL IDENTIFICATION NUMBER (PIN): <span class="font-bold">DL-DWK-2024-8841-A9</span> • CIRCLE RATE CLASS: A-CATEGORY RESIDENTIAL</span>
+</div>
+<!-- Line 8 -->
+<div class="flex hover:bg-surface-container-low px-1 py-0.5 rounded transition-colors group">
+<span class="line-number-gutter w-10 text-right pr-4 text-outline select-none font-semibold text-label-sm">08</span>
+<span>CONSIDERATION AMOUNT: INR 1,85,00,000 (Rupees One Crore Eighty Five Lakhs Only) paid via RTGS/NEFT.</span>
+</div>
+<!-- Line 9 (With low-confidence token simulated) -->
+<div class="flex hover:bg-surface-container-low px-1 py-0.5 rounded transition-colors group">
+<span class="line-number-gutter w-10 text-right pr-4 text-outline select-none font-semibold text-label-sm">09</span>
+<span>STAMP DUTY DEPOSITED: INR 11,10,000 via e-Stamp Certificate <span class="bg-amber-100 text-amber-900 border-b border-amber-400 font-bold px-1 cursor-help" title="Confidence: 68.2% - Possible smudge on document">IN-DL44918230B</span>.</span>
+</div>
+<!-- Line 10 -->
+<div class="flex hover:bg-surface-container-low px-1 py-0.5 rounded transition-colors group">
+<span class="line-number-gutter w-10 text-right pr-4 text-outline select-none font-semibold text-label-sm">10</span>
+<span>REGISTRATION FEE: INR 1,85,000 verified against Delhi Treasury Receipt Ref TR-998234.</span>
+</div>
+<!-- Line 11 -->
+<div class="flex hover:bg-surface-container-low px-1 py-0.5 rounded transition-colors group">
+<span class="line-number-gutter w-10 text-right pr-4 text-outline select-none font-semibold text-label-sm">11</span>
+<span>ENCUMBRANCE STATUS: Free from all encumbrances, liens, mortgages, court attachments, or prior contracts.</span>
+</div>
+<!-- Line 12 -->
+<div class="flex hover:bg-surface-container-low px-1 py-0.5 rounded transition-colors group">
+<span class="line-number-gutter w-10 text-right pr-4 text-outline select-none font-semibold text-label-sm">12</span>
+<span>BOUNDARIES: North: 24m Main Road • South: Plot 44-C • East: Park Buffer • West: Lane No. 3</span>
+</div>
+<!-- Line 13 -->
+<div class="flex hover:bg-surface-container-low px-1 py-0.5 rounded transition-colors group">
+<span class="line-number-gutter w-10 text-right pr-4 text-outline select-none font-semibold text-label-sm">13</span>
+<span>WITNESS 1: Ashok Mathur, Advocate (Enrolment No. D/441/2004)</span>
+</div>
+<!-- Line 14 -->
+<div class="flex hover:bg-surface-container-low px-1 py-0.5 rounded transition-colors group">
+<span class="line-number-gutter w-10 text-right pr-4 text-outline select-none font-semibold text-label-sm">14</span>
+<span>WITNESS 2: Smt. Neeta Saxena, Chartered Urban Surveyor, New Delhi</span>
+</div>
+<!-- Line 15 -->
+<div class="flex hover:bg-surface-container-low px-1 py-0.5 rounded transition-colors group">
+<span class="line-number-gutter w-10 text-right pr-4 text-outline select-none font-semibold text-label-sm">15</span>
+<span>ATTESTED BY: Sub-Registrar IX (Dwarka), District South-West, GNCTD [DIGITALLY SIGNED]</span>
+</div>
+</div>
+</div>
+<!-- Left Inspector Footer Utilities -->
+<div class="p-space-sm bg-surface-container-low flex items-center justify-between text-body-sm font-body-sm">
+<div class="flex items-center gap-3 text-outline">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="translate">translate</span>
+              UTF-8 Unicode
+            </span>
+<span>•</span>
+<span>CRLF Newlines</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="inline-flex items-center gap-1 px-3 py-1 bg-surface-container-lowest border border-outline-variant hover:border-outline text-on-surface font-label-md text-label-md rounded shadow-xs transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="copy_all">copy_all</span>
+              Copy Raw Text to Clipboard
+            </button>
+</div>
+</div>
+</section>
+<!-- RIGHT SIDE (50%): Structured JSON Payload Tree -->
+<section class="flex flex-col bg-surface-container-lowest rounded-lg border border-outline-variant shadow-sm overflow-hidden min-h-[640px]">
+<!-- JSON Header Toolbar -->
+<div class="p-space-sm bg-surface border-b border-outline-variant flex items-center justify-between gap-2 flex-wrap">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary" data-icon="schema">schema</span>
+<div class="flex flex-col">
+<h2 class="text-title-md font-title-md font-bold text-on-surface">Validated Schema Output</h2>
+<span class="text-label-sm font-label-sm text-outline">GeoJSON &amp; FedRAMP Schema Compliant</span>
+</div>
+</div>
+<!-- Interactive JSON Utilities -->
+<div class="flex items-center gap-1">
+<button class="px-2.5 py-1 text-label-sm font-label-sm bg-surface-container-lowest hover:bg-surface border border-outline-variant rounded text-on-surface transition-colors flex items-center gap-1" title="Beautify and indent code">
+<span class="material-symbols-outlined text-[16px]" data-icon="auto_fix_high">auto_fix_high</span>
+              Format/Beautify
+            </button>
+<button class="px-2.5 py-1 text-label-sm font-label-sm bg-surface-container-lowest hover:bg-surface border border-outline-variant rounded text-on-surface transition-colors flex items-center gap-1" title="Collapse all JSON nodes">
+<span class="material-symbols-outlined text-[16px]" data-icon="unfold_less">unfold_less</span>
+              Collapse All
+            </button>
+<button class="px-2.5 py-1 text-label-sm font-label-sm bg-surface-container-lowest hover:bg-surface border border-outline-variant rounded text-on-surface transition-colors flex items-center gap-1" title="Copy raw JSON payload">
+<span class="material-symbols-outlined text-[16px]" data-icon="content_copy">content_copy</span>
+              Copy JSON
+            </button>
+<button class="px-2.5 py-1 text-label-sm font-label-sm bg-emerald-50 text-emerald-800 border border-emerald-300 rounded font-semibold hover:bg-emerald-100 transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-emerald-700" data-icon="check_circle">check_circle</span>
+              Validate against Schema
+            </button>
+</div>
+</div>
+<!-- Syntax Highlighted JSON Code Box -->
+<div class="flex-1 bg-[#0b1c30] text-[#eaf1ff] overflow-y-auto p-4 font-mono text-data-mono font-data-mono leading-relaxed select-text border-b border-outline-variant">
+<pre class="m-0"><code class="block font-data-mono">{
+  <span class="text-[#89ceff]">"job_id"</span>: <span class="text-[#ffd0bc]">"JOB-8841-REV"</span>,
+  <span class="text-[#89ceff]">"status"</span>: <span class="text-[#a7f3d0]">"COMPLETED"</span>,
+  <span class="text-[#89ceff]">"engine_version"</span>: <span class="text-[#ffd0bc]">"Tesseract-Gov-4.9.1-FIPS"</span>,
+  <span class="text-[#89ceff]">"document"</span>: {
+    <span class="text-[#89ceff]">"filename"</span>: <span class="text-[#ffd0bc]">"Land_Title_Deed_Registry_2024_08B.pdf"</span>,
+    <span class="text-[#89ceff]">"pages"</span>: <span class="text-[#ffb4ab]">6</span>,
+    <span class="text-[#89ceff]">"filesize_bytes"</span>: <span class="text-[#ffb4ab]">5033164</span>,
+    <span class="text-[#89ceff]">"mime_type"</span>: <span class="text-[#ffd0bc]">"application/pdf"</span>,
+    <span class="text-[#89ceff]">"sha256"</span>: <span class="text-[#ffd0bc]">"8f9b2d8e4a1122a76f2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4"</span>
+  },
+  <span class="text-[#89ceff]">"template_id"</span>: <span class="text-[#ffd0bc]">"TPL-DEED-CONV-2.1"</span>,
+  <span class="text-[#89ceff]">"confidence_aggregate"</span>: <span class="text-[#ffb4ab]">0.9421</span>,
+  <span class="text-[#89ceff]">"extracted_fields"</span>: {
+    <span class="text-[#89ceff]">"grantor_name"</span>: {
+      <span class="text-[#89ceff]">"value"</span>: <span class="text-[#ffd0bc]">"Raj Kumar Verma"</span>,
+      <span class="text-[#89ceff]">"confidence"</span>: <span class="text-[#a7f3d0]">0.964</span>,
+      <span class="text-[#89ceff]">"page"</span>: <span class="text-[#ffb4ab]">1</span>,
+      <span class="text-[#89ceff]">"bbox"</span>: [<span class="text-[#ffb4ab]">142</span>, <span class="text-[#ffb4ab]">320</span>, <span class="text-[#ffb4ab]">480</span>, <span class="text-[#ffb4ab]">355</span>],
+      <span class="text-[#89ceff]">"verification_state"</span>: <span class="text-[#a7f3d0]">"VERIFIED"</span>
+    },
+    <span class="text-[#89ceff]">"grantee_name"</span>: {
+      <span class="text-[#89ceff]">"value"</span>: <span class="text-[#ffd0bc]">"Suresh Chandra Sharma"</span>,
+      <span class="text-[#89ceff]">"confidence"</span>: <span class="text-[#a7f3d0]">0.948</span>,
+      <span class="text-[#89ceff]">"page"</span>: <span class="text-[#ffb4ab]">1</span>,
+      <span class="text-[#89ceff]">"bbox"</span>: [<span class="text-[#ffb4ab]">142</span>, <span class="text-[#ffb4ab]">410</span>, <span class="text-[#ffb4ab]">520</span>, <span class="text-[#ffb4ab]">442</span>],
+      <span class="text-[#89ceff]">"verification_state"</span>: <span class="text-[#a7f3d0]">"VERIFIED"</span>
+    },
+    <span class="text-[#89ceff]">"property_identifier"</span>: {
+      <span class="text-[#89ceff]">"plot"</span>: <span class="text-[#ffd0bc]">"Plot No. 44-B"</span>,
+      <span class="text-[#89ceff]">"sector"</span>: <span class="text-[#ffd0bc]">"Sector 12"</span>,
+      <span class="text-[#89ceff]">"locality"</span>: <span class="text-[#ffd0bc]">"Dwarka"</span>,
+      <span class="text-[#89ceff]">"pin_code"</span>: <span class="text-[#ffd0bc]">"110078"</span>,
+      <span class="text-[#89ceff]">"area_sq_meters"</span>: <span class="text-[#ffb4ab]">320.0</span>,
+      <span class="text-[#89ceff]">"confidence"</span>: <span class="text-[#a7f3d0]">0.981</span>
+    },
+    <span class="text-[#89ceff]">"transaction_details"</span>: {
+      <span class="text-[#89ceff]">"consideration_inr"</span>: <span class="text-[#ffb4ab]">18500000</span>,
+      <span class="text-[#89ceff]">"stamp_duty_inr"</span>: <span class="text-[#ffb4ab]">1110000</span>,
+      <span class="text-[#89ceff]">"stamp_certificate_no"</span>: <span class="text-[#ffd0bc]">"IN-DL44918230B"</span>,
+      <span class="text-[#89ceff]">"confidence"</span>: <span class="text-[#fde68a]">0.682</span>
+    },
+    <span class="text-[#89ceff]">"geo_coordinates"</span>: {
+      <span class="text-[#89ceff]">"type"</span>: <span class="text-[#ffd0bc]">"Point"</span>,
+      <span class="text-[#89ceff]">"coordinates"</span>: [<span class="text-[#ffb4ab]">77.04218</span>, <span class="text-[#ffb4ab]">28.58921</span>]
+    }
+  },
+  <span class="text-[#89ceff]">"audit_metadata"</span>: {
+    <span class="text-[#89ceff]">"ingested_by"</span>: <span class="text-[#ffd0bc]">"officer_roy@gnctd.gov.in"</span>,
+    <span class="text-[#89ceff]">"authorization_tier"</span>: <span class="text-[#ffd0bc]">"FED_RAMP_HIGH"</span>,
+    <span class="text-[#89ceff]">"validation_status"</span>: <span class="text-[#ffd0bc]">"SCHEMA_VALID_ISO19115"</span>
+  }
+}</code></pre>
+</div>
+<!-- Right Inspector Footer -->
+<div class="p-space-sm bg-surface-container-low flex items-center justify-between text-body-sm font-body-sm">
+<div class="flex items-center gap-2 text-on-surface-variant font-medium">
+<span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+<span>JSON Schema 2020-12 • Valid</span>
+</div>
+<div class="flex items-center gap-2 text-outline text-label-sm font-label-sm">
+<span>Size: 1.84 KB</span>
+<span>•</span>
+<span>Parsed in 34ms</span>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Institutional Audit Footer Bar -->
+<footer class="h-10 bg-surface-container border-t border-outline-variant px-gutter flex items-center justify-between text-body-sm font-body-sm text-on-surface-variant">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="fingerprint">fingerprint</span>
+<span class="font-mono text-label-sm font-label-sm text-on-surface">Cryptographic SHA-256 Digest: 8f9b2d8e4a1122a76f2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e4a1</span>
+</div>
+<div class="flex items-center gap-space-md text-label-sm font-label-sm">
+<span class="flex items-center gap-1 text-emerald-800 font-semibold">
+<span class="material-symbols-outlined text-[16px] text-emerald-600" data-icon="gavel">gavel</span>
+          Verified against FedRAMP High Compliance Record
+        </span>
+<span class="text-outline">|</span>
+<span class="text-outline">Node ID: US-EAST-GOV-OCR-04</span>
+</div>
+</footer>
+</div>
+</body></html>

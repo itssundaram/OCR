@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DocGov CivicIntel - Design System &amp; Component Library</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-tertiary-fixed": "#23005c",
+            "error": "#ba1a1a",
+            "tertiary-container": "#4e03b8",
+            "surface": "#f8f9ff",
+            "surface-dim": "#cbdbf5",
+            "surface-container-low": "#eff4ff",
+            "on-tertiary": "#ffffff",
+            "secondary-fixed": "#c9e6ff",
+            "error-container": "#ffdad6",
+            "on-secondary-container": "#004666",
+            "tertiary-fixed-dim": "#d0bcff",
+            "on-tertiary-fixed-variant": "#5516be",
+            "background": "#f8f9ff",
+            "surface-container-high": "#dce9ff",
+            "surface-bright": "#f8f9ff",
+            "tertiary": "#340081",
+            "secondary-fixed-dim": "#89ceff",
+            "on-secondary-fixed-variant": "#004c6e",
+            "on-primary-fixed-variant": "#264191",
+            "on-background": "#0b1c30",
+            "secondary-container": "#39b8fd",
+            "on-primary-fixed": "#00164e",
+            "outline-variant": "#c5c5d3",
+            "surface-container-lowest": "#ffffff",
+            "primary-fixed-dim": "#b6c4ff",
+            "tertiary-fixed": "#e9ddff",
+            "surface-container": "#e5eeff",
+            "on-surface": "#0b1c30",
+            "on-secondary": "#ffffff",
+            "surface-variant": "#d3e4fe",
+            "secondary": "#006591",
+            "on-error-container": "#93000a",
+            "on-error": "#ffffff",
+            "inverse-on-surface": "#eaf1ff",
+            "on-tertiary-container": "#b89cff",
+            "on-secondary-fixed": "#001e2f",
+            "inverse-surface": "#213145",
+            "outline": "#757682",
+            "primary": "#00236f",
+            "primary-container": "#1e3a8a",
+            "surface-tint": "#4059aa",
+            "surface-container-highest": "#d3e4fe",
+            "primary-fixed": "#dce1ff",
+            "on-surface-variant": "#444651",
+            "on-primary-container": "#90a8ff",
+            "inverse-primary": "#b6c4ff",
+            "on-primary": "#ffffff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-sm": "0.5rem",
+            "space-xs": "0.25rem",
+            "space-md": "1rem",
+            "space-lg": "1.5rem",
+            "gutter": "1.25rem",
+            "margin": "1.5rem",
+            "space-xl": "2rem"
+          },
+          "fontFamily": {
+            "body-lg": ["Inter"],
+            "body-sm": ["Inter"],
+            "display-lg": ["Inter"],
+            "headline-sm": ["Inter"],
+            "headline-md": ["Inter"],
+            "display-lg-mobile": ["Inter"],
+            "label-sm": ["Inter"],
+            "title-md": ["Inter"],
+            "headline-lg": ["Inter"],
+            "label-md": ["Inter"],
+            "data-mono": ["Inter"],
+            "body-md": ["Inter"]
+          },
+          "fontSize": {
+            "body-lg": ["16px", {"lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400"}],
+            "body-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "400"}],
+            "display-lg": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "headline-sm": ["18px", {"lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600"}],
+            "headline-md": ["22px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+            "display-lg-mobile": ["28px", {"lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+            "label-sm": ["11px", {"lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600"}],
+            "title-md": ["16px", {"lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "600"}],
+            "headline-lg": ["28px", {"lineHeight": "36px", "letterSpacing": "-0.015em", "fontWeight": "600"}],
+            "label-md": ["13px", {"lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+            "data-mono": ["13px", {"lineHeight": "18px", "letterSpacing": "0em", "fontWeight": "500"}],
+            "body-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface antialiased font-body-md text-body-md selection:bg-surface-variant selection:text-primary min-h-screen flex flex-col">
+<!-- TOP APP BAR -->
+<header class="flex justify-between items-center h-14 px-gutter w-full sticky top-0 z-40 bg-surface-container-lowest dark:bg-inverse-surface border-b border-outline-variant dark:border-outline shadow-sm dark:shadow-none">
+<div class="flex items-center gap-space-md">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-title-md" style="font-variation-settings: 'FILL' 1;">shield</span>
+<span class="text-headline-sm font-headline-sm font-bold text-primary dark:text-primary-fixed tracking-tight">DocGov CivicIntel</span>
+</div>
+<span class="inline-flex items-center px-1.5 py-0.5 rounded text-label-sm font-label-sm bg-surface-container text-primary border border-outline-variant font-medium">FED-RAMP HIGH</span>
+<div class="hidden md:flex items-center relative ml-space-md">
+<span class="material-symbols-outlined absolute left-2.5 text-outline text-label-md">search</span>
+<input class="bg-surface-container-low border border-outline-variant rounded-lg pl-8 pr-12 py-1 text-body-sm font-body-sm text-on-surface focus:outline-none focus:border-secondary w-72 h-8 transition-colors" placeholder="Search tokens, components, guides (Press /)" type="text"/>
+<kbd class="absolute right-2 text-label-sm font-label-sm text-on-surface-variant bg-surface-container px-1 rounded border border-outline-variant">⌘K</kbd>
+</div>
+</div>
+<div class="flex items-center gap-space-sm">
+<div class="hidden lg:flex items-center gap-space-xs text-on-surface-variant text-label-sm font-label-sm px-space-sm py-1 bg-surface-container-low rounded border border-outline-variant">
+<span class="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+<span>WCAG 2.1 AAA Compliant</span>
+</div>
+<button class="p-1.5 rounded text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors duration-150" title="Notifications">
+<span class="material-symbols-outlined text-title-md">notifications</span>
+</button>
+<button class="p-1.5 rounded text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors duration-150" title="Help">
+<span class="material-symbols-outlined text-title-md">help</span>
+</button>
+<button class="p-1.5 rounded text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors duration-150" title="Settings">
+<span class="material-symbols-outlined text-title-md">settings</span>
+</button>
+<div class="h-5 w-[1px] bg-outline-variant mx-1"></div>
+<div class="flex items-center gap-2 pl-1">
+<img class="w-8 h-8 rounded-full border border-outline-variant object-cover" data-alt="Official federal officer avatar portrait wearing standard formal navy uniform against neutral institution background with sharp contrast and authentic badge emblem on chest" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAn0HYX8nmdXhWbPOcAYZcGdrROodz5R6PK08GBnyvVotHHkJh2pX-O1cLRnmuPGehLzsocsGtNVkgfp0YVSs5oXanbxsQapWPaXRW_mphr1ZyP8oQ_-y6UH1PcsrHw_R3QhmGN98k-q4A0ZgzMLFVNujXOesSG0AVQPLmEpx_pITA4G-irk_w_fmnsSOSJK7knP88rPoukmjKr_v-qzExfxoitXzGgOD-KMola9-U6B2xMdybdb-fr"/>
+<div class="hidden sm:flex flex-col text-left">
+<span class="text-label-sm font-label-sm font-semibold text-on-surface leading-tight">Agent Miller, C.</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant text-[10px] leading-tight">GS-14 Lead Auditor</span>
+</div>
+</div>
+</div>
+</header>
+<!-- BODY LAYOUT WITH SIDE NAV -->
+<div class="flex flex-1 w-full relative">
+<!-- SIDE NAVIGATION BAR -->
+<aside class="flex flex-col justify-between h-[calc(100vh-3.5rem)] w-64 shrink-0 py-space-md px-space-sm sticky top-14 z-30 bg-surface-container-lowest dark:bg-inverse-surface border-r border-outline-variant dark:border-outline shadow-sm dark:shadow-none overflow-y-auto custom-scroll">
+<div class="space-y-space-md">
+<!-- Agency Header -->
+<div class="px-space-sm pb-space-sm border-b border-outline-variant">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-title-md" style="font-variation-settings: 'FILL' 1;">account_balance</span>
+<div>
+<h2 class="text-title-md font-title-md font-bold text-primary dark:text-primary-fixed leading-none">CivicIntel Platform</h2>
+<p class="text-body-sm font-body-sm text-on-surface-variant text-[11px] mt-0.5">Agency Compliance v4.2</p>
+</div>
+</div>
+<button class="w-full mt-space-md flex items-center justify-center gap-1.5 bg-primary text-on-primary hover:bg-primary-container text-label-md font-label-md py-1.5 px-3 rounded-lg shadow-sm transition-colors duration-150">
+<span class="material-symbols-outlined text-label-md">add_circle</span>
+<span>New Document Ingestion</span>
+</button>
+</div>
+<!-- Navigation Tabs -->
+<nav class="space-y-0.5">
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary dark:hover:text-primary-fixed transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-title-md">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary dark:hover:text-primary-fixed transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-title-md">account_balance</span>
+<span>Departments</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary dark:hover:text-primary-fixed transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-title-md">link</span>
+<span>URLs</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary dark:hover:text-primary-fixed transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-title-md">document_scanner</span>
+<span>OCR</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary dark:hover:text-primary-fixed transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-title-md">account_tree</span>
+<span>Orchestration</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary dark:hover:text-primary-fixed transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-title-md">receipt_long</span>
+<span>Logs</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary dark:hover:text-primary-fixed transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-title-md">topic</span>
+<span>Manage Templates</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary dark:hover:text-primary-fixed transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-title-md">support</span>
+<span>Help &amp; Support</span>
+</a>
+</nav>
+</div>
+<!-- Footer Nav Tabs (Compliance Settings active for Design System Catalog) -->
+<div class="pt-space-sm border-t border-outline-variant space-y-0.5">
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary dark:hover:text-primary-fixed transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-title-md">verified_user</span>
+<span>System Health</span>
+</a>
+<a class="flex items-center gap-space-sm bg-surface-container dark:bg-surface-container-high text-primary dark:text-primary-fixed border-l-2 border-primary dark:border-primary-fixed font-title-md text-title-md px-space-md py-space-sm rounded-r-lg" href="#">
+<span class="material-symbols-outlined text-title-md" style="font-variation-settings: 'FILL' 1;">tune</span>
+<span>Compliance Settings</span>
+</a>
+</div>
+</aside>
+<!-- MAIN CANVAS -->
+<main class="flex-1 min-w-0 p-space-lg lg:p-margin space-y-space-xl overflow-y-auto">
+<!-- Breadcrumb & Header Hero -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-lg shadow-sm">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-space-md">
+<div>
+<div class="flex items-center gap-2 text-label-sm font-label-sm text-on-surface-variant mb-1">
+<span>DocGov CivicIntel</span>
+<span>/</span>
+<span>Regulatory Compliance</span>
+<span>/</span>
+<span class="text-primary font-semibold">Design System &amp; Pattern Library v4.2</span>
+</div>
+<h1 class="text-display-lg font-display-lg text-primary tracking-tight">Civic Design System Catalog</h1>
+<p class="text-body-md font-body-md text-on-surface-variant mt-1 max-w-3xl">
+              Standardized UI components, civic enterprise tokens, accessibility standards (WCAG 2.1 AAA), and federal design guidelines for multi-pipeline document verification and OCR orchestration.
+            </p>
+</div>
+<div class="flex flex-wrap items-center gap-2">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-label-sm font-label-sm bg-emerald-50 text-emerald-800 border border-emerald-300">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+              FIPS 140-3 Active
+            </span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-label-sm font-label-sm bg-blue-50 text-primary border border-blue-200">
+<span class="material-symbols-outlined text-label-sm">verified</span>
+              Section 508 Verified
+            </span>
+</div>
+</div>
+<!-- Sticky Anchor Links Navigation -->
+<div class="flex flex-wrap items-center gap-2 mt-space-lg pt-space-md border-t border-outline-variant overflow-x-auto pb-1 text-label-md font-label-md">
+<a class="px-3 py-1 rounded bg-surface-container text-primary font-medium hover:bg-surface-container-high transition-colors" href="#tokens">Color &amp; Tokens</a>
+<a class="px-3 py-1 rounded bg-surface-container-low text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors" href="#typography">Typography Scale</a>
+<a class="px-3 py-1 rounded bg-surface-container-low text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors" href="#confidence">Confidence Badges</a>
+<a class="px-3 py-1 rounded bg-surface-container-low text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors" href="#forms">Form Controls</a>
+<a class="px-3 py-1 rounded bg-surface-container-low text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors" href="#inspection">Document Inspection</a>
+<a class="px-3 py-1 rounded bg-surface-container-low text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors" href="#pipeline">DAG Pipeline Nodes</a>
+<a class="px-3 py-1 rounded bg-surface-container-low text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors" href="#toasts">Banners &amp; Toasts</a>
+</div>
+</div>
+<!-- SECTION 1: COLOR TOKENS & SEMANTIC MATRIX -->
+<section class="space-y-space-md" id="tokens">
+<div class="flex items-center justify-between">
+<div>
+<h2 class="text-headline-md font-headline-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">palette</span>
+              1. Color Tokens &amp; Semantic Palette Matrix
+            </h2>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Calibrated for strict WCAG 2.1 AAA high-contrast ratios (minimum 7:1 against light canvases).</p>
+</div>
+<span class="text-label-sm font-label-sm text-on-surface-variant bg-surface-container px-2 py-0.5 rounded border border-outline-variant">9 Palette Domains</span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md">
+<!-- Primary Navy -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-md flex flex-col justify-between shadow-sm">
+<div>
+<div class="h-16 w-full rounded bg-primary mb-space-sm flex items-end p-2 text-white justify-between">
+<span class="text-label-sm font-label-sm font-mono uppercase">Primary Deep</span>
+<span class="text-label-sm font-label-sm">#00236F</span>
+</div>
+<h3 class="text-title-md font-title-md text-on-surface font-semibold">Federal Deep Navy</h3>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5">Core brand token. Used for active headers, navigation lockups, primary actions.</p>
+</div>
+<div class="mt-space-md pt-space-xs border-t border-outline-variant flex items-center justify-between text-label-sm font-label-sm">
+<span class="text-on-surface-variant font-mono">text-primary</span>
+<span class="text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">14.2:1 AAA</span>
+</div>
+</div>
+<!-- Primary Container Blue -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-md flex flex-col justify-between shadow-sm">
+<div>
+<div class="h-16 w-full rounded bg-primary-container mb-space-sm flex items-end p-2 text-white justify-between">
+<span class="text-label-sm font-label-sm font-mono uppercase">Primary Container</span>
+<span class="text-label-sm font-label-sm">#1E3A8A</span>
+</div>
+<h3 class="text-title-md font-title-md text-on-surface font-semibold">Institutional Navy</h3>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5">Primary interactive buttons, DAG node frames, and focused form outlines.</p>
+</div>
+<div class="mt-space-md pt-space-xs border-t border-outline-variant flex items-center justify-between text-label-sm font-label-sm">
+<span class="text-on-surface-variant font-mono">bg-primary-container</span>
+<span class="text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">11.8:1 AAA</span>
+</div>
+</div>
+<!-- Secondary Cyan -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-md flex flex-col justify-between shadow-sm">
+<div>
+<div class="h-16 w-full rounded bg-secondary mb-space-sm flex items-end p-2 text-white justify-between">
+<span class="text-label-sm font-label-sm font-mono uppercase">Secondary Blue</span>
+<span class="text-label-sm font-label-sm">#006591</span>
+</div>
+<h3 class="text-title-md font-title-md text-on-surface font-semibold">Inspection Cyan</h3>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5">OCR bounding-box stroke, interactive canvas overlays, metadata hyperlinks.</p>
+</div>
+<div class="mt-space-md pt-space-xs border-t border-outline-variant flex items-center justify-between text-label-sm font-label-sm">
+<span class="text-on-surface-variant font-mono">text-secondary</span>
+<span class="text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">7.4:1 AAA</span>
+</div>
+</div>
+<!-- Surface Lowest -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-md flex flex-col justify-between shadow-sm">
+<div>
+<div class="h-16 w-full rounded bg-surface-container-lowest border border-outline-variant mb-space-sm flex items-end p-2 text-on-surface justify-between">
+<span class="text-label-sm font-label-sm font-mono uppercase">Surface Lowest</span>
+<span class="text-label-sm font-label-sm">#FFFFFF</span>
+</div>
+<h3 class="text-title-md font-title-md text-on-surface font-semibold">Elevated Card Base</h3>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5">Data table cells, modals, inspection cards, and input backgrounds.</p>
+</div>
+<div class="mt-space-md pt-space-xs border-t border-outline-variant flex items-center justify-between text-label-sm font-label-sm">
+<span class="text-on-surface-variant font-mono">bg-surface-lowest</span>
+<span class="text-on-surface font-semibold bg-surface-container px-1.5 py-0.5 rounded">Level 1 Base</span>
+</div>
+</div>
+<!-- Success Token -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-md flex flex-col justify-between shadow-sm">
+<div>
+<div class="h-16 w-full rounded bg-emerald-700 mb-space-sm flex items-end p-2 text-white justify-between">
+<span class="text-label-sm font-label-sm font-mono uppercase">Verified Green</span>
+<span class="text-label-sm font-label-sm">#15803D</span>
+</div>
+<h3 class="text-title-md font-title-md text-on-surface font-semibold">Confidence High (&gt;90%)</h3>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5">Machine learning consensus reached, cryptographic signatures valid.</p>
+</div>
+<div class="mt-space-md pt-space-xs border-t border-outline-variant flex items-center justify-between text-label-sm font-label-sm">
+<span class="text-on-surface-variant font-mono">bg-emerald-700</span>
+<span class="text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">8.1:1 AAA</span>
+</div>
+</div>
+<!-- Warning Token -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-md flex flex-col justify-between shadow-sm">
+<div>
+<div class="h-16 w-full rounded bg-amber-600 mb-space-sm flex items-end p-2 text-white justify-between">
+<span class="text-label-sm font-label-sm font-mono uppercase">Audit Amber</span>
+<span class="text-label-sm font-label-sm">#B45309</span>
+</div>
+<h3 class="text-title-md font-title-md text-on-surface font-semibold">Manual Review (70-89%)</h3>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5">Discrepancy among OCR models; requires supervisory sign-off.</p>
+</div>
+<div class="mt-space-md pt-space-xs border-t border-outline-variant flex items-center justify-between text-label-sm font-label-sm">
+<span class="text-on-surface-variant font-mono">bg-amber-600</span>
+<span class="text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">7.2:1 AAA</span>
+</div>
+</div>
+<!-- Critical Error Token -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-md flex flex-col justify-between shadow-sm">
+<div>
+<div class="h-16 w-full rounded bg-error mb-space-sm flex items-end p-2 text-white justify-between">
+<span class="text-label-sm font-label-sm font-mono uppercase">Critical Red</span>
+<span class="text-label-sm font-label-sm">#BA1A1A</span>
+</div>
+<h3 class="text-title-md font-title-md text-on-surface font-semibold">Extraction Failure (&lt;70%)</h3>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5">Low confidence, schema validation faults, worker queue timeout.</p>
+</div>
+<div class="mt-space-md pt-space-xs border-t border-outline-variant flex items-center justify-between text-label-sm font-label-sm">
+<span class="text-on-surface-variant font-mono">text-error</span>
+<span class="text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">8.9:1 AAA</span>
+</div>
+</div>
+<!-- Security Violet Token -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-md flex flex-col justify-between shadow-sm">
+<div>
+<div class="h-16 w-full rounded bg-tertiary mb-space-sm flex items-end p-2 text-white justify-between">
+<span class="text-label-sm font-label-sm font-mono uppercase">Security Violet</span>
+<span class="text-label-sm font-label-sm">#340081</span>
+</div>
+<h3 class="text-title-md font-title-md text-on-surface font-semibold">Cryptographic Lock</h3>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5">CJIS encryption tokens, PII masking layers, immutable blockchain logs.</p>
+</div>
+<div class="mt-space-md pt-space-xs border-t border-outline-variant flex items-center justify-between text-label-sm font-label-sm">
+<span class="text-on-surface-variant font-mono">bg-tertiary</span>
+<span class="text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">15.1:1 AAA</span>
+</div>
+</div>
+</div>
+</section>
+<!-- SECTION 2: TYPOGRAPHY SCALE -->
+<section class="space-y-space-md" id="typography">
+<div>
+<h2 class="text-headline-md font-headline-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">text_fields</span>
+            2. Typography Scale (Inter Font Display)
+          </h2>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Disciplined optical weighting ensuring optimal readability on dense enterprise verification canvases.</p>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl divide-y divide-outline-variant shadow-sm">
+<!-- Display Lg -->
+<div class="p-space-md flex flex-col md:flex-row md:items-baseline justify-between gap-space-sm">
+<div class="w-48 shrink-0">
+<span class="text-label-sm font-label-sm font-mono text-on-surface-variant">display-lg / 36px (700)</span>
+</div>
+<div class="flex-1">
+<p class="text-display-lg font-display-lg text-primary tracking-tight">Federal Document Audit Suite</p>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-1">Used for primary application title, root dashboard headers.</p>
+</div>
+</div>
+<!-- Headline Sm -->
+<div class="p-space-md flex flex-col md:flex-row md:items-baseline justify-between gap-space-sm">
+<div class="w-48 shrink-0">
+<span class="text-label-sm font-label-sm font-mono text-on-surface-variant">headline-sm / 18px (600)</span>
+</div>
+<div class="flex-1">
+<p class="text-headline-sm font-headline-sm text-on-surface">Deed Transfer Verification &amp; Notarial Seal Analysis</p>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-1">Section and modal headers, inspection pane title elements.</p>
+</div>
+</div>
+<!-- Title Md -->
+<div class="p-space-md flex flex-col md:flex-row md:items-baseline justify-between gap-space-sm">
+<div class="w-48 shrink-0">
+<span class="text-label-sm font-label-sm font-mono text-on-surface-variant">title-md / 16px (600)</span>
+</div>
+<div class="flex-1">
+<p class="text-title-md font-title-md text-on-surface">Surya-OCR v2.4 Engine Ingestion Node (Worker #04)</p>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-1">Component labels, card headers, drawer accordion triggers.</p>
+</div>
+</div>
+<!-- Label Md -->
+<div class="p-space-md flex flex-col md:flex-row md:items-baseline justify-between gap-space-sm">
+<div class="w-48 shrink-0">
+<span class="text-label-sm font-label-sm font-mono text-on-surface-variant">label-md / 13px (500)</span>
+</div>
+<div class="flex-1">
+<p class="text-label-md font-label-md text-on-surface">ASSIGNOR: STATE HOUSING FINANCE AUTHORITY CORP.</p>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-1">Data field descriptors, table headers, form inputs.</p>
+</div>
+</div>
+<!-- Body Md -->
+<div class="p-space-md flex flex-col md:flex-row md:items-baseline justify-between gap-space-sm">
+<div class="w-48 shrink-0">
+<span class="text-label-sm font-label-sm font-mono text-on-surface-variant">body-md / 14px (400)</span>
+</div>
+<div class="flex-1">
+<p class="text-body-md font-body-md text-on-surface">
+                The attached statutory warranty deed was recorded in Official Records Book 4921, Page 1042. Two unredacted tax parcel numbers require secondary compliance checks under state code § 119.071.
+              </p>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-1">Default narrative text, compliance briefings, audit logs.</p>
+</div>
+</div>
+<!-- Mono / Code Stream -->
+<div class="p-space-md flex flex-col md:flex-row md:items-baseline justify-between gap-space-sm bg-surface-container-low">
+<div class="w-48 shrink-0">
+<span class="text-label-sm font-label-sm font-mono text-on-surface-variant">data-mono / 13px (500)</span>
+</div>
+<div class="flex-1 space-y-1">
+<div class="font-mono text-body-sm font-body-sm bg-surface-container-lowest p-2.5 rounded border border-outline-variant text-on-surface">
+<span class="text-secondary font-semibold">SHA-256:</span> e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855<br/>
+<span class="text-tertiary font-semibold">GEO-BOX:</span> [x0: 142.8, y0: 890.1, x1: 520.4, y1: 914.8] · CONF: 0.9841
+              </div>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Cryptographic signatures, bounding coordinates, raw JSON streams.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- SECTION 3: CONFIDENCE METERS & MACHINE LEARNING BADGES -->
+<section class="space-y-space-md" id="confidence">
+<div>
+<h2 class="text-headline-md font-headline-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">verified</span>
+            3. Confidence Meters &amp; Machine Learning Quorum Badges
+          </h2>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Standardized confidence signals for dual-model consensus (Surya + Tesseract + AWS Textract).</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-space-md">
+<!-- Confidence Status Cards -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-md shadow-sm space-y-space-md">
+<h3 class="text-title-md font-title-md text-on-surface font-semibold pb-space-xs border-b border-outline-variant">Confidence Levels</h3>
+<div class="flex items-center justify-between">
+<span class="text-body-sm font-body-sm text-on-surface">High Confidence (&gt;90%)</span>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-label-sm font-label-sm font-semibold bg-emerald-50 text-emerald-800 border border-emerald-300">
+<span class="material-symbols-outlined text-label-sm" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                98.4% Match
+              </span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-body-sm font-body-sm text-on-surface">Review Needed (70–89%)</span>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-label-sm font-label-sm font-semibold bg-amber-50 text-amber-800 border border-amber-300">
+<span class="material-symbols-outlined text-label-sm">warning</span>
+                79.1% Review
+              </span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-body-sm font-body-sm text-on-surface">Low / Discrepancy (&lt;70%)</span>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-label-sm font-label-sm font-semibold bg-rose-50 text-rose-800 border border-rose-300">
+<span class="material-symbols-outlined text-label-sm" style="font-variation-settings: 'FILL' 1;">cancel</span>
+                52.8% Discrepant
+              </span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-body-sm font-body-sm text-on-surface">Pipeline Active</span>
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-label-sm font-label-sm font-semibold bg-purple-50 text-purple-900 border border-purple-200">
+<span class="w-2 h-2 rounded-full bg-purple-600 animate-pulse"></span>
+                Inference In Flight
+              </span>
+</div>
+</div>
+<!-- Multi-Model Quorum Badges -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-md shadow-sm space-y-space-md">
+<h3 class="text-title-md font-title-md text-on-surface font-semibold pb-space-xs border-b border-outline-variant">Quorum Consensus Badges</h3>
+<div class="p-2.5 bg-surface-container-low rounded-lg border border-outline-variant space-y-1">
+<div class="flex items-center justify-between">
+<span class="text-label-md font-label-md font-semibold text-primary">Unanimous Quorum</span>
+<span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded text-label-sm font-label-sm font-bold">3/3 Engines</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant text-[11px]">Surya, Tesseract-OCR, &amp; Local Donut agree identically on string token.</p>
+</div>
+<div class="p-2.5 bg-surface-container-low rounded-lg border border-outline-variant space-y-1">
+<div class="flex items-center justify-between">
+<span class="text-label-md font-label-md font-semibold text-amber-800">Majority Quorum</span>
+<span class="px-2 py-0.5 bg-amber-100 text-amber-800 border border-amber-300 rounded text-label-sm font-label-sm font-bold">2/3 Quorum</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant text-[11px]">Surya &amp; Donut match; Tesseract flagged degraded handwriting baseline.</p>
+</div>
+<div class="p-2.5 bg-surface-container-low rounded-lg border border-outline-variant space-y-1">
+<div class="flex items-center justify-between">
+<span class="text-label-md font-label-md font-semibold text-error">Consensus Blocked</span>
+<span class="px-2 py-0.5 bg-rose-100 text-rose-800 border border-rose-300 rounded text-label-sm font-label-sm font-bold">Split Verdict</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant text-[11px]">Severe optical variance. Requires supervisory officer resolution.</p>
+</div>
+</div>
+<!-- Dynamic Progress & Inline Chips -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-md shadow-sm space-y-space-md">
+<h3 class="text-title-md font-title-md text-on-surface font-semibold pb-space-xs border-b border-outline-variant">Confidence Meters</h3>
+<div class="space-y-1">
+<div class="flex justify-between text-body-sm font-body-sm">
+<span>Field: Grantee Tax ID</span>
+<span class="font-mono text-emerald-700 font-semibold">99.2%</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-emerald-600 h-full rounded-full" style="width: 99.2%;"></div>
+</div>
+</div>
+<div class="space-y-1">
+<div class="flex justify-between text-body-sm font-body-sm">
+<span>Field: Consideration Amount</span>
+<span class="font-mono text-amber-600 font-semibold">78.5%</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-amber-500 h-full rounded-full" style="width: 78.5%;"></div>
+</div>
+</div>
+<div class="space-y-1">
+<div class="flex justify-between text-body-sm font-body-sm">
+<span>Field: Notary Public Seal</span>
+<span class="font-mono text-error font-semibold">41.0%</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-error h-full rounded-full" style="width: 41.0%;"></div>
+</div>
+</div>
+<div class="pt-2 flex flex-wrap gap-1.5">
+<span class="inline-flex items-center gap-1 bg-surface-container px-2 py-0.5 rounded text-label-sm font-label-sm border border-outline-variant text-on-surface">
+                Token: <strong class="font-mono">"$1,450,000"</strong>
+<span class="text-emerald-700 font-bold">.98</span>
+</span>
+<span class="inline-flex items-center gap-1 bg-surface-container px-2 py-0.5 rounded text-label-sm font-label-sm border border-outline-variant text-on-surface">
+                Token: <strong class="font-mono">"DEED"</strong>
+<span class="text-emerald-700 font-bold">.99</span>
+</span>
+</div>
+</div>
+</div>
+</section>
+<!-- SECTION 4: FORM ELEMENTS & ENTERPRISE CONTROLS -->
+<section class="space-y-space-md" id="forms">
+<div>
+<h2 class="text-headline-md font-headline-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">edit_note</span>
+            4. Form Elements &amp; Enterprise Input Controls
+          </h2>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Engineered for intense daily data entry, supervisory reviews, and parameter adjustments.</p>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-lg shadow-sm space-y-space-lg">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+<!-- Text Input -->
+<div class="space-y-1">
+<label class="text-label-md font-label-md text-on-surface font-medium block">Statutory Instrument Number</label>
+<div class="relative">
+<input class="w-full h-9 px-3 bg-surface-container-lowest border border-outline rounded-lg text-body-md font-body-md text-on-surface focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary" type="text" value="INSTR-2024-00892-TX"/>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant text-[11px]">Format: INSTR-YYYY-[5 digits]-[Jurisdiction]</p>
+</div>
+<!-- Jurisdictional Select -->
+<div class="space-y-1">
+<label class="text-label-md font-label-md text-on-surface font-medium block">Regulatory Filing County</label>
+<select class="w-full h-9 px-3 bg-surface-container-lowest border border-outline rounded-lg text-body-md font-body-md text-on-surface focus:outline-none focus:border-secondary">
+<option>Travis County, TX (Public Records Dept)</option>
+<option>Cook County, IL (Recorder of Deeds)</option>
+<option>Maricopa County, AZ (Civic Ingestion)</option>
+<option>Fulton County, GA (Superior Court Clerk)</option>
+</select>
+<p class="text-body-sm font-body-sm text-on-surface-variant text-[11px]">Configured for automatic GIS parcel spatial cross-check</p>
+</div>
+<!-- Search with Shortcut -->
+<div class="space-y-1">
+<label class="text-label-md font-label-md text-on-surface font-medium block">Entity / Grantee Lookup</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-2.5 top-2 text-outline text-label-md">search</span>
+<input class="w-full h-9 pl-8 pr-12 bg-surface-container-lowest border border-outline rounded-lg text-body-md font-body-md text-on-surface focus:outline-none focus:border-secondary" placeholder="Search by EIN, C-Corp, or Name..." type="text"/>
+<kbd class="absolute right-2 top-2 text-label-sm font-label-sm bg-surface-container px-1 rounded text-on-surface-variant border border-outline-variant">⌘K</kbd>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant text-[11px]">Matches against SAM.gov exclusions registry</p>
+</div>
+</div>
+<!-- Toggles & Sliders Row -->
+<div class="pt-space-md border-t border-outline-variant grid grid-cols-1 md:grid-cols-2 gap-space-lg">
+<!-- Toggles -->
+<div class="space-y-3">
+<span class="text-label-md font-label-md font-semibold text-primary block">Compliance Rules &amp; Automation</span>
+<label class="flex items-center justify-between p-2.5 rounded-lg border border-outline-variant bg-surface-container-low cursor-pointer hover:bg-surface-container transition-colors">
+<div>
+<span class="text-label-md font-label-md font-medium text-on-surface block">Enable Auto-Quorum Verification</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant text-[11px]">Auto-finalize records when 3 engines report &gt;95% confidence</span>
+</div>
+<input checked="" class="w-4 h-4 text-primary rounded border-outline focus:ring-secondary" type="checkbox"/>
+</label>
+<label class="flex items-center justify-between p-2.5 rounded-lg border border-outline-variant bg-surface-container-low cursor-pointer hover:bg-surface-container transition-colors">
+<div>
+<span class="text-label-md font-label-md font-medium text-on-surface block">NIST SP 800-53 r5 Strict Mode</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant text-[11px]">Enforce CJIS memory scrubbing immediately post-inference</span>
+</div>
+<input checked="" class="w-4 h-4 text-primary rounded border-outline focus:ring-secondary" type="checkbox"/>
+</label>
+</div>
+<!-- OCR Confidence Threshold Slider -->
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<div>
+<span class="text-label-md font-label-md font-semibold text-primary block">Supervisory Escalation Threshold</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant text-[11px]">Fields falling below this score will route to human officer queue</span>
+</div>
+<span class="text-title-md font-title-md font-mono text-primary font-bold bg-surface-container px-2 py-0.5 rounded border border-outline-variant">85%</span>
+</div>
+<div class="space-y-1 pt-2">
+<input class="w-full h-2 bg-surface-container rounded-lg appearance-none cursor-pointer accent-primary" max="99" min="50" type="range" value="85"/>
+<div class="flex justify-between text-label-sm font-label-sm text-on-surface-variant font-mono">
+<span>50% (Permissive)</span>
+<span>75%</span>
+<span>85% (Standard)</span>
+<span>99% (Strict)</span>
+</div>
+</div>
+<div class="flex items-center gap-2 p-2 rounded bg-amber-50 border border-amber-200 text-amber-900 text-body-sm font-body-sm">
+<span class="material-symbols-outlined text-title-md">info</span>
+<span>Current threshold flags approx 12.4% of scanned deeds for officer review.</span>
+</div>
+</div>
+</div>
+<!-- Buttons Hierarchy Showcases -->
+<div class="pt-space-md border-t border-outline-variant space-y-space-sm">
+<span class="text-label-md font-label-md font-semibold text-primary block">Button Hierarchy &amp; Interactive States</span>
+<div class="flex flex-wrap items-center gap-3">
+<!-- Primary Action -->
+<button class="flex items-center gap-2 bg-primary text-on-primary hover:bg-primary-container px-4 py-2 rounded-lg text-label-md font-label-md font-semibold shadow-sm transition-colors duration-150">
+<span>Certify Batch Document</span>
+<span class="material-symbols-outlined text-label-md">arrow_forward</span>
+</button>
+<!-- Secondary Outline -->
+<button class="flex items-center gap-2 bg-surface-container-lowest border border-outline hover:bg-surface-container text-on-surface px-4 py-2 rounded-lg text-label-md font-label-md font-semibold shadow-sm transition-colors duration-150">
+<span class="material-symbols-outlined text-label-md">download</span>
+<span>Export Verification JSON</span>
+</button>
+<!-- Danger Red Button -->
+<button class="flex items-center gap-1.5 bg-surface-container-lowest border border-error text-error hover:bg-error hover:text-white px-3.5 py-2 rounded-lg text-label-md font-label-md font-semibold transition-colors duration-150">
+<span class="material-symbols-outlined text-label-md">delete</span>
+<span>Reject Ingestion Pipeline</span>
+</button>
+<!-- Ghost Button -->
+<button class="flex items-center gap-1 text-on-surface-variant hover:text-primary hover:bg-surface-container px-3 py-2 rounded-lg text-label-md font-label-md transition-colors duration-150">
+<span class="material-symbols-outlined text-label-md">refresh</span>
+<span>Reset Coordinates</span>
+</button>
+<!-- Loading State Button -->
+<button class="flex items-center gap-2 bg-primary-container text-white opacity-85 px-4 py-2 rounded-lg text-label-md font-label-md font-semibold cursor-not-allowed" disabled="">
+<svg class="animate-spin h-4 w-4 text-white" fill="none" viewbox="0 0 24 24">
+<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+<path class="opacity-75" d="M4 12a8 8 0 018-8v8H4z" fill="currentColor"></path>
+</svg>
+<span>Evaluating ML Quorum...</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- SECTION 5: DOCUMENT INSPECTION & BOUNDING BOX UI ATOMS -->
+<section class="space-y-space-md" id="inspection">
+<div>
+<h2 class="text-headline-md font-headline-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">view_in_ar</span>
+            5. Document Inspection &amp; Bounding Box UI Atoms
+          </h2>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Interactive canvas bounding indicators synchronized with extracted structured metadata fields.</p>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-md">
+<!-- Document Canvas Simulator (Left 7 Cols) -->
+<div class="lg:col-span-7 bg-surface-container-lowest border border-outline-variant rounded-xl p-space-md flex flex-col justify-between shadow-sm">
+<div class="flex items-center justify-between pb-space-sm border-b border-outline-variant">
+<!-- Bounding Box Color Legend -->
+<div class="flex flex-wrap items-center gap-2">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm bg-blue-50 text-blue-900 border border-blue-400">
+<span class="w-2.5 h-2.5 rounded-sm bg-blue-700"></span>
+                  Grantor Box
+                </span>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm bg-emerald-50 text-emerald-900 border border-emerald-400">
+<span class="w-2.5 h-2.5 rounded-sm bg-emerald-600"></span>
+                  Grantee Box
+                </span>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm bg-amber-50 text-amber-900 border border-amber-400">
+<span class="w-2.5 h-2.5 rounded-sm bg-amber-600"></span>
+                  Consideration
+                </span>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm bg-rose-50 text-rose-900 border border-rose-400">
+<span class="w-2.5 h-2.5 rounded-sm bg-rose-600"></span>
+                  Seal Stamp
+                </span>
+</div>
+<!-- Canvas Toolbar Controls -->
+<div class="flex items-center bg-surface-container-low border border-outline-variant rounded p-0.5 gap-0.5">
+<button class="p-1 hover:bg-surface-container rounded text-on-surface-variant" title="Zoom In">
+<span class="material-symbols-outlined text-label-md">zoom_in</span>
+</button>
+<button class="p-1 hover:bg-surface-container rounded text-on-surface-variant" title="Zoom Out">
+<span class="material-symbols-outlined text-label-md">zoom_out</span>
+</button>
+<button class="p-1 hover:bg-surface-container rounded text-on-surface-variant" title="Reset View">
+<span class="material-symbols-outlined text-label-md">restart_alt</span>
+</button>
+<div class="h-3 w-[1px] bg-outline-variant mx-0.5"></div>
+<button class="p-1 hover:bg-surface-container rounded text-primary" title="Toggle Bounding Visibility">
+<span class="material-symbols-outlined text-label-md" style="font-variation-settings: 'FILL' 1;">layers</span>
+</button>
+</div>
+</div>
+<!-- Simulated Document Canvas Area -->
+<div class="relative bg-slate-100 rounded border border-outline-variant my-space-md p-space-md min-h-[300px] flex items-center justify-center overflow-hidden">
+<div class="bg-white shadow-md p-6 w-full max-w-lg space-y-3 relative border border-slate-300">
+<div class="flex justify-between items-center border-b pb-2">
+<div class="text-[10px] uppercase font-mono tracking-widest text-slate-500">Official Warranty Deed · Page 1 of 4</div>
+<div class="text-[10px] font-mono text-slate-400">ID: DOC-49012-A</div>
+</div>
+<!-- Bounding Box Sample 1: Grantor -->
+<div class="relative p-1.5 border-2 border-blue-600 bg-blue-500/10 rounded-sm">
+<span class="absolute -top-3 left-1 text-[9px] font-bold bg-blue-600 text-white px-1 rounded-sm uppercase">Grantor (98%)</span>
+<p class="text-body-sm font-body-sm text-slate-800 leading-tight">HERITAGE RIDGE DEVELOPMENT TRUST, A DELAWARE STATUTORY TRUST</p>
+</div>
+<!-- Bounding Box Sample 2: Grantee -->
+<div class="relative p-1.5 border-2 border-emerald-600 bg-emerald-500/10 rounded-sm">
+<span class="absolute -top-3 left-1 text-[9px] font-bold bg-emerald-600 text-white px-1 rounded-sm uppercase">Grantee (99%)</span>
+<p class="text-body-sm font-body-sm text-slate-800 leading-tight">AUSTIN CIVIC PRESERVATION LAND AUTHORITY</p>
+</div>
+<!-- Bounding Box Sample 3: Consideration (Active Selected) -->
+<div class="relative p-1.5 border-2 border-dashed border-amber-600 bg-amber-500/15 rounded-sm ring-2 ring-amber-400/50">
+<span class="absolute -top-3 left-1 text-[9px] font-bold bg-amber-600 text-white px-1 rounded-sm uppercase">Consideration (79% Amber)</span>
+<p class="text-body-sm font-body-sm font-bold text-slate-900 leading-tight">TEN DOLLARS ($10.00) AND OTHER VALUABLE CONSIDERATION</p>
+</div>
+<!-- Simulated Notary Seal Stamp -->
+<div class="pt-2 flex justify-end">
+<div class="w-24 h-16 border-2 border-rose-500 bg-rose-500/10 rounded flex flex-col items-center justify-center relative p-1 text-center">
+<span class="absolute -top-2.5 right-1 text-[8px] font-bold bg-rose-600 text-white px-1 rounded uppercase">Notary Stamp</span>
+<span class="material-symbols-outlined text-rose-600 text-title-md">verified</span>
+<span class="text-[8px] font-bold text-rose-800">TRAVIS COUNTY</span>
+</div>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between text-body-sm font-body-sm text-on-surface-variant">
+<span>Canvas Cursor: <strong class="font-mono text-on-surface">X: 384px, Y: 512px</strong></span>
+<span>Zoom Scale: <strong class="font-mono text-on-surface">100% (Native 300 DPI)</strong></span>
+</div>
+</div>
+<!-- Extracted Fields Table Variants (Right 5 Cols) -->
+<div class="lg:col-span-5 bg-surface-container-lowest border border-outline-variant rounded-xl p-space-md shadow-sm space-y-space-md">
+<div>
+<h3 class="text-title-md font-title-md text-on-surface font-semibold">Extracted Inspection Row States</h3>
+<p class="text-body-sm font-body-sm text-on-surface-variant text-[12px]">Interactive table state variants synchronizing with canvas bounding triggers.</p>
+</div>
+<div class="space-y-2">
+<!-- Variant 1: Default State -->
+<div class="p-2.5 rounded-lg border border-outline-variant bg-surface-container-lowest hover:bg-surface-container-low transition-colors">
+<div class="flex items-center justify-between mb-1">
+<span class="text-label-sm font-label-sm text-on-surface-variant">STATE: DEFAULT FIELD</span>
+<span class="text-label-sm font-label-sm text-emerald-700 bg-emerald-50 px-1 rounded border border-emerald-200">98% Auto</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-label-md font-label-md font-medium text-on-surface">Grantor Name</span>
+<span class="text-body-sm font-body-sm text-on-surface font-mono">Heritage Ridge Trust</span>
+</div>
+</div>
+<!-- Variant 2: Active / Selected State -->
+<div class="p-2.5 rounded-lg border-2 border-primary bg-surface-container shadow-sm">
+<div class="flex items-center justify-between mb-1">
+<span class="text-label-sm font-label-sm text-primary font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-label-sm">edit</span>
+                    STATE: ACTIVE INSPECTION
+                  </span>
+<span class="text-label-sm font-label-sm text-amber-800 bg-amber-100 px-1 rounded border border-amber-300">79% Review</span>
+</div>
+<div class="space-y-1.5">
+<div class="flex items-center justify-between">
+<span class="text-label-md font-label-md font-semibold text-primary">Consideration Amount</span>
+<span class="text-body-sm font-body-sm font-mono font-bold text-on-surface">$10.00 Cash</span>
+</div>
+<div class="flex gap-2">
+<button class="text-label-sm font-label-sm bg-primary text-white px-2 py-0.5 rounded hover:bg-primary-container">Approve</button>
+<button class="text-label-sm font-label-sm border border-outline bg-white px-2 py-0.5 rounded hover:bg-surface-container">Edit Value</button>
+</div>
+</div>
+</div>
+<!-- Variant 3: Low Confidence / Warning State -->
+<div class="p-2.5 rounded-lg border border-rose-300 bg-rose-50/50">
+<div class="flex items-center justify-between mb-1">
+<span class="text-label-sm font-label-sm text-rose-800 font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-label-sm">error</span>
+                    STATE: LOW CONFIDENCE FAULT
+                  </span>
+<span class="text-label-sm font-label-sm text-rose-800 bg-rose-100 px-1 rounded border border-rose-300">41% Flagged</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-label-md font-label-md font-medium text-rose-900">Notary Seal Expiry</span>
+<span class="text-body-sm font-body-sm text-rose-900 font-mono italic">[OCR Unreadable]</span>
+</div>
+</div>
+<!-- Variant 4: Officer Verified State -->
+<div class="p-2.5 rounded-lg border border-emerald-300 bg-emerald-50/40">
+<div class="flex items-center justify-between mb-1">
+<span class="text-label-sm font-label-sm text-emerald-800 font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-label-sm">verified_user</span>
+                    STATE: OFFICER VERIFIED
+                  </span>
+<span class="text-label-sm font-label-sm text-on-surface-variant font-mono text-[10px]">Signed: Badge #402</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-label-md font-label-md font-medium text-emerald-950">Parcel Legal Description</span>
+<span class="text-body-sm font-body-sm text-emerald-900 font-mono">Lot 4, Block B, Sec 12</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- SECTION 6: PIPELINE DAG NODE CARDS -->
+<section class="space-y-space-md" id="pipeline">
+<div>
+<h2 class="text-headline-md font-headline-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">account_tree</span>
+            6. Pipeline DAG Node Cards (Execution Graph Atoms)
+          </h2>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Micro-architectures visualizing asynchronous federal ingestion queues, Surya OCR execution, and quorum arbitration.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-space-md">
+<!-- Node 1: Ingestion Node (Success) -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-md relative overflow-hidden shadow-sm flex flex-col justify-between">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-emerald-600"></div>
+<div>
+<div class="flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant mb-1">
+<span class="font-mono">NODE-01 // INGEST</span>
+<span class="text-emerald-700 font-bold flex items-center gap-0.5">
+<span class="material-symbols-outlined text-label-sm">check</span>
+                  COMPLETE
+                </span>
+</div>
+<h3 class="text-title-md font-title-md text-on-surface font-semibold">TIF/PDF Payload Ingestion</h3>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-1 text-[12px]">Multipart binary streaming, MIME validation, and CJIS hash attestation.</p>
+</div>
+<div class="mt-space-md pt-space-xs border-t border-outline-variant text-body-sm font-body-sm flex justify-between font-mono text-[11px] text-on-surface-variant">
+<span>LATENCY: 142ms</span>
+<span>PAGES: 4 of 4</span>
+</div>
+</div>
+<!-- Node 2: OCR Engine Node (Active Progress) -->
+<div class="bg-surface-container-lowest border-2 border-secondary rounded-xl p-space-md relative overflow-hidden shadow-sm flex flex-col justify-between">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-secondary"></div>
+<div>
+<div class="flex items-center justify-between text-label-sm font-label-sm text-secondary font-bold mb-1">
+<span class="font-mono">NODE-02 // ML ENGINE</span>
+<span class="flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-secondary animate-ping"></span>
+                  ACTIVE (80%)
+                </span>
+</div>
+<h3 class="text-title-md font-title-md text-on-surface font-semibold">Surya OCR Inference v2.4</h3>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-1 text-[12px]">Deep layout parsing, rotation rectification, and bounding box polygon mapping.</p>
+</div>
+<div class="mt-space-md space-y-1">
+<div class="flex justify-between text-[11px] font-mono text-on-surface">
+<span>Page 4 / 6 In Flight</span>
+<span class="text-secondary font-bold">80%</span>
+</div>
+<div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+<div class="bg-secondary h-full rounded-full" style="width: 80%;"></div>
+</div>
+</div>
+</div>
+<!-- Node 3: Fallback / Exception Node (Warning) -->
+<div class="bg-surface-container-lowest border border-amber-300 rounded-xl p-space-md relative overflow-hidden shadow-sm flex flex-col justify-between">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-amber-500"></div>
+<div>
+<div class="flex items-center justify-between text-label-sm font-label-sm text-amber-800 font-bold mb-1">
+<span class="font-mono">NODE-03 // EXCEPTION</span>
+<span class="flex items-center gap-0.5">
+<span class="material-symbols-outlined text-label-sm">warning</span>
+                  FALLBACK ACTIVE
+                </span>
+</div>
+<h3 class="text-title-md font-title-md text-on-surface font-semibold">Tesseract 300DPI Downsampler</h3>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-1 text-[12px]">GPU out-of-memory triggered CPU-bound secondary fallback worker.</p>
+</div>
+<div class="mt-space-md pt-space-xs border-t border-outline-variant text-body-sm font-body-sm flex justify-between font-mono text-[11px] text-amber-900">
+<span>QUEUED: Worker #09</span>
+<span>RETRIES: 1 / 3</span>
+</div>
+</div>
+<!-- Node 4: Quorum Arbitrator Node (Consensus Verified) -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-md relative overflow-hidden shadow-sm flex flex-col justify-between">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-tertiary"></div>
+<div>
+<div class="flex items-center justify-between text-label-sm font-label-sm text-on-surface-variant mb-1">
+<span class="font-mono">NODE-04 // QUORUM</span>
+<span class="text-purple-900 font-bold flex items-center gap-0.5">
+<span class="material-symbols-outlined text-label-sm">gavel</span>
+                  ARBITRATED
+                </span>
+</div>
+<h3 class="text-title-md font-title-md text-on-surface font-semibold">Multi-Model Quorum Gate</h3>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-1 text-[12px]">Weighted semantic distance check verifying consensus across independent engines.</p>
+</div>
+<div class="mt-space-md pt-space-xs border-t border-outline-variant text-body-sm font-body-sm flex justify-between font-mono text-[11px] text-on-surface-variant">
+<span>CONSENSUS: 3/3</span>
+<span>SCORE: 0.984</span>
+</div>
+</div>
+</div>
+</section>
+<!-- SECTION 7: TOAST & ALERT NOTIFICATION BANNERS -->
+<section class="space-y-space-md" id="toasts">
+<div>
+<h2 class="text-headline-md font-headline-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">notifications_active</span>
+            7. Alert Banners &amp; Toast Notifications
+          </h2>
+<p class="text-body-sm font-body-sm text-on-surface-variant">High-visibility operational feedback tokens strictly adhering to severity styling.</p>
+</div>
+<div class="space-y-3">
+<!-- Success Toast Sample -->
+<div class="flex items-center justify-between p-space-md bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-950 shadow-sm">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-emerald-700 text-headline-sm" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<div>
+<span class="text-label-md font-label-md font-bold block">Document Batch Verified &amp; Sealed</span>
+<p class="text-body-sm font-body-sm text-emerald-900">
+                  Document batch <strong class="font-mono">#BAT-9021-TX</strong> cryptographically verified. SHA-256 seal stored in immutable federal audit trail.
+                </p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="text-label-sm font-label-sm font-bold text-emerald-800 underline hover:text-emerald-950">View Ledger</button>
+<button class="p-1 text-emerald-700 hover:text-emerald-950 rounded">
+<span class="material-symbols-outlined text-label-md">close</span>
+</button>
+</div>
+</div>
+<!-- Warning Banner Sample -->
+<div class="flex items-center justify-between p-space-md bg-amber-50 border border-amber-300 rounded-xl text-amber-950 shadow-sm">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-amber-700 text-headline-sm" style="font-variation-settings: 'FILL' 1;">warning</span>
+<div>
+<span class="text-label-md font-label-md font-bold block">Schema Deprecation Warning</span>
+<p class="text-body-sm font-body-sm text-amber-900">
+                  Schema v3.8 is deprecated for Urban Development URB-02 filings. Automatic migrations to OpenCivic XML v4.2 will execute on Nov 1st.
+                </p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="text-label-sm font-label-sm font-bold text-amber-800 underline hover:text-amber-950">Migration Spec</button>
+<button class="p-1 text-amber-700 hover:text-amber-950 rounded">
+<span class="material-symbols-outlined text-label-md">close</span>
+</button>
+</div>
+</div>
+<!-- Error Banner Sample -->
+<div class="flex items-center justify-between p-space-md bg-rose-50 border border-rose-300 rounded-xl text-rose-950 shadow-sm">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-rose-700 text-headline-sm" style="font-variation-settings: 'FILL' 1;">error</span>
+<div>
+<span class="text-label-md font-label-md font-bold block">Pipeline Execution Failure (CUDA OOM)</span>
+<p class="text-body-sm font-body-sm text-rose-900">
+                  Worker node GPU out of memory - downsample fallback suggested for uncompressed 1200DPI county scan payloads.
+                </p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="text-label-sm font-label-sm font-bold text-rose-800 underline hover:text-rose-950">Retry with Downsampling</button>
+<button class="p-1 text-rose-700 hover:text-rose-950 rounded">
+<span class="material-symbols-outlined text-label-md">close</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Institutional Footer Note -->
+<footer class="pt-space-xl pb-space-lg border-t border-outline-variant flex flex-col sm:flex-row items-center justify-between text-body-sm font-body-sm text-on-surface-variant gap-space-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-title-md">shield</span>
+<span>DocGov CivicIntel Platform · Enterprise Design System v4.2 · GSA Schedule Contract GS-35F-0119Y</span>
+</div>
+<div class="flex items-center gap-4 text-label-sm font-label-sm">
+<a class="hover:text-primary underline" href="#">Section 508 VPAT</a>
+<a class="hover:text-primary underline" href="#">FIPS 140-3 Validation</a>
+<a class="hover:text-primary underline" href="#">Security Whitepaper</a>
+</div>
+</footer>
+</main>
+</div>
+<script>
+    // Lightweight micro-interactions for Design System Catalog
+    document.querySelectorAll('input[type="range"]').forEach(slider => {
+      slider.addEventListener('input', (e) => {
+        const valueSpan = e.target.parentElement.previousElementSibling.querySelector('.font-mono');
+        if (valueSpan) {
+          valueSpan.textContent = e.target.value + '%';
+        }
+      });
+    });
+  </script>
+</body></html>

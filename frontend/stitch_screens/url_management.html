@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DocGov CivicIntel - Automated URL Ingestion &amp; Web Sources</title>
+<!-- Material Symbols Font (Immutable requirement) -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Inter Google Font -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 with Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration verbatim as defined in Design System -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-secondary-fixed": "#001e2f",
+            "on-secondary": "#ffffff",
+            "inverse-on-surface": "#eaf1ff",
+            "surface-container-low": "#eff4ff",
+            "secondary-fixed-dim": "#89ceff",
+            "on-tertiary-container": "#b89cff",
+            "tertiary-container": "#4e03b8",
+            "tertiary": "#340081",
+            "tertiary-fixed": "#e9ddff",
+            "surface-dim": "#cbdbf5",
+            "outline-variant": "#c5c5d3",
+            "inverse-primary": "#b6c4ff",
+            "background": "#f8f9ff",
+            "on-primary-fixed-variant": "#264191",
+            "secondary-container": "#39b8fd",
+            "surface-container": "#e5eeff",
+            "on-error-container": "#93000a",
+            "primary-fixed": "#dce1ff",
+            "surface-bright": "#f8f9ff",
+            "error-container": "#ffdad6",
+            "on-tertiary": "#ffffff",
+            "on-tertiary-fixed-variant": "#5516be",
+            "secondary-fixed": "#c9e6ff",
+            "primary-container": "#1e3a8a",
+            "on-tertiary-fixed": "#23005c",
+            "surface-container-lowest": "#ffffff",
+            "on-surface": "#0b1c30",
+            "surface-container-highest": "#d3e4fe",
+            "on-secondary-fixed-variant": "#004c6e",
+            "on-primary": "#ffffff",
+            "on-background": "#0b1c30",
+            "primary-fixed-dim": "#b6c4ff",
+            "surface-container-high": "#dce9ff",
+            "inverse-surface": "#213145",
+            "surface-tint": "#4059aa",
+            "on-secondary-container": "#004666",
+            "secondary": "#006591",
+            "on-surface-variant": "#444651",
+            "primary": "#00236f",
+            "on-error": "#ffffff",
+            "error": "#ba1a1a",
+            "surface-variant": "#d3e4fe",
+            "surface": "#f8f9ff",
+            "on-primary-fixed": "#00164e",
+            "outline": "#757682",
+            "on-primary-container": "#90a8ff",
+            "tertiary-fixed-dim": "#d0bcff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "gutter": "1.25rem",
+            "margin": "1.5rem",
+            "space-md": "1rem",
+            "space-xl": "2rem",
+            "space-sm": "0.5rem",
+            "space-lg": "1.5rem",
+            "space-xs": "0.25rem"
+          },
+          "fontFamily": {
+            "title-md": ["Inter"],
+            "label-sm": ["Inter"],
+            "headline-md": ["Inter"],
+            "body-sm": ["Inter"],
+            "label-md": ["Inter"],
+            "headline-lg": ["Inter"],
+            "data-mono": ["Inter"],
+            "display-lg": ["Inter"],
+            "body-lg": ["Inter"],
+            "headline-sm": ["Inter"],
+            "body-md": ["Inter"],
+            "display-lg-mobile": ["Inter"]
+          },
+          "fontSize": {
+            "title-md": ["16px", { "lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "600" }],
+            "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }],
+            "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "400" }],
+            "label-md": ["13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+            "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.015em", "fontWeight": "600" }],
+            "data-mono": ["13px", { "lineHeight": "18px", "letterSpacing": "0em", "fontWeight": "500" }],
+            "display-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "headline-sm": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600" }],
+            "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "display-lg-mobile": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "700" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.15); }
+    }
+    .pulse-active {
+      animation: pulse-dot 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-body-md antialiased overflow-x-hidden">
+<!-- ================= TOP APP BAR (Shared Component) ================= -->
+<!-- Applied exact tokens from TopNavBar JSON specification -->
+<header class="bg-surface-container-lowest dark:bg-inverse-surface border-b border-outline-variant dark:border-outline shadow-sm dark:shadow-none flex justify-between items-center h-14 px-gutter w-full sticky top-0 z-40 transition-colors duration-150 ease-in-out">
+<!-- Left Section: Agency Branding & Global Search -->
+<div class="flex items-center gap-space-lg">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary dark:text-inverse-primary" style="font-variation-settings: 'FILL' 1;">assured_workload</span>
+<span class="text-headline-sm font-headline-sm font-bold text-primary dark:text-primary-fixed tracking-tight">DocGov CivicIntel</span>
+</div>
+<!-- Top Search Bar on Left as per JSON (search_bar: "on_left") -->
+<div class="hidden md:flex items-center relative w-80">
+<span class="material-symbols-outlined absolute left-3 text-outline pointer-events-none text-[18px]">search</span>
+<input class="w-full h-9 pl-9 pr-3 bg-surface-container-low text-on-surface font-body-sm text-body-sm rounded-lg border border-outline-variant focus:border-secondary focus:ring-1 focus:ring-secondary transition-all" placeholder="Global document or endpoint query..." type="text"/>
+</div>
+</div>
+<!-- Right Section: Trailing Actions & User Badge -->
+<div class="flex items-center gap-space-md">
+<div class="flex items-center space-x-1">
+<!-- Notification Action -->
+<button class="w-9 h-9 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary transition-colors duration-150 relative" title="Notifications">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full ring-2 ring-surface-container-lowest"></span>
+</button>
+<!-- Help Action -->
+<button class="w-9 h-9 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary transition-colors duration-150" title="Help &amp; Guides">
+<span class="material-symbols-outlined text-[20px]">help</span>
+</button>
+<!-- Settings Action -->
+<button class="w-9 h-9 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary transition-colors duration-150" title="System Settings">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+</button>
+</div>
+<div class="h-6 w-px bg-outline-variant mx-1"></div>
+<!-- User Avatar / Officer Badge -->
+<div class="flex items-center gap-2.5 pl-1 cursor-pointer">
+<div class="w-8 h-8 rounded-lg bg-primary-container text-on-primary font-title-md text-title-md flex items-center justify-center shadow-xs">
+          IN
+        </div>
+<div class="hidden lg:flex flex-col text-left">
+<span class="font-label-md text-label-md text-on-surface leading-tight">Insp. N. Vance</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant leading-tight">Registry Clearance</span>
+</div>
+<span class="material-symbols-outlined text-outline text-[16px]">expand_more</span>
+</div>
+</div>
+</header>
+<!-- ================= MAIN LAYOUT WITH SIDENAV ================= -->
+<div class="flex flex-1 w-full relative">
+<!-- ================= PERSISTENT SIDENAV (Shared Component) ================= -->
+<!-- Executing SideNavBar JSON specification -->
+<aside class="w-64 shrink-0 bg-surface-container-lowest dark:bg-inverse-surface border-r border-outline-variant dark:border-outline shadow-sm dark:shadow-none flex flex-col justify-between py-space-md px-space-sm min-h-[calc(100vh-56px)] sticky top-14 z-30 transition-colors duration-150">
+<div>
+<!-- SideNav Agency Header -->
+<div class="px-space-sm pb-space-md mb-space-sm border-b border-outline-variant">
+<div class="flex items-center gap-2.5 mb-1">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed text-[22px]">policy</span>
+<div class="text-title-md font-title-md font-bold text-primary dark:text-primary-fixed">CivicIntel Platform</div>
+</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant pl-8">Agency Compliance v4.2</div>
+</div>
+<!-- Primary CTA (Shared JSON requirement) -->
+<div class="mb-space-md px-space-sm">
+<button class="w-full flex items-center justify-center gap-2 bg-primary-container text-on-primary py-2 px-3 rounded-lg font-label-md text-label-md hover:bg-primary transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+<span>New Document Ingestion</span>
+</button>
+</div>
+<!-- Navigation Tabs (8 Items from JSON) -->
+<nav class="space-y-1">
+<!-- 1. Dashboard -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span>Dashboard</span>
+</a>
+<!-- 2. Departments -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-[20px]">account_balance</span>
+<span>Departments</span>
+</a>
+<!-- 3. URLs (ACTIVE ITEM - STRICTLY DETERMINED BY CONTEXT & MATCHING JSON) -->
+<a aria-current="page" class="flex items-center gap-space-sm bg-surface-container dark:bg-surface-container-high text-primary dark:text-primary-fixed border-l-2 border-primary dark:border-primary-fixed font-title-md text-title-md px-space-md py-space-sm rounded-r-lg transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">link</span>
+<span>URLs</span>
+</a>
+<!-- 4. OCR -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-[20px]">document_scanner</span>
+<span>OCR</span>
+</a>
+<!-- 5. Orchestration -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-[20px]">account_tree</span>
+<span>Orchestration</span>
+</a>
+<!-- 6. Logs -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-[20px]">receipt_long</span>
+<span>Logs</span>
+</a>
+<!-- 7. Manage Templates -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-[20px]">topic</span>
+<span>Manage Templates</span>
+</a>
+<!-- 8. Help & Support -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary transition-colors duration-150" href="#">
+<span class="material-symbols-outlined text-[20px]">support</span>
+<span>Help &amp; Support</span>
+</a>
+</nav>
+</div>
+<!-- SideNav Footer Tabs (Immutable specification) -->
+<div class="pt-space-sm border-t border-outline-variant space-y-1">
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]">verified_user</span>
+<span>System Health</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]">tune</span>
+<span>Compliance Settings</span>
+</a>
+</div>
+</aside>
+<!-- ================= MAIN CONTENT AREA ================= -->
+<main class="flex-1 min-w-0 bg-background p-space-lg space-y-space-lg">
+<!-- Top Section: Header & Quick Stats Bento Bar -->
+<div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4 pb-2">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="px-2 py-0.5 rounded-full text-label-sm font-label-sm bg-surface-container-highest text-primary border border-outline-variant">
+              SECURE REGULATORY PIPELINE
+            </span>
+<span class="text-body-sm font-body-sm text-outline">• Active Feed Sync</span>
+</div>
+<h1 class="text-headline-lg font-headline-lg text-primary tracking-tight">Automated URL Ingestion &amp; Web Sources</h1>
+<p class="text-body-md font-body-md text-on-surface-variant mt-0.5">
+            Monitor and configure automated ingestion endpoints, agency portals, gazette feeds, and public document drops.
+          </p>
+</div>
+<!-- Quick Summary Mini Bento -->
+<div class="flex items-center gap-3">
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-2.5 px-4 flex items-center gap-3 shadow-xs">
+<div class="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">sync</span>
+</div>
+<div>
+<div class="text-label-sm font-label-sm text-on-surface-variant">ACTIVE JOBS</div>
+<div class="text-title-md font-title-md text-on-surface">4 / 5 Active</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-2.5 px-4 flex items-center gap-3 shadow-xs">
+<div class="w-9 h-9 rounded-lg bg-error-container flex items-center justify-center text-error">
+<span class="material-symbols-outlined text-[20px]">warning</span>
+</div>
+<div>
+<div class="text-label-sm font-label-sm text-on-surface-variant">ATTENTION REQUIRED</div>
+<div class="text-title-md font-title-md text-error">1 Endpoint Blocked</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Controls & Filter Toolbar -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-space-md shadow-xs space-y-3">
+<div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+<!-- Search Bar -->
+<div class="relative flex-1 max-w-lg">
+<span class="material-symbols-outlined absolute left-3 top-2.5 text-outline text-[18px]">search</span>
+<input class="w-full h-10 pl-9 pr-4 bg-surface-container-lowest text-on-surface font-body-sm text-body-sm rounded-lg border border-outline-variant focus:border-secondary focus:ring-1 focus:ring-secondary transition-all" placeholder="Search target URLs, domains, schema templates or source tags..." type="text"/>
+</div>
+<!-- Controls cluster -->
+<div class="flex flex-wrap items-center gap-2">
+<!-- Filter by Department -->
+<div class="relative">
+<select class="h-10 pl-3 pr-8 bg-surface-container-lowest text-on-surface font-label-md text-label-md rounded-lg border border-outline-variant hover:bg-surface-container-low transition-colors appearance-none focus:ring-1 focus:ring-secondary">
+<option value="">Filter by Department (All)</option>
+<option value="Revenue &amp; Land">Revenue &amp; Land</option>
+<option value="Civil Registry">Civil Registry</option>
+<option value="Urban Planning">Urban Planning</option>
+<option value="Health Services">Health Services</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-2.5 text-outline pointer-events-none text-[18px]">expand_more</span>
+</div>
+<!-- Filter by Status -->
+<div class="relative">
+<select class="h-10 pl-3 pr-8 bg-surface-container-lowest text-on-surface font-label-md text-label-md rounded-lg border border-outline-variant hover:bg-surface-container-low transition-colors appearance-none focus:ring-1 focus:ring-secondary">
+<option value="">Filter by Status (All)</option>
+<option value="Active">Active</option>
+<option value="Paused">Paused</option>
+<option value="Error">Error</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-2.5 text-outline pointer-events-none text-[18px]">expand_more</span>
+</div>
+<!-- Sort by Last Run -->
+<div class="relative">
+<select class="h-10 pl-3 pr-8 bg-surface-container-lowest text-on-surface font-label-md text-label-md rounded-lg border border-outline-variant hover:bg-surface-container-low transition-colors appearance-none focus:ring-1 focus:ring-secondary">
+<option value="last_run_desc">Sort by Last Run (Newest)</option>
+<option value="last_run_asc">Sort by Last Run (Oldest)</option>
+<option value="docs_count">Most Docs Fetched</option>
+<option value="status_urgency">Status Urgency</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-2.5 text-outline pointer-events-none text-[18px]">sort</span>
+</div>
+<!-- Primary Action Button: + Add Ingestion URL -->
+<button class="h-10 px-4 bg-primary-container hover:bg-primary text-on-primary font-label-md text-label-md rounded-lg flex items-center gap-2 shadow-xs transition-colors shrink-0" onclick="document.getElementById('add-url-drawer').classList.remove('translate-x-full')">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span>+ Add Ingestion URL</span>
+</button>
+</div>
+</div>
+<!-- Filter Pills Bar -->
+<div class="flex items-center gap-2 pt-2 border-t border-outline-variant text-label-sm font-label-sm text-on-surface-variant">
+<span class="flex items-center gap-1 text-outline">
+<span class="material-symbols-outlined text-[14px]">filter_list</span> Filters applied:
+          </span>
+<span class="inline-flex items-center gap-1 bg-surface-container px-2 py-0.5 rounded text-on-surface">
+            Showing all 5 public drops
+          </span>
+<span class="inline-flex items-center gap-1 bg-surface-container px-2 py-0.5 rounded text-on-surface">
+            Network Status: Operational
+          </span>
+<button class="text-secondary hover:underline ml-auto font-label-sm">Reset View</button>
+</div>
+</div>
+<!-- URLs Data Table Container -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg shadow-xs overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full border-collapse text-left">
+<thead>
+<tr class="bg-surface-bright border-b border-outline-variant">
+<th class="py-2.5 px-4 font-label-sm text-label-sm text-on-surface-variant tracking-wider" scope="col">
+                  TARGET URL &amp; SOURCE NAME
+                </th>
+<th class="py-2.5 px-4 font-label-sm text-label-sm text-on-surface-variant tracking-wider" scope="col">
+                  DEPARTMENT
+                </th>
+<th class="py-2.5 px-4 font-label-sm text-label-sm text-on-surface-variant tracking-wider" scope="col">
+                  ASSIGNED TEMPLATE
+                </th>
+<th class="py-2.5 px-4 font-label-sm text-label-sm text-on-surface-variant tracking-wider" scope="col">
+                  STATUS
+                </th>
+<th class="py-2.5 px-4 font-label-sm text-label-sm text-on-surface-variant tracking-wider" scope="col">
+                  LAST CHECKED
+                </th>
+<th class="py-2.5 px-4 font-label-sm text-label-sm text-on-surface-variant tracking-wider text-right" scope="col">
+                  LAST SUCCESSFUL RUN
+                </th>
+<th class="py-2.5 px-4 font-label-sm text-label-sm text-on-surface-variant tracking-wider text-center" scope="col">
+                  ACTIONS
+                </th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant font-body-sm text-body-sm">
+<!-- Row 1: egazette.gov.in/notices/revenue -->
+<tr class="hover:bg-surface-container-low transition-colors duration-150">
+<td class="py-3 px-4">
+<div class="flex items-start gap-2.5">
+<span class="material-symbols-outlined text-secondary text-[20px] mt-0.5">language</span>
+<div>
+<div class="font-title-md text-body-md text-on-surface flex items-center gap-1.5 font-medium">
+                        egazette.gov.in/notices/revenue
+                        <span class="material-symbols-outlined text-outline text-[14px]">open_in_new</span>
+</div>
+<div class="text-body-sm font-body-sm text-on-surface-variant">Official Gazette - Land Notices</div>
+</div>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-label-sm font-label-md bg-surface-container text-on-surface">
+                    Revenue &amp; Land
+                  </span>
+</td>
+<td class="py-3 px-4 text-on-surface font-label-md">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-outline text-[16px]">file_copy</span>
+<span>Land Gazette Schema v3</span>
+</div>
+</td>
+<td class="py-3 px-4">
+<!-- Active status with green badge & pulsing dot -->
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-label-sm font-label-sm bg-[#ecfdf5] text-[#065f46] border border-[#a7f3d0]">
+<span class="w-2 h-2 rounded-full bg-[#10b981] pulse-active"></span>
+<span>Active</span>
+</span>
+</td>
+<td class="py-3 px-4 text-on-surface-variant font-data-mono">
+                  4 mins ago
+                </td>
+<td class="py-3 px-4 text-right font-data-mono text-on-surface">
+<span class="text-on-surface">4 mins ago</span>
+<span class="text-secondary font-label-sm block">(14 docs fetched)</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex items-center justify-center gap-1">
+<button class="h-8 px-2.5 rounded bg-surface-container hover:bg-surface-container-high text-primary font-label-sm flex items-center gap-1 transition-colors" title="Trigger scan">
+<span class="material-symbols-outlined text-[15px]">refresh</span>
+<span>Check Now</span>
+</button>
+<!-- Kebab dropdown trigger -->
+<div class="relative group">
+<button class="w-8 h-8 flex items-center justify-center text-outline hover:text-on-surface rounded hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+<!-- Dropdown Menu -->
+<div class="absolute right-0 mt-1 w-44 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg z-20 hidden group-hover:block py-1">
+<a class="flex items-center gap-2 px-3 py-1.5 text-label-md text-on-surface hover:bg-surface-container-low" href="#">
+<span class="material-symbols-outlined text-[16px]">edit</span> Edit
+                        </a>
+<a class="flex items-center gap-2 px-3 py-1.5 text-label-md text-on-surface hover:bg-surface-container-low" href="#">
+<span class="material-symbols-outlined text-[16px]">pause</span> Disable / Pause
+                        </a>
+<a class="flex items-center gap-2 px-3 py-1.5 text-label-md text-on-surface hover:bg-surface-container-low" href="#">
+<span class="material-symbols-outlined text-[16px]">list_alt</span> View Run Logs
+                        </a>
+<div class="border-t border-outline-variant my-1"></div>
+<a class="flex items-center gap-2 px-3 py-1.5 text-label-md text-error hover:bg-error-container" href="#">
+<span class="material-symbols-outlined text-[16px]">delete</span> Delete
+                        </a>
+</div>
+</div>
+</div>
+</td>
+</tr>
+<!-- Row 2: parivahan.gov.in/rc-extracts -->
+<tr class="hover:bg-surface-container-low transition-colors duration-150">
+<td class="py-3 px-4">
+<div class="flex items-start gap-2.5">
+<span class="material-symbols-outlined text-secondary text-[20px] mt-0.5">language</span>
+<div>
+<div class="font-title-md text-body-md text-on-surface flex items-center gap-1.5 font-medium">
+                        parivahan.gov.in/rc-extracts
+                        <span class="material-symbols-outlined text-outline text-[14px]">open_in_new</span>
+</div>
+<div class="text-body-sm font-body-sm text-on-surface-variant">Vehicle Commercial Registry Drop</div>
+</div>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-label-sm font-label-md bg-surface-container text-on-surface">
+                    Civil Registry
+                  </span>
+</td>
+<td class="py-3 px-4 text-on-surface font-label-md">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-outline text-[16px]">file_copy</span>
+<span>RC Extract v1.2</span>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-label-sm font-label-sm bg-[#ecfdf5] text-[#065f46] border border-[#a7f3d0]">
+<span class="w-2 h-2 rounded-full bg-[#10b981] pulse-active"></span>
+<span>Active</span>
+</span>
+</td>
+<td class="py-3 px-4 text-on-surface-variant font-data-mono">
+                  12 mins ago
+                </td>
+<td class="py-3 px-4 text-right font-data-mono text-on-surface">
+<span class="text-on-surface">12 mins ago</span>
+<span class="text-secondary font-label-sm block">(6 docs)</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex items-center justify-center gap-1">
+<button class="h-8 px-2.5 rounded bg-surface-container hover:bg-surface-container-high text-primary font-label-sm flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[15px]">refresh</span>
+<span>Check Now</span>
+</button>
+<div class="relative group">
+<button class="w-8 h-8 flex items-center justify-center text-outline hover:text-on-surface rounded hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+<div class="absolute right-0 mt-1 w-44 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg z-20 hidden group-hover:block py-1">
+<a class="flex items-center gap-2 px-3 py-1.5 text-label-md text-on-surface hover:bg-surface-container-low" href="#">
+<span class="material-symbols-outlined text-[16px]">edit</span> Edit
+                        </a>
+<a class="flex items-center gap-2 px-3 py-1.5 text-label-md text-on-surface hover:bg-surface-container-low" href="#">
+<span class="material-symbols-outlined text-[16px]">pause</span> Disable / Pause
+                        </a>
+<a class="flex items-center gap-2 px-3 py-1.5 text-label-md text-on-surface hover:bg-surface-container-low" href="#">
+<span class="material-symbols-outlined text-[16px]">list_alt</span> View Run Logs
+                        </a>
+<div class="border-t border-outline-variant my-1"></div>
+<a class="flex items-center gap-2 px-3 py-1.5 text-label-md text-error hover:bg-error-container" href="#">
+<span class="material-symbols-outlined text-[16px]">delete</span> Delete
+                        </a>
+</div>
+</div>
+</div>
+</td>
+</tr>
+<!-- Row 3: urbanplanning.state.gov/zoning-permits -->
+<tr class="hover:bg-surface-container-low transition-colors duration-150 bg-surface-bright/40">
+<td class="py-3 px-4">
+<div class="flex items-start gap-2.5">
+<span class="material-symbols-outlined text-outline text-[20px] mt-0.5">pause_circle</span>
+<div>
+<div class="font-title-md text-body-md text-on-surface flex items-center gap-1.5 font-medium">
+                        urbanplanning.state.gov/zoning-permits
+                        <span class="material-symbols-outlined text-outline text-[14px]">open_in_new</span>
+</div>
+<div class="text-body-sm font-body-sm text-on-surface-variant">Zoning Approval Repository</div>
+</div>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-label-sm font-label-md bg-surface-container text-on-surface">
+                    Urban Planning
+                  </span>
+</td>
+<td class="py-3 px-4 text-on-surface font-label-md">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-outline text-[16px]">file_copy</span>
+<span>Zoning Permit Schema</span>
+</div>
+</td>
+<td class="py-3 px-4">
+<!-- Paused status (Amber badge) -->
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-label-sm font-label-sm bg-[#fffbeb] text-[#92400e] border border-[#fde68a]">
+<span class="w-2 h-2 rounded-full bg-[#f59e0b]"></span>
+<span>Paused</span>
+</span>
+</td>
+<td class="py-3 px-4 text-on-surface-variant font-data-mono">
+                  Yesterday 18:00
+                </td>
+<td class="py-3 px-4 text-right font-data-mono text-on-surface-variant">
+<span>Yesterday</span>
+<span class="text-outline font-label-sm block">(0 docs)</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex items-center justify-center gap-1">
+<button class="h-8 px-2.5 rounded bg-surface-container hover:bg-surface-container-high text-primary font-label-sm flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[15px]">refresh</span>
+<span>Check Now</span>
+</button>
+<div class="relative group">
+<button class="w-8 h-8 flex items-center justify-center text-outline hover:text-on-surface rounded hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+<div class="absolute right-0 mt-1 w-44 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg z-20 hidden group-hover:block py-1">
+<a class="flex items-center gap-2 px-3 py-1.5 text-label-md text-on-surface hover:bg-surface-container-low" href="#">
+<span class="material-symbols-outlined text-[16px]">play_arrow</span> Resume Schedule
+                        </a>
+<a class="flex items-center gap-2 px-3 py-1.5 text-label-md text-on-surface hover:bg-surface-container-low" href="#">
+<span class="material-symbols-outlined text-[16px]">edit</span> Edit
+                        </a>
+<a class="flex items-center gap-2 px-3 py-1.5 text-label-md text-on-surface hover:bg-surface-container-low" href="#">
+<span class="material-symbols-outlined text-[16px]">list_alt</span> View Run Logs
+                        </a>
+<div class="border-t border-outline-variant my-1"></div>
+<a class="flex items-center gap-2 px-3 py-1.5 text-label-md text-error hover:bg-error-container" href="#">
+<span class="material-symbols-outlined text-[16px]">delete</span> Delete
+                        </a>
+</div>
+</div>
+</div>
+</td>
+</tr>
+<!-- Row 4: revenue.taxportal.gov/forms-incoming -->
+<tr class="hover:bg-surface-container-low transition-colors duration-150">
+<td class="py-3 px-4">
+<div class="flex items-start gap-2.5">
+<span class="material-symbols-outlined text-secondary text-[20px] mt-0.5">language</span>
+<div>
+<div class="font-title-md text-body-md text-on-surface flex items-center gap-1.5 font-medium">
+                        revenue.taxportal.gov/forms-incoming
+                        <span class="material-symbols-outlined text-outline text-[14px]">open_in_new</span>
+</div>
+<div class="text-body-sm font-body-sm text-on-surface-variant">Tax Form 16A Inbound Queue</div>
+</div>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-label-sm font-label-md bg-surface-container text-on-surface">
+                    Revenue &amp; Land
+                  </span>
+</td>
+<td class="py-3 px-4 text-on-surface font-label-md">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-outline text-[16px]">file_copy</span>
+<span>Standard Form 16</span>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-label-sm font-label-sm bg-[#ecfdf5] text-[#065f46] border border-[#a7f3d0]">
+<span class="w-2 h-2 rounded-full bg-[#10b981] pulse-active"></span>
+<span>Active</span>
+</span>
+</td>
+<td class="py-3 px-4 text-on-surface-variant font-data-mono">
+                  1 hour ago
+                </td>
+<td class="py-3 px-4 text-right font-data-mono text-on-surface">
+<span class="text-on-surface">1 hour ago</span>
+<span class="text-secondary font-label-sm block">(38 docs)</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex items-center justify-center gap-1">
+<button class="h-8 px-2.5 rounded bg-surface-container hover:bg-surface-container-high text-primary font-label-sm flex items-center gap-1 transition-colors">
+<span class="material-symbols-outlined text-[15px]">refresh</span>
+<span>Check Now</span>
+</button>
+<div class="relative group">
+<button class="w-8 h-8 flex items-center justify-center text-outline hover:text-on-surface rounded hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+<div class="absolute right-0 mt-1 w-44 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg z-20 hidden group-hover:block py-1">
+<a class="flex items-center gap-2 px-3 py-1.5 text-label-md text-on-surface hover:bg-surface-container-low" href="#">
+<span class="material-symbols-outlined text-[16px]">edit</span> Edit
+                        </a>
+<a class="flex items-center gap-2 px-3 py-1.5 text-label-md text-on-surface hover:bg-surface-container-low" href="#">
+<span class="material-symbols-outlined text-[16px]">pause</span> Disable / Pause
+                        </a>
+<a class="flex items-center gap-2 px-3 py-1.5 text-label-md text-on-surface hover:bg-surface-container-low" href="#">
+<span class="material-symbols-outlined text-[16px]">list_alt</span> View Run Logs
+                        </a>
+<div class="border-t border-outline-variant my-1"></div>
+<a class="flex items-center gap-2 px-3 py-1.5 text-label-md text-error hover:bg-error-container" href="#">
+<span class="material-symbols-outlined text-[16px]">delete</span> Delete
+                        </a>
+</div>
+</div>
+</div>
+</td>
+</tr>
+<!-- Row 5: healthlicensing.gov/clinic-permits (ERROR STATE) -->
+<tr class="hover:bg-error-container/20 transition-colors duration-150 bg-error-container/10">
+<td class="py-3 px-4">
+<div class="flex items-start gap-2.5">
+<span class="material-symbols-outlined text-error text-[20px] mt-0.5">error</span>
+<div>
+<div class="font-title-md text-body-md text-on-surface flex items-center gap-1.5 font-medium">
+                        healthlicensing.gov/clinic-permits
+                        <span class="material-symbols-outlined text-outline text-[14px]">open_in_new</span>
+</div>
+<div class="text-body-sm font-body-sm text-on-surface-variant">Clinical Practice Renewals</div>
+</div>
+</div>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-label-sm font-label-md bg-surface-container text-on-surface">
+                    Health Services
+                  </span>
+</td>
+<td class="py-3 px-4 text-on-surface font-label-md">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-outline text-[16px]">file_copy</span>
+<span>Clinic Permit v2</span>
+</div>
+</td>
+<td class="py-3 px-4">
+<!-- Red Badge with Error HTTP 403 -->
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-label-sm font-label-sm bg-[#fef2f2] text-[#991b1b] border border-[#fecaca]">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+<span>Error (HTTP 403)</span>
+</span>
+</td>
+<td class="py-3 px-4 text-on-surface-variant font-data-mono">
+                  30 mins ago
+                </td>
+<td class="py-3 px-4 text-right font-data-mono text-error">
+<span class="font-label-md">Failed 30m ago</span>
+<span class="text-error font-body-sm block">Handshake Rejected</span>
+</td>
+<td class="py-3 px-4">
+<div class="flex items-center justify-center gap-1">
+<button class="h-8 px-2.5 rounded bg-error-container hover:bg-error/20 text-error font-label-sm flex items-center gap-1 transition-colors" title="Retry Authentication">
+<span class="material-symbols-outlined text-[15px]">sync_problem</span>
+<span>Retry</span>
+</button>
+<div class="relative group">
+<button class="w-8 h-8 flex items-center justify-center text-outline hover:text-on-surface rounded hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+<div class="absolute right-0 mt-1 w-44 bg-surface-container-lowest border border-outline-variant rounded-lg shadow-lg z-20 hidden group-hover:block py-1">
+<a class="flex items-center gap-2 px-3 py-1.5 text-label-md text-on-surface hover:bg-surface-container-low" href="#">
+<span class="material-symbols-outlined text-[16px]">key</span> Renew Auth Token
+                        </a>
+<a class="flex items-center gap-2 px-3 py-1.5 text-label-md text-on-surface hover:bg-surface-container-low" href="#">
+<span class="material-symbols-outlined text-[16px]">edit</span> Edit
+                        </a>
+<a class="flex items-center gap-2 px-3 py-1.5 text-label-md text-on-surface hover:bg-surface-container-low" href="#">
+<span class="material-symbols-outlined text-[16px]">list_alt</span> View Run Logs
+                        </a>
+<div class="border-t border-outline-variant my-1"></div>
+<a class="flex items-center gap-2 px-3 py-1.5 text-label-md text-error hover:bg-error-container" href="#">
+<span class="material-symbols-outlined text-[16px]">delete</span> Delete
+                        </a>
+</div>
+</div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Pagination Footer -->
+<div class="py-3 px-4 bg-surface-bright border-t border-outline-variant flex flex-col sm:flex-row items-center justify-between gap-3 text-body-sm text-on-surface-variant font-body-sm">
+<div>
+            Showing <span class="font-medium text-on-surface">1</span> to <span class="font-medium text-on-surface">5</span> of <span class="font-medium text-on-surface">5</span> endpoints
+          </div>
+<div class="flex items-center gap-2">
+<button class="px-2.5 py-1 rounded border border-outline-variant text-outline bg-surface-container-lowest disabled:opacity-50 text-label-sm" disabled="">Previous</button>
+<span class="px-2 py-0.5 rounded bg-primary-container text-on-primary text-label-sm font-medium">1</span>
+<button class="px-2.5 py-1 rounded border border-outline-variant text-on-surface bg-surface-container-lowest hover:bg-surface-container text-label-sm" disabled="">Next</button>
+</div>
+</div>
+</div>
+<!-- Institutional Ingestion Topology Notice Card (Bento Pattern) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md pt-2">
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-space-md shadow-xs">
+<div class="flex items-center gap-2 text-primary font-title-md text-title-md mb-2">
+<span class="material-symbols-outlined text-[20px]">security</span>
+            TLS &amp; Public Key Pinning
+          </div>
+<p class="text-body-sm font-body-sm text-on-surface-variant">
+            All outgoing crawlers operate under strictly verified SHA-256 cipher fingerprints compliant with NIST SP 800-52r2 standards.
+          </p>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-space-md shadow-xs">
+<div class="flex items-center gap-2 text-primary font-title-md text-title-md mb-2">
+<span class="material-symbols-outlined text-[20px]">data_thresholding</span>
+            Automated OCR Routing
+          </div>
+<p class="text-body-sm font-body-sm text-on-surface-variant">
+            Incoming multi-page PDF documents are segmented and prioritized across localized multi-engine OCR cluster nodes in real-time.
+          </p>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-space-md shadow-xs">
+<div class="flex items-center gap-2 text-primary font-title-md text-title-md mb-2">
+<span class="material-symbols-outlined text-[20px]">history_toggle_off</span>
+            Rate Limiting Compliance
+          </div>
+<p class="text-body-sm font-body-sm text-on-surface-variant">
+            Adaptive backoff delays automatically safeguard regional government portal bandwidth against overload during peak filing periods.
+          </p>
+</div>
+</div>
+</main>
+<!-- ================= ADD URL SOURCE DRAWER (Overlay Modal Card) ================= -->
+<div class="fixed inset-y-0 right-0 w-full max-w-md bg-surface-container-lowest border-l border-outline-variant shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col justify-between" id="add-url-drawer">
+<!-- Drawer Header -->
+<div class="p-space-lg border-b border-outline-variant flex items-center justify-between bg-surface-container-low">
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded bg-primary-container text-on-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">add_link</span>
+</div>
+<div>
+<h2 class="text-title-md font-title-md text-on-surface">Add URL Source</h2>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Configure automated pipeline capture</p>
+</div>
+</div>
+<button class="w-8 h-8 rounded-lg flex items-center justify-center text-outline hover:text-on-surface hover:bg-surface-container transition-colors" onclick="document.getElementById('add-url-drawer').classList.add('translate-x-full')">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<!-- Drawer Form Fields -->
+<div class="p-space-lg space-y-space-md overflow-y-auto flex-1 font-body-md text-body-md">
+<!-- Field 1: Target URL -->
+<div class="space-y-1">
+<label class="block font-label-md text-label-md text-on-surface">
+            Target URL <span class="text-error">*</span>
+</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-2 text-outline text-[18px]">link</span>
+<input class="w-full h-9 pl-9 pr-3 rounded border border-outline-variant text-body-sm bg-surface-container-lowest focus:border-secondary focus:ring-1 focus:ring-secondary" placeholder="https://agency.gov.state/drop-archive" type="url"/>
+</div>
+<p class="text-body-sm font-body-sm text-outline">Must be an accessible HTTP/HTTPS government portal feed.</p>
+</div>
+<!-- Field 2: Source Name -->
+<div class="space-y-1">
+<label class="block font-label-md text-label-md text-on-surface">
+            Source Name <span class="text-error">*</span>
+</label>
+<input class="w-full h-9 px-3 rounded border border-outline-variant text-body-sm bg-surface-container-lowest focus:border-secondary focus:ring-1 focus:ring-secondary" placeholder="e.g. State Gazette Circulars 2025" type="text"/>
+</div>
+<!-- Field 3: Target Department -->
+<div class="space-y-1">
+<label class="block font-label-md text-label-md text-on-surface">
+            Target Department <span class="text-error">*</span>
+</label>
+<select class="w-full h-9 px-3 rounded border border-outline-variant text-body-sm bg-surface-container-lowest focus:border-secondary focus:ring-1 focus:ring-secondary">
+<option disabled="" selected="" value="">Select governing agency unit</option>
+<option value="Revenue &amp; Land">Revenue &amp; Land</option>
+<option value="Civil Registry">Civil Registry</option>
+<option value="Urban Planning">Urban Planning</option>
+<option value="Health Services">Health Services</option>
+<option value="Public Works &amp; Procurement">Public Works &amp; Procurement</option>
+</select>
+</div>
+<!-- Field 4: Assigned Template -->
+<div class="space-y-1">
+<label class="block font-label-md text-label-md text-on-surface">
+            Assigned Template <span class="text-error">*</span>
+</label>
+<select class="w-full h-9 px-3 rounded border border-outline-variant text-body-sm bg-surface-container-lowest focus:border-secondary focus:ring-1 focus:ring-secondary">
+<option disabled="" selected="" value="">Select OCR extraction schema</option>
+<option value="Land Gazette Schema v3">Land Gazette Schema v3</option>
+<option value="RC Extract v1.2">RC Extract v1.2</option>
+<option value="Zoning Permit Schema">Zoning Permit Schema</option>
+<option value="Standard Form 16">Standard Form 16</option>
+<option value="Clinic Permit v2">Clinic Permit v2</option>
+</select>
+</div>
+<!-- Field 5: Ingestion Frequency -->
+<div class="space-y-1">
+<label class="block font-label-md text-label-md text-on-surface">
+            Ingestion Frequency
+          </label>
+<div class="grid grid-cols-3 gap-2">
+<label class="flex items-center justify-center gap-1.5 p-2 border border-outline-variant rounded cursor-pointer hover:bg-surface-container text-label-md">
+<input class="text-primary-container focus:ring-secondary" name="frequency" type="radio" value="15m"/>
+<span>Every 15m</span>
+</label>
+<label class="flex items-center justify-center gap-1.5 p-2 border border-outline-variant rounded cursor-pointer bg-surface-container-low text-primary font-medium text-label-md">
+<input checked="" class="text-primary-container focus:ring-secondary" name="frequency" type="radio" value="hourly"/>
+<span>Hourly</span>
+</label>
+<label class="flex items-center justify-center gap-1.5 p-2 border border-outline-variant rounded cursor-pointer hover:bg-surface-container text-label-md">
+<input class="text-primary-container focus:ring-secondary" name="frequency" type="radio" value="daily"/>
+<span>Daily</span>
+</label>
+</div>
+</div>
+<!-- Field 6: Authentication Configuration -->
+<div class="space-y-2 pt-2 border-t border-outline-variant">
+<label class="block font-label-md text-label-md text-on-surface">
+            Authentication Method
+          </label>
+<div class="space-y-2">
+<label class="flex items-center gap-2 text-label-md text-on-surface cursor-pointer">
+<input checked="" class="text-primary-container focus:ring-secondary" name="auth_type" type="radio" value="none"/>
+<span>None (Open Public Portal)</span>
+</label>
+<label class="flex items-center gap-2 text-label-md text-on-surface cursor-pointer">
+<input class="text-primary-container focus:ring-secondary" name="auth_type" type="radio" value="bearer"/>
+<span>Bearer Token (API Gateway Header)</span>
+</label>
+<label class="flex items-center gap-2 text-label-md text-on-surface cursor-pointer">
+<input class="text-primary-container focus:ring-secondary" name="auth_type" type="radio" value="basic"/>
+<span>Basic Auth (Encrypted Credentials)</span>
+</label>
+</div>
+<!-- Dynamic Token Field Example -->
+<div class="mt-2 pt-2">
+<label class="block font-label-sm text-label-sm text-outline">Optional Authorization Header Secret</label>
+<input class="w-full h-8 px-2.5 rounded border border-outline-variant text-body-sm bg-surface-bright focus:border-secondary focus:ring-1 focus:ring-secondary" placeholder="Bearer gov_sec_live_..." type="password"/>
+</div>
+</div>
+</div>
+<!-- Drawer Actions Footer -->
+<div class="p-space-md border-t border-outline-variant bg-surface-container-low flex items-center justify-end gap-2">
+<button class="h-9 px-4 rounded border border-outline-variant text-on-surface hover:bg-surface-container font-label-md text-label-md transition-colors" onclick="document.getElementById('add-url-drawer').classList.add('translate-x-full')">
+          Cancel
+        </button>
+<button class="h-9 px-4 rounded bg-primary-container hover:bg-primary text-on-primary font-label-md text-label-md transition-colors shadow-xs flex items-center gap-1.5" onclick="document.getElementById('add-url-drawer').classList.add('translate-x-full')">
+<span class="material-symbols-outlined text-[16px]">save</span>
+<span>Save &amp; Initialize Drop</span>
+</button>
+</div>
+</div>
+</div>
+</body></html>

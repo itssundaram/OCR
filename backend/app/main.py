@@ -14,6 +14,14 @@ from app.core.config import settings
 from app.core.exceptions import DocIntError
 from app.core.logging import configure_logging, get_logger
 
+# Phase 13: importing app.pipelines triggers every @register_pipeline
+# decorator (qwen, legacy_ocr, surya) so the registry is populated before
+# any request — the OCR/Orchestration page routes (app/api/routes/extract.py,
+# pipelines.py) call get_pipeline()/list_pipelines() and need this to have
+# already run. Previously only tests imported this package; it was harmless
+# while nothing in the live app called into the registry at runtime.
+import app.pipelines  # noqa: F401
+
 configure_logging()
 logger = get_logger(__name__)
 

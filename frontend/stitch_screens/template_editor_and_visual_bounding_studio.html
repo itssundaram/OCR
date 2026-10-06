@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Template Editor - Deed of Conveyance v2.1 - DocGov CivicIntel</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS CDN -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Theme Configuration verbatim from Style Guidance -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "error-container": "#ffdad6",
+            "on-primary-container": "#90a8ff",
+            "on-error": "#ffffff",
+            "inverse-on-surface": "#eaf1ff",
+            "surface-container-lowest": "#ffffff",
+            "inverse-surface": "#213145",
+            "primary-container": "#1e3a8a",
+            "on-error-container": "#93000a",
+            "on-background": "#0b1c30",
+            "on-primary-fixed-variant": "#264191",
+            "tertiary": "#340081",
+            "outline": "#757682",
+            "on-secondary": "#ffffff",
+            "inverse-primary": "#b6c4ff",
+            "secondary": "#006591",
+            "on-tertiary-fixed-variant": "#5516be",
+            "error": "#ba1a1a",
+            "primary-fixed-dim": "#b6c4ff",
+            "on-tertiary": "#ffffff",
+            "on-surface": "#0b1c30",
+            "surface-bright": "#f8f9ff",
+            "surface-variant": "#d3e4fe",
+            "surface-container-high": "#dce9ff",
+            "surface-container-highest": "#d3e4fe",
+            "on-tertiary-fixed": "#23005c",
+            "primary-fixed": "#dce1ff",
+            "surface-container": "#e5eeff",
+            "on-primary": "#ffffff",
+            "secondary-fixed-dim": "#89ceff",
+            "secondary-fixed": "#c9e6ff",
+            "tertiary-container": "#4e03b8",
+            "on-secondary-container": "#004666",
+            "surface-dim": "#cbdbf5",
+            "on-tertiary-container": "#b89cff",
+            "on-secondary-fixed-variant": "#004c6e",
+            "on-surface-variant": "#444651",
+            "tertiary-fixed": "#e9ddff",
+            "on-primary-fixed": "#00164e",
+            "background": "#f8f9ff",
+            "primary": "#00236f",
+            "surface": "#f8f9ff",
+            "outline-variant": "#c5c5d3",
+            "tertiary-fixed-dim": "#d0bcff",
+            "secondary-container": "#39b8fd",
+            "surface-container-low": "#eff4ff",
+            "on-secondary-fixed": "#001e2f",
+            "surface-tint": "#4059aa"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-sm": "0.5rem",
+            "space-xs": "0.25rem",
+            "space-md": "1rem",
+            "space-xl": "2rem",
+            "gutter": "1.25rem",
+            "space-lg": "1.5rem",
+            "margin": "1.5rem"
+          },
+          "fontFamily": {
+            "body-md": ["Inter"],
+            "title-md": ["Inter"],
+            "headline-sm": ["Inter"],
+            "display-lg-mobile": ["Inter"],
+            "body-lg": ["Inter"],
+            "label-sm": ["Inter"],
+            "data-mono": ["Inter"],
+            "headline-md": ["Inter"],
+            "display-lg": ["Inter"],
+            "headline-lg": ["Inter"],
+            "label-md": ["Inter"],
+            "body-sm": ["Inter"]
+          },
+          "fontSize": {
+            "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "title-md": ["16px", { "lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "600" }],
+            "headline-sm": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600" }],
+            "display-lg-mobile": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }],
+            "data-mono": ["13px", { "lineHeight": "18px", "letterSpacing": "0em", "fontWeight": "500" }],
+            "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "display-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.015em", "fontWeight": "600" }],
+            "label-md": ["13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "400" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 18px;
+      line-height: 1;
+      letter-spacing: normal;
+      text-transform: none;
+      display: inline-block;
+      white-space: nowrap;
+      word-wrap: normal;
+      direction: ltr;
+      -webkit-font-smoothing: antialiased;
+      vertical-align: middle;
+    }
+    /* Grid Canvas Pattern for Studio */
+    .blueprint-grid {
+      background-size: 20px 20px;
+      background-image: 
+        linear-gradient(to right, rgba(117, 118, 130, 0.08) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(117, 118, 130, 0.08) 1px, transparent 1px);
+    }
+    /* Custom Scrollbar for dense high-frequency enterprise layout */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f8f9ff;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #c5c5d3;
+      border-radius: 2px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #757682;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface antialiased overflow-hidden flex flex-col h-screen select-none">
+<!-- ================= TOP NAVIGATION BAR (Shared Component JSON Conformance) ================= -->
+<header class="bg-surface-container-lowest dark:bg-inverse-surface border-b border-outline-variant dark:border-outline shadow-sm dark:shadow-none flex justify-between items-center h-14 px-gutter w-full sticky top-0 z-40 shrink-0">
+<!-- Brand & Left Search Cluster -->
+<div class="flex items-center gap-space-lg">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-xl" data-icon="account_balance">account_balance</span>
+<span class="text-headline-sm font-headline-sm font-bold text-primary dark:text-primary-fixed tracking-tight">DocGov CivicIntel</span>
+</div>
+<div class="h-5 w-px bg-outline-variant"></div>
+<!-- Search Bar on Left as per JSON -->
+<div class="relative w-72">
+<span class="material-symbols-outlined absolute left-2.5 top-2 text-outline text-base" data-icon="search">search</span>
+<input class="w-full h-8 pl-8 pr-3 bg-surface-container-low rounded text-body-sm font-body-sm text-on-surface border border-outline-variant focus:outline-none focus:border-secondary transition-colors" placeholder="Search templates, schemas, runs..." type="text"/>
+</div>
+</div>
+<!-- Active Section Breadcrumb Center Pill -->
+<div class="hidden lg:flex items-center gap-1.5 px-space-md py-1 bg-surface-container rounded-full text-body-sm font-body-sm text-on-surface-variant">
+<span class="hover:text-primary cursor-pointer transition-colors">Templates</span>
+<span class="text-outline">/</span>
+<span class="hover:text-primary cursor-pointer transition-colors">Revenue & Land Records</span>
+<span class="text-outline">/</span>
+<span class="font-data-mono text-data-mono text-primary font-medium">TPL-DEED-CONV-v2.1</span>
+<span class="text-outline">/</span>
+<span class="text-primary font-title-md text-title-md font-semibold">Visual Studio</span>
+</div>
+<!-- Trailing Action Cluster matching JSON: ["notifications", "help", "settings"] -->
+<div class="flex items-center gap-space-sm">
+<button class="w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors" title="Notifications">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors" title="Help & Guides">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<button class="w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors" title="Settings">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="h-5 w-px bg-outline-variant mx-1"></div>
+<!-- Officer user avatar badge -->
+<div class="flex items-center gap-2 pl-1 cursor-pointer">
+<div class="w-7 h-7 rounded-full bg-primary-container text-on-primary flex items-center justify-center text-label-sm font-label-sm ring-1 ring-outline-variant" title="Officer user avatar badge">
+          OG
+        </div>
+<div class="hidden xl:flex flex-col text-left">
+<span class="text-label-sm font-label-sm text-on-surface leading-tight font-semibold">Officer Ghosh</span>
+<span class="text-[10px] text-outline leading-none">Senior Registrar</span>
+</div>
+</div>
+</div>
+</header>
+<!-- ================= SUB-HEADER / ACTIONS TOOLBAR ================= -->
+<section class="h-12 bg-surface-container-lowest border-b border-outline-variant px-gutter flex items-center justify-between shrink-0 z-30">
+<!-- Left Meta Information -->
+<div class="flex items-center gap-3">
+<a class="p-1 rounded text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors mr-1" href="#" title="Back to Schema Inventory">
+<span class="material-symbols-outlined text-lg" data-icon="arrow_back">arrow_back</span>
+</a>
+<h1 class="text-title-md font-title-md text-on-surface font-semibold tracking-tight">Deed of Conveyance & Title Transfer v2.1</h1>
+<!-- Status Badge -->
+<span class="px-2 py-0.5 rounded text-label-sm font-label-sm font-semibold bg-surface-container-high text-primary border border-surface-variant flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary-container"></span>
+        Editing Draft v2.2
+      </span>
+<!-- Department Badge -->
+<span class="px-2 py-0.5 rounded text-label-sm font-label-sm font-semibold bg-surface-container-low text-on-surface-variant border border-outline-variant">
+        REV-01
+      </span>
+<div class="hidden md:flex items-center gap-1.5 text-body-sm font-body-sm text-outline pl-2">
+<span class="material-symbols-outlined text-sm" data-icon="schedule">schedule</span>
+<span>Last auto-saved 1 min ago</span>
+</div>
+</div>
+<!-- Right Sub-header Action CTA Group -->
+<div class="flex items-center gap-2">
+<button class="px-3 py-1.5 rounded text-body-sm font-body-sm font-medium border border-outline-variant text-on-surface hover:bg-surface-container-low transition-colors">
+        Discard Changes
+      </button>
+<button class="px-3 py-1.5 rounded text-body-sm font-body-sm font-medium border border-outline-variant text-on-surface bg-surface-container-lowest hover:bg-surface-container flex items-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-base text-secondary" data-icon="play_circle">play_circle</span>
+        Test on Sample PDF
+      </button>
+<button class="px-4 py-1.5 rounded text-body-sm font-body-sm font-semibold bg-primary-container text-on-primary hover:bg-primary shadow-sm flex items-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-base" data-icon="task_alt">task_alt</span>
+        Save & Publish Schema
+      </button>
+</div>
+</section>
+<!-- ================= MAIN 3-COLUMN STUDIO LAYOUT ================= -->
+<main class="flex-1 flex overflow-hidden">
+<!-- ================= LEFT COLUMN: SCHEMA FIELDS & TABLES (~280px) ================= -->
+<aside class="w-[285px] bg-surface-container-lowest border-r border-outline-variant flex flex-col shrink-0">
+<!-- Tabs Switcher -->
+<div class="flex border-b border-outline-variant text-label-sm font-label-sm text-center">
+<button class="flex-1 py-2.5 font-semibold text-primary border-b-2 border-primary bg-surface-container-low transition-colors">
+          Extracted Fields (18)
+        </button>
+<button class="flex-1 py-2.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-bright transition-colors">
+          Tables (2)
+        </button>
+<button class="flex-1 py-2.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-bright transition-colors">
+          Rules (4)
+        </button>
+</div>
+<!-- Search Fields Input -->
+<div class="p-2 border-b border-outline-variant">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-2 top-2 text-outline text-sm" data-icon="filter_list">filter_list</span>
+<input class="w-full h-7 pl-7 pr-2 bg-surface-bright rounded text-body-sm font-body-sm text-on-surface border border-outline-variant focus:outline-none focus:border-secondary" placeholder="Filter schema keys..." type="text"/>
+</div>
+</div>
+<!-- Field List (Scrollable Area) -->
+<div class="flex-1 overflow-y-auto p-2 space-y-3">
+<!-- Group 1: Header & Identification -->
+<div>
+<div class="flex items-center justify-between px-1.5 py-1 text-label-sm font-label-sm text-outline font-semibold uppercase tracking-wider">
+<span>Header & Identification</span>
+<span class="text-[10px] font-normal">4 keys</span>
+</div>
+<div class="space-y-1 mt-1">
+<!-- Active Selected Field: grantor_name -->
+<div class="group relative flex items-center justify-between p-2 rounded-lg bg-surface-container border border-primary text-on-surface cursor-pointer shadow-sm">
+<div class="flex items-center gap-2 overflow-hidden">
+<span class="material-symbols-outlined text-outline cursor-grab active:cursor-grabbing text-sm" data-icon="drag_indicator">drag_indicator</span>
+<span class="material-symbols-outlined text-primary text-base" data-icon="short_text">short_text</span>
+<div class="truncate">
+<div class="text-data-mono font-data-mono text-primary font-semibold truncate leading-tight">grantor_name</div>
+<div class="flex items-center gap-1.5 text-[11px] text-on-surface-variant mt-0.5">
+<span class="text-error font-medium">*Req</span>
+<span>•</span>
+<span class="text-secondary font-medium">Box #1</span>
+<span>•</span>
+<span class="text-green-700 font-semibold">>90%</span>
+</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-primary text-sm shrink-0" data-icon="check_circle">check_circle</span>
+</div>
+<!-- Field: grantee_name -->
+<div class="group flex items-center justify-between p-2 rounded-lg bg-surface-bright hover:bg-surface-container-low border border-transparent hover:border-outline-variant text-on-surface cursor-pointer transition-colors">
+<div class="flex items-center gap-2 overflow-hidden">
+<span class="material-symbols-outlined text-outline opacity-40 group-hover:opacity-100 cursor-grab text-sm" data-icon="drag_indicator">drag_indicator</span>
+<span class="material-symbols-outlined text-on-surface-variant text-base" data-icon="short_text">short_text</span>
+<div class="truncate">
+<div class="text-data-mono font-data-mono text-on-surface font-medium truncate leading-tight">grantee_name</div>
+<div class="flex items-center gap-1.5 text-[11px] text-outline mt-0.5">
+<span class="text-error">*Req</span>
+<span>•</span>
+<span>Box #2</span>
+<span>•</span>
+<span>Text</span>
+</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline text-xs opacity-0 group-hover:opacity-100" data-icon="edit">edit</span>
+</div>
+<!-- Field: document_date -->
+<div class="group flex items-center justify-between p-2 rounded-lg bg-surface-bright hover:bg-surface-container-low border border-transparent hover:border-outline-variant text-on-surface cursor-pointer transition-colors">
+<div class="flex items-center gap-2 overflow-hidden">
+<span class="material-symbols-outlined text-outline opacity-40 group-hover:opacity-100 cursor-grab text-sm" data-icon="drag_indicator">drag_indicator</span>
+<span class="material-symbols-outlined text-on-surface-variant text-base" data-icon="calendar_today">calendar_today</span>
+<div class="truncate">
+<div class="text-data-mono font-data-mono text-on-surface font-medium truncate leading-tight">document_date</div>
+<div class="flex items-center gap-1.5 text-[11px] text-outline mt-0.5">
+<span>Date</span>
+<span>•</span>
+<span>DD/MM/YYYY</span>
+<span>•</span>
+<span>Box #3</span>
+</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline text-xs opacity-0 group-hover:opacity-100" data-icon="edit">edit</span>
+</div>
+<!-- Field: deed_registration_id -->
+<div class="group flex items-center justify-between p-2 rounded-lg bg-surface-bright hover:bg-surface-container-low border border-transparent hover:border-outline-variant text-on-surface cursor-pointer transition-colors">
+<div class="flex items-center gap-2 overflow-hidden">
+<span class="material-symbols-outlined text-outline opacity-40 group-hover:opacity-100 cursor-grab text-sm" data-icon="drag_indicator">drag_indicator</span>
+<span class="material-symbols-outlined text-on-surface-variant text-base" data-icon="pin">pin</span>
+<div class="truncate">
+<div class="text-data-mono font-data-mono text-on-surface font-medium truncate leading-tight">deed_registration_id</div>
+<div class="flex items-center gap-1.5 text-[11px] text-outline mt-0.5">
+<span>Regex</span>
+<span>•</span>
+<span>Box #4</span>
+</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline text-xs opacity-0 group-hover:opacity-100" data-icon="edit">edit</span>
+</div>
+</div>
+</div>
+<!-- Group 2: Financial & Legal Details -->
+<div>
+<div class="flex items-center justify-between px-1.5 py-1 text-label-sm font-label-sm text-outline font-semibold uppercase tracking-wider">
+<span>Financial & Legal Details</span>
+<span class="text-[10px] font-normal">3 keys</span>
+</div>
+<div class="space-y-1 mt-1">
+<!-- Field: consideration_amount -->
+<div class="group flex items-center justify-between p-2 rounded-lg bg-surface-bright hover:bg-surface-container-low border border-transparent hover:border-outline-variant text-on-surface cursor-pointer transition-colors">
+<div class="flex items-center gap-2 overflow-hidden">
+<span class="material-symbols-outlined text-outline opacity-40 group-hover:opacity-100 cursor-grab text-sm" data-icon="drag_indicator">drag_indicator</span>
+<span class="material-symbols-outlined text-on-surface-variant text-base" data-icon="payments">payments</span>
+<div class="truncate">
+<div class="text-data-mono font-data-mono text-on-surface font-medium truncate leading-tight">consideration_amount</div>
+<div class="flex items-center gap-1.5 text-[11px] text-outline mt-0.5">
+<span>Currency</span>
+<span>•</span>
+<span>Box #5</span>
+</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline text-xs opacity-0 group-hover:opacity-100" data-icon="edit">edit</span>
+</div>
+<!-- Field: stamp_duty_paid -->
+<div class="group flex items-center justify-between p-2 rounded-lg bg-surface-bright hover:bg-surface-container-low border border-transparent hover:border-outline-variant text-on-surface cursor-pointer transition-colors">
+<div class="flex items-center gap-2 overflow-hidden">
+<span class="material-symbols-outlined text-outline opacity-40 group-hover:opacity-100 cursor-grab text-sm" data-icon="drag_indicator">drag_indicator</span>
+<span class="material-symbols-outlined text-on-surface-variant text-base" data-icon="receipt">receipt</span>
+<div class="truncate">
+<div class="text-data-mono font-data-mono text-on-surface font-medium truncate leading-tight">stamp_duty_paid</div>
+<div class="flex items-center gap-1.5 text-[11px] text-outline mt-0.5">
+<span>Currency</span>
+<span>•</span>
+<span>Box #6</span>
+</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline text-xs opacity-0 group-hover:opacity-100" data-icon="edit">edit</span>
+</div>
+<!-- Field: encumbrance_status -->
+<div class="group flex items-center justify-between p-2 rounded-lg bg-surface-bright hover:bg-surface-container-low border border-transparent hover:border-outline-variant text-on-surface cursor-pointer transition-colors">
+<div class="flex items-center gap-2 overflow-hidden">
+<span class="material-symbols-outlined text-outline opacity-40 group-hover:opacity-100 cursor-grab text-sm" data-icon="drag_indicator">drag_indicator</span>
+<span class="material-symbols-outlined text-on-surface-variant text-base" data-icon="fact_check">fact_check</span>
+<div class="truncate">
+<div class="text-data-mono font-data-mono text-on-surface font-medium truncate leading-tight">encumbrance_status</div>
+<div class="flex items-center gap-1.5 text-[11px] text-outline mt-0.5">
+<span>Boolean</span>
+<span>•</span>
+<span>Box #7</span>
+</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline text-xs opacity-0 group-hover:opacity-100" data-icon="edit">edit</span>
+</div>
+</div>
+</div>
+<!-- Group 3: Cadastral & Geographic -->
+<div>
+<div class="flex items-center justify-between px-1.5 py-1 text-label-sm font-label-sm text-outline font-semibold uppercase tracking-wider">
+<span>Cadastral & Geographic</span>
+<span class="text-[10px] font-normal">2 keys</span>
+</div>
+<div class="space-y-1 mt-1">
+<!-- Field: parcel_pin_number -->
+<div class="group flex items-center justify-between p-2 rounded-lg bg-surface-bright hover:bg-surface-container-low border border-transparent hover:border-outline-variant text-on-surface cursor-pointer transition-colors">
+<div class="flex items-center gap-2 overflow-hidden">
+<span class="material-symbols-outlined text-outline opacity-40 group-hover:opacity-100 cursor-grab text-sm" data-icon="drag_indicator">drag_indicator</span>
+<span class="material-symbols-outlined text-on-surface-variant text-base" data-icon="tag">tag</span>
+<div class="truncate">
+<div class="text-data-mono font-data-mono text-on-surface font-medium truncate leading-tight">parcel_pin_number</div>
+<div class="flex items-center gap-1.5 text-[11px] text-outline mt-0.5">
+<span>Alphanumeric</span>
+<span>•</span>
+<span>Box #8</span>
+</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline text-xs opacity-0 group-hover:opacity-100" data-icon="edit">edit</span>
+</div>
+<!-- Field: plot_subdivision_code -->
+<div class="group flex items-center justify-between p-2 rounded-lg bg-surface-bright hover:bg-surface-container-low border border-transparent hover:border-outline-variant text-on-surface cursor-pointer transition-colors">
+<div class="flex items-center gap-2 overflow-hidden">
+<span class="material-symbols-outlined text-outline opacity-40 group-hover:opacity-100 cursor-grab text-sm" data-icon="drag_indicator">drag_indicator</span>
+<span class="material-symbols-outlined text-on-surface-variant text-base" data-icon="layers">layers</span>
+<div class="truncate">
+<div class="text-data-mono font-data-mono text-on-surface font-medium truncate leading-tight">plot_subdivision_code</div>
+<div class="flex items-center gap-1.5 text-[11px] text-outline mt-0.5">
+<span>Text</span>
+<span>•</span>
+<span>Box #9</span>
+</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline text-xs opacity-0 group-hover:opacity-100" data-icon="edit">edit</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Add Extracted Field Bottom CTA -->
+<div class="p-3 border-t border-outline-variant bg-surface-container-lowest">
+<button class="w-full py-2 px-3 border border-dashed border-primary text-primary hover:bg-surface-container-low rounded text-label-md font-label-md font-semibold flex items-center justify-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-base" data-icon="add_circle">add_circle</span>
+          + Add Extracted Field
+        </button>
+</div>
+</aside>
+<!-- ================= CENTER COLUMN: CANVAS / VIEWPORT ================= -->
+<section class="flex-1 flex flex-col bg-slate-200/50 overflow-hidden relative">
+<!-- Viewport Toolbar -->
+<div class="h-10 bg-surface-container-lowest border-b border-outline-variant px-3 flex items-center justify-between shrink-0 shadow-sm z-20">
+<!-- Zoom & View Tools -->
+<div class="flex items-center gap-1">
+<div class="flex items-center bg-surface-container-low rounded border border-outline-variant px-1">
+<button class="p-1 hover:text-primary transition-colors text-on-surface-variant" title="Zoom Out">
+<span class="material-symbols-outlined text-sm" data-icon="remove">remove</span>
+</button>
+<span class="text-label-sm font-label-sm font-semibold px-2 text-on-surface">100%</span>
+<button class="p-1 hover:text-primary transition-colors text-on-surface-variant" title="Zoom In">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+</button>
+</div>
+<button class="p-1.5 rounded hover:bg-surface-container text-on-surface-variant transition-colors" title="Fit to Screen Width">
+<span class="material-symbols-outlined text-base" data-icon="fit_screen">fit_screen</span>
+</button>
+<div class="h-4 w-px bg-outline-variant mx-1"></div>
+<!-- Interaction Draw Mode Tools -->
+<div class="flex items-center gap-0.5">
+<button class="p-1.5 rounded text-on-surface-variant hover:bg-surface-container transition-colors" title="Hand / Pan Tool">
+<span class="material-symbols-outlined text-base" data-icon="pan_tool">pan_tool</span>
+</button>
+<!-- Active Bounding Box Draw Tool -->
+<button class="p-1.5 rounded bg-primary-container text-on-primary shadow-xs" title="Box Draw Tool (Active)">
+<span class="material-symbols-outlined text-base" data-icon="crop_square">crop_square</span>
+</button>
+<button class="p-1.5 rounded text-on-surface-variant hover:bg-surface-container transition-colors" title="Polygon Segmentation Tool">
+<span class="material-symbols-outlined text-base" data-icon="polyline">polyline</span>
+</button>
+</div>
+</div>
+<!-- Page Navigator in Middle -->
+<div class="flex items-center gap-2">
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant transition-colors disabled:opacity-40" disabled="">
+<span class="material-symbols-outlined text-base" data-icon="chevron_left">chevron_left</span>
+</button>
+<span class="text-label-sm font-label-sm font-semibold text-on-surface">Page 1 of 6</span>
+<button class="p-1 rounded hover:bg-surface-container text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined text-base" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+<!-- Layer & Guide Toggles -->
+<div class="flex items-center gap-2 text-label-sm font-label-sm">
+<label class="flex items-center gap-1.5 cursor-pointer text-on-surface-variant hover:text-on-surface">
+<input checked="" class="rounded border-outline-variant text-primary-container focus:ring-0 w-3.5 h-3.5" type="checkbox"/>
+<span>Show Labels</span>
+</label>
+<label class="flex items-center gap-1.5 cursor-pointer text-on-surface-variant hover:text-on-surface">
+<input checked="" class="rounded border-outline-variant text-primary-container focus:ring-0 w-3.5 h-3.5" type="checkbox"/>
+<span>Show Anchors</span>
+</label>
+<label class="flex items-center gap-1.5 cursor-pointer text-on-surface-variant hover:text-on-surface">
+<input checked="" class="rounded border-outline-variant text-primary-container focus:ring-0 w-3.5 h-3.5" type="checkbox"/>
+<span>Snap to Grid</span>
+</label>
+</div>
+</div>
+<!-- Canvas Blueprint Workspace Area -->
+<div class="flex-1 overflow-auto p-8 flex justify-center blueprint-grid relative">
+<!-- Crosshair Guidelines Overlay (Simulated Alignment Guides) -->
+<div class="absolute inset-x-0 top-48 h-px border-t border-secondary-container/40 pointer-events-none"></div>
+<div class="absolute inset-y-0 left-[380px] w-px border-l border-secondary-container/40 pointer-events-none"></div>
+<!-- Federal Document Canvas Sheet (A4 Proportion) -->
+<div class="w-[640px] min-h-[880px] bg-white shadow-xl rounded-sm border border-slate-300 p-10 relative select-text">
+<!-- Official Government Watermark & Seal Stamp Header -->
+<div class="flex items-start justify-between border-b-2 border-slate-800 pb-4 mb-6">
+<div class="w-16 h-16 rounded-full border-2 border-slate-700 flex flex-col items-center justify-center p-1 text-center">
+<span class="material-symbols-outlined text-slate-800 text-2xl" data-icon="verified_user">verified_user</span>
+<span class="text-[7px] font-bold uppercase tracking-tighter text-slate-800">State Registry</span>
+</div>
+<div class="text-center flex-1 px-4">
+<span class="text-[10px] tracking-widest uppercase font-semibold text-slate-500">Government of National Capital Territory</span>
+<h2 class="text-headline-sm font-headline-sm font-bold text-slate-900 uppercase tracking-tight mt-0.5">
+                DEED OF ABSOLUTE CONVEYANCE & SALE
+              </h2>
+<span class="text-[11px] text-slate-600 block mt-1 font-mono">Form 14-B (Land Revenue & Registration Authority)</span>
+</div>
+<!-- Box #4 Bounding Box: deed_registration_id (Amber Dotted Box) -->
+<div class="relative">
+<div class="border-2 border-dashed border-amber-500 bg-amber-500/10 p-2 text-right rounded">
+<span class="text-[9px] text-amber-800 font-bold block">REGISTRATION STAMP ID</span>
+<span class="font-mono text-xs font-bold text-slate-900">DL-REV-2024-884920</span>
+<!-- Floating Label Tag -->
+<div class="absolute -top-3 right-0 bg-amber-500 text-white text-[9px] px-1.5 py-0.2 rounded font-semibold tracking-wider uppercase">
+                  Box #4: deed_registration_id
+                </div>
+</div>
+</div>
+</div>
+<!-- Simulated Document Body Paragraphs -->
+<div class="text-[13px] leading-relaxed text-slate-700 space-y-4 font-serif">
+<p>
+              THIS INDENTURE OF DEED OF CONVEYANCE is made on this 
+              <span class="border-b border-slate-400 font-semibold text-slate-900 px-1 bg-blue-50/50">14th day of October, 2024</span>
+              at the Office of Sub-Registrar IV, Central Revenue District.
+            </p>
+<div class="pt-2">
+<div class="font-bold text-slate-900 tracking-wide uppercase text-[12px] mb-1">PARTIES TO THIS CONVEYANCE:</div>
+<!-- Box #1 Bounding Box: grantor_name (ACTIVE BLUE HIGHLIGHT WITH DRAG HANDLES) -->
+<div class="relative my-2">
+<div class="border-2 border-primary bg-primary/10 rounded p-1.5 relative shadow-md">
+<!-- Anchor Pin Tag Left -->
+<div class="absolute -top-3.5 -left-1 flex items-center gap-1 bg-primary text-white text-[10px] px-2 py-0.5 rounded shadow">
+<span class="material-symbols-outlined text-[11px]" data-icon="anchor">anchor</span>
+<span class="font-semibold">grantor_name</span>
+<span class="text-secondary-fixed text-[9px] pl-1 font-mono">[98.4% target]</span>
+</div>
+<!-- Document Text Inside Bounding Box -->
+<div class="text-[13px] text-slate-900 font-medium">
+                    BETWEEN: SHRI <strong class="text-primary font-bold">RAJESHWAR PRASAD MUKHERJEE</strong>, S/O LATE HARIHAR MUKHERJEE, residing at Sector 14, Institutional Area, Plot 88, hereinafter called the <span class="font-bold">"GRANTOR / VENDOR"</span>.
+                  </div>
+<!-- Interactive Bounding Box Drag Handles -->
+<div class="w-2.5 h-2.5 bg-primary border border-white absolute -top-1.5 -left-1.5 rounded-sm cursor-nwse-resize"></div>
+<div class="w-2.5 h-2.5 bg-primary border border-white absolute -top-1.5 left-1/2 -translate-x-1/2 rounded-sm cursor-ns-resize"></div>
+<div class="w-2.5 h-2.5 bg-primary border border-white absolute -top-1.5 -right-1.5 rounded-sm cursor-nesw-resize"></div>
+<div class="w-2.5 h-2.5 bg-primary border border-white absolute top-1/2 -translate-y-1/2 -right-1.5 rounded-sm cursor-ew-resize"></div>
+<div class="w-2.5 h-2.5 bg-primary border border-white absolute -bottom-1.5 -right-1.5 rounded-sm cursor-nwse-resize"></div>
+<div class="w-2.5 h-2.5 bg-primary border border-white absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded-sm cursor-ns-resize"></div>
+<div class="w-2.5 h-2.5 bg-primary border border-white absolute -bottom-1.5 -left-1.5 rounded-sm cursor-nesw-resize"></div>
+<div class="w-2.5 h-2.5 bg-primary border border-white absolute top-1/2 -translate-y-1/2 -left-1.5 rounded-sm cursor-ew-resize"></div>
+</div>
+</div>
+<!-- Box #2 Bounding Box: grantee_name (Green Border) -->
+<div class="relative my-3">
+<div class="border-2 border-emerald-600 bg-emerald-600/10 rounded p-1.5 relative">
+<div class="absolute -top-3 left-2 bg-emerald-700 text-white text-[9px] px-1.5 py-0.2 rounded font-semibold tracking-wider">
+                    Box #2: grantee_name (Anchor: "AND IN FAVOUR OF")
+                  </div>
+<div class="text-[13px] text-slate-900 font-medium">
+                    AND IN FAVOUR OF: SMT. <strong class="text-emerald-900 font-bold">ANANYA VASUDEVAN</strong>, W/O DR. K. VASUDEVAN, residing at Flat 402, Royal Enclave, New Delhi, hereinafter called the <span class="font-bold">"GRANTEE / PURCHASER"</span>.
+                  </div>
+</div>
+</div>
+</div>
+<!-- Paragraph on Consideration with Box #5 -->
+<div class="pt-2">
+<p>
+                WHEREAS the Vendor is the absolute and undisputed owner of the commercial freehold plot situated at Survey No. 418/A. 
+                NOW THIS DEED WITNESSETH that in consideration of the sum of:
+              </p>
+<!-- Box #5 Bounding Box: consideration_amount -->
+<div class="relative inline-block my-2 w-full">
+<div class="border-2 border-blue-500 bg-blue-500/10 px-2 py-1 rounded inline-flex items-center gap-2">
+<span class="text-slate-900 font-bold font-mono text-sm">USD $425,000.00 (UNITED STATES DOLLARS FOUR HUNDRED TWENTY FIVE THOUSAND ONLY)</span>
+<div class="bg-blue-600 text-white text-[9px] px-1.5 py-0.5 rounded font-mono font-medium">
+                    Box #5: consideration_amount
+                  </div>
+</div>
+</div>
+<p>
+                duly paid by the Purchaser via Electronic RTGS transfer acknowledgment #TXN-9023481 to the designated escrow bank account, the receipt whereof the Vendor doth hereby acknowledge.
+              </p>
+</div>
+<!-- Legal Schedule Description Preview -->
+<div class="border-t border-slate-300 pt-3 mt-4">
+<div class="font-bold text-[12px] uppercase text-slate-800">SCHEDULE OF PROPERTY DESCRIPTION</div>
+<p class="text-xs text-slate-600 mt-1 font-mono">
+                Cadastral PIN: 110-092-B82 | Sub-division: Urban Zone Sector 14 | Total Plot Extent: 4,800 sq ft.
+              </p>
+</div>
+</div>
+<!-- Bottom Signature Rows -->
+<div class="mt-8 pt-4 border-t border-slate-200 flex justify-between items-end text-center text-xs">
+<div class="w-40 border-t border-dashed border-slate-400 pt-1 text-slate-600">
+              Signature of Grantor (Vendor)
+            </div>
+<div class="w-32 py-1 border border-slate-300 rounded text-[10px] text-slate-400 uppercase font-mono">
+              Notary Seal & Affix
+            </div>
+<div class="w-40 border-t border-dashed border-slate-400 pt-1 text-slate-600">
+              Signature of Grantee (Purchaser)
+            </div>
+</div>
+</div>
+</div>
+</section>
+<!-- ================= RIGHT COLUMN: FIELD INSPECTOR & EXTRACTION LOGIC (~340px) ================= -->
+<aside class="w-[340px] bg-surface-container-lowest border-l border-outline-variant flex flex-col shrink-0 overflow-y-auto">
+<!-- Panel Header -->
+<div class="p-3 border-b border-outline-variant flex items-center justify-between bg-surface-bright">
+<div>
+<span class="text-label-sm font-label-sm uppercase tracking-wider text-outline block">Field Inspector</span>
+<h2 class="text-title-md font-title-md text-on-surface font-semibold">Configuring: grantor_name</h2>
+</div>
+<span class="px-2 py-0.5 rounded text-label-sm font-label-sm font-medium bg-surface-container text-primary border border-surface-variant">
+          String / Single-line
+        </span>
+</div>
+<!-- Inspector Form Fields Stack -->
+<div class="p-4 space-y-4 flex-1">
+<!-- Field Identifier Slug -->
+<div>
+<label class="block text-label-md font-label-md font-medium text-on-surface mb-1">Field Key / Identifier</label>
+<div class="relative">
+<input class="w-full h-8 px-2.5 bg-surface-container-low font-data-mono text-data-mono text-on-surface-variant rounded border border-outline-variant focus:outline-none cursor-not-allowed" readonly="" type="text" value="grantor_name"/>
+<span class="material-symbols-outlined absolute right-2 top-2 text-outline text-sm" data-icon="lock">lock</span>
+</div>
+<span class="text-[11px] text-outline mt-1 block">Read-only system schema slug used in downstream APIs.</span>
+</div>
+<!-- Display Label -->
+<div>
+<label class="block text-label-md font-label-md font-medium text-on-surface mb-1">Display Label</label>
+<input class="w-full h-8 px-2.5 bg-surface-container-lowest rounded text-body-sm font-body-sm text-on-surface border border-outline-variant focus:outline-none focus:border-secondary transition-colors" type="text" value="Grantor / Seller Full Name"/>
+</div>
+<!-- Data Type Dropdown -->
+<div>
+<label class="block text-label-md font-label-md font-medium text-on-surface mb-1">Data Type</label>
+<select class="w-full h-8 px-2 bg-surface-container-lowest rounded text-body-sm font-body-sm text-on-surface border border-outline-variant focus:outline-none focus:border-secondary">
+<option selected="">Text (Alphanumeric)</option>
+<option>Currency (INR / USD / EUR)</option>
+<option>Date (Multiple formats)</option>
+<option>Cadastral Identifier / PIN</option>
+<option>Regex Pattern Matched</option>
+</select>
+</div>
+<!-- Required Field Toggle Switch -->
+<div class="flex items-center justify-between p-2.5 rounded bg-surface-bright border border-outline-variant">
+<div>
+<div class="text-label-md font-label-md font-semibold text-on-surface">Required Field</div>
+<div class="text-[11px] text-on-surface-variant">Flag document if key is missing in payload</div>
+</div>
+<!-- Toggle Switch Active ON -->
+<button class="w-10 h-5 bg-primary-container rounded-full relative p-0.5 transition-colors focus:outline-none" title="Toggle Required" type="button">
+<div class="w-4 h-4 bg-white rounded-full translate-x-5 transition-transform"></div>
+</button>
+</div>
+<!-- Minimum Confidence Threshold Slider -->
+<div>
+<div class="flex items-center justify-between mb-1">
+<label class="text-label-md font-label-md font-medium text-on-surface flex items-center gap-1">
+              Minimum Confidence Threshold
+              <span class="material-symbols-outlined text-outline text-xs cursor-help" data-icon="info" title="Trigger human review below this threshold">info</span>
+</label>
+<span class="text-data-mono font-data-mono font-bold text-primary text-sm">90%</span>
+</div>
+<input class="w-full accent-primary cursor-pointer h-1.5 bg-surface-container-highest rounded-lg" max="99" min="50" type="range" value="90"/>
+<div class="flex justify-between text-[10px] text-outline mt-1 font-mono">
+<span>50% (Lenient)</span>
+<span>Trigger human review <90%</span>
+<span>99% (Strict)</span>
+</div>
+</div>
+<!-- Extraction Method Radio Pills -->
+<div>
+<label class="block text-label-md font-label-md font-medium text-on-surface mb-1.5">Extraction Method</label>
+<div class="space-y-1.5">
+<!-- Selected Method -->
+<label class="flex items-start gap-2 p-2 rounded border border-primary bg-surface-container cursor-pointer">
+<input checked="" class="mt-0.5 text-primary focus:ring-0" name="extraction_method" type="radio"/>
+<div>
+<div class="text-body-sm font-body-sm font-semibold text-primary">Bounding Box Anchor (Recommended)</div>
+<div class="text-[11px] text-on-surface-variant leading-tight">Extract relative to fixed geometric page coordinates and text keywords.</div>
+</div>
+</label>
+<label class="flex items-start gap-2 p-2 rounded border border-outline-variant hover:bg-surface-container-low cursor-pointer transition-colors">
+<input class="mt-0.5 text-primary focus:ring-0" name="extraction_method" type="radio"/>
+<div>
+<div class="text-body-sm font-body-sm font-medium text-on-surface">LLM Key-Value Discovery</div>
+<div class="text-[11px] text-outline leading-tight">Semantic zero-shot field recovery from non-standard document formats.</div>
+</div>
+</label>
+<label class="flex items-start gap-2 p-2 rounded border border-outline-variant hover:bg-surface-container-low cursor-pointer transition-colors">
+<input class="mt-0.5 text-primary focus:ring-0" name="extraction_method" type="radio"/>
+<div>
+<div class="text-body-sm font-body-sm font-medium text-on-surface">Table Extraction</div>
+<div class="text-[11px] text-outline leading-tight">Extract structured cells from tabular boundaries.</div>
+</div>
+</label>
+</div>
+</div>
+<!-- Anchor Keyword Association -->
+<div class="p-3 bg-surface-bright border border-outline-variant rounded space-y-2">
+<div class="flex items-center gap-1.5 text-label-sm font-label-sm font-semibold text-primary">
+<span class="material-symbols-outlined text-sm" data-icon="anchor">anchor</span>
+<span>Anchor Keyword Association</span>
+</div>
+<div>
+<label class="block text-[11px] text-on-surface-variant mb-0.5 font-medium">Preceding Label Anchor</label>
+<input class="w-full h-7 px-2 font-data-mono text-data-mono text-xs bg-white rounded border border-outline-variant focus:outline-none focus:border-secondary" type="text" value="BETWEEN: SHRI"/>
+</div>
+<div>
+<label class="block text-[11px] text-on-surface-variant mb-0.5 font-medium">Following Delimiter Anchor</label>
+<input class="w-full h-7 px-2 font-data-mono text-data-mono text-xs bg-white rounded border border-outline-variant focus:outline-none focus:border-secondary" type="text" value="S/O LATE"/>
+</div>
+</div>
+<!-- Validation Regex Pattern -->
+<div>
+<label class="block text-label-md font-label-md font-medium text-on-surface mb-1">Validation Regex Pattern</label>
+<input class="w-full h-8 px-2.5 bg-surface-container-lowest font-data-mono text-data-mono text-xs text-on-surface rounded border border-outline-variant focus:outline-none focus:border-secondary" type="text" value="^[A-Z\s\.\,]{3,60}$"/>
+<span class="text-[11px] text-outline mt-1 block">Validates uppercase legal deed vendor names.</span>
+</div>
+<!-- OCR Engine Priority -->
+<div>
+<label class="block text-label-md font-label-md font-medium text-on-surface mb-1">OCR Engine Priority</label>
+<div class="flex items-center gap-2">
+<span class="px-2 py-1 bg-surface-container-high text-primary font-mono text-xs rounded border border-surface-variant flex-1 text-center font-semibold">
+              Surya v2.4 (Default)
+            </span>
+<span class="material-symbols-outlined text-outline text-sm" data-icon="sync_alt">sync_alt</span>
+<span class="px-2 py-1 bg-surface-container-low text-on-surface-variant font-mono text-xs rounded border border-outline-variant flex-1 text-center">
+              PaddleOCR Fallback
+            </span>
+</div>
+</div>
+</div>
+<!-- Destructive Action Footer -->
+<div class="p-3 border-t border-outline-variant bg-surface-container-lowest">
+<button class="w-full py-1.5 px-3 border border-transparent hover:border-error-container text-error hover:bg-error-container/20 rounded text-label-md font-label-md font-semibold flex items-center justify-center gap-1.5 transition-colors">
+<span class="material-symbols-outlined text-base" data-icon="delete">delete</span>
+          Delete Field
+        </button>
+</div>
+</aside>
+</main>
+</body></html>

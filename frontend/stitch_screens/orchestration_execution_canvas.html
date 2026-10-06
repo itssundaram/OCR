@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Orchestration Execution Canvas - DocGov CivicIntel</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts Inter -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 with Forms & Container Queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration Verbatim -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-background": "#0b1c30",
+            "tertiary-fixed-dim": "#d0bcff",
+            "surface-container-low": "#eff4ff",
+            "on-tertiary-fixed": "#23005c",
+            "primary-container": "#1e3a8a",
+            "secondary-fixed-dim": "#89ceff",
+            "on-tertiary-fixed-variant": "#5516be",
+            "surface-variant": "#d3e4fe",
+            "outline": "#757682",
+            "secondary-container": "#39b8fd",
+            "primary-fixed": "#dce1ff",
+            "on-surface-variant": "#444651",
+            "tertiary-container": "#4e03b8",
+            "secondary-fixed": "#c9e6ff",
+            "surface-container-high": "#dce9ff",
+            "on-secondary": "#ffffff",
+            "on-tertiary-container": "#b89cff",
+            "on-surface": "#0b1c30",
+            "surface-container-lowest": "#ffffff",
+            "surface": "#f8f9ff",
+            "surface-container": "#e5eeff",
+            "error": "#ba1a1a",
+            "surface-container-highest": "#d3e4fe",
+            "on-primary-fixed": "#00164e",
+            "secondary": "#006591",
+            "inverse-primary": "#b6c4ff",
+            "inverse-surface": "#213145",
+            "on-secondary-fixed-variant": "#004c6e",
+            "on-error-container": "#93000a",
+            "primary-fixed-dim": "#b6c4ff",
+            "surface-dim": "#cbdbf5",
+            "on-error": "#ffffff",
+            "on-secondary-fixed": "#001e2f",
+            "outline-variant": "#c5c5d3",
+            "primary": "#00236f",
+            "inverse-on-surface": "#eaf1ff",
+            "surface-tint": "#4059aa",
+            "on-primary": "#ffffff",
+            "tertiary": "#340081",
+            "tertiary-fixed": "#e9ddff",
+            "on-tertiary": "#ffffff",
+            "on-primary-fixed-variant": "#264191",
+            "surface-bright": "#f8f9ff",
+            "on-primary-container": "#90a8ff",
+            "background": "#f8f9ff",
+            "on-secondary-container": "#004666",
+            "error-container": "#ffdad6"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-lg": "1.5rem",
+            "space-xl": "2rem",
+            "margin": "1.5rem",
+            "space-sm": "0.5rem",
+            "space-xs": "0.25rem",
+            "space-md": "1rem",
+            "gutter": "1.25rem"
+          },
+          "fontFamily": {
+            "data-mono": ["Inter"],
+            "body-md": ["Inter"],
+            "display-lg": ["Inter"],
+            "body-lg": ["Inter"],
+            "headline-sm": ["Inter"],
+            "label-md": ["Inter"],
+            "headline-md": ["Inter"],
+            "body-sm": ["Inter"],
+            "headline-lg": ["Inter"],
+            "display-lg-mobile": ["Inter"],
+            "label-sm": ["Inter"],
+            "title-md": ["Inter"]
+          },
+          "fontSize": {
+            "data-mono": ["13px", { "lineHeight": "18px", "letterSpacing": "0em", "fontWeight": "500" }],
+            "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "display-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "headline-sm": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600" }],
+            "label-md": ["13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+            "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "400" }],
+            "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.015em", "fontWeight": "600" }],
+            "display-lg-mobile": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+            "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }],
+            "title-md": ["16px", { "lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "600" }]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    /* Material Symbols base styling */
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 20px;
+      line-height: 1;
+      display: inline-block;
+      white-space: nowrap;
+      word-wrap: normal;
+      direction: ltr;
+      -webkit-font-feature-settings: 'liga';
+      -webkit-font-smoothing: antialiased;
+    }
+    
+    /* Subtle Canvas Grid Background Pattern */
+    .dag-canvas-bg {
+      background-color: #f8f9ff;
+      background-image: radial-gradient(#c5c5d3 0.75px, transparent 0.75px);
+      background-size: 24px 24px;
+    }
+
+    /* Flow connector animations */
+    @keyframes dash {
+      to {
+        stroke-dashoffset: -20;
+      }
+    }
+    .flow-active {
+      stroke-dasharray: 5, 5;
+      animation: dash 1s linear infinite;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface antialiased flex flex-col h-screen overflow-hidden select-none">
+<!-- ========================================== -->
+<!-- 1. TOP APP BAR (Shared Component Anchor)    -->
+<!-- ========================================== -->
+<header class="flex justify-between items-center h-14 px-gutter w-full sticky top-0 z-40 bg-surface-container-lowest shadow-sm border-b border-outline-variant">
+<!-- Left Cluster: Brand & Global Search -->
+<div class="flex items-center gap-space-lg">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-headline-md" data-icon="account_balance">account_balance</span>
+<span class="text-headline-sm font-headline-sm font-bold text-primary tracking-tight">DocGov CivicIntel</span>
+</div>
+<!-- Integrated Search Input -->
+<div class="relative w-80">
+<span class="material-symbols-outlined absolute left-space-sm top-1/2 -translate-y-1/2 text-outline" data-icon="search">search</span>
+<input class="w-full pl-9 pr-space-md py-1 bg-surface-container-low border border-outline-variant rounded-lg text-body-sm font-body-sm text-on-surface focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-colors duration-150 ease-in-out" placeholder="Search documents, pipeline runs, seals..." type="text"/>
+<div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+<kbd class="px-1.5 py-0.5 text-label-sm font-label-sm text-outline border border-outline-variant rounded bg-surface-container-lowest">⌘K</kbd>
+</div>
+</div>
+</div>
+<!-- Right Cluster: Actions & Officer Profile -->
+<div class="flex items-center gap-space-md">
+<!-- Trace Metric Widget -->
+<div class="flex items-center gap-2 px-space-sm py-1 bg-surface-container-high rounded border border-outline-variant">
+<span class="h-2 w-2 rounded-full bg-secondary-container animate-pulse"></span>
+<span class="text-label-sm font-label-sm text-primary font-bold">NODE CLUSTER 04 - US-EAST</span>
+</div>
+<!-- Trailing Action Icons -->
+<div class="flex items-center gap-1 border-r border-outline-variant pr-space-sm">
+<button class="p-1.5 rounded text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out relative" title="Notifications">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-1 right-1 w-2 h-2 bg-error rounded-full ring-2 ring-surface-container-lowest"></span>
+</button>
+<button class="p-1.5 rounded text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" title="Help">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<button class="p-1.5 rounded text-on-surface-variant hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" title="Settings">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</div>
+<!-- Officer Badge -->
+<div class="flex items-center gap-space-sm cursor-pointer hover:bg-surface-container-low px-2 py-1 rounded transition-colors duration-150 ease-in-out">
+<img class="w-7 h-7 rounded-full border border-outline-variant object-cover" data-alt="Close-up headshot portrait of a senior federal compliance officer wearing a formal deep navy blazer and institutional security badge, natural professional lighting against a clean white backdrop, sharp detail and high contrast palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgIGs1iMp_uCty0BgM6DRd9mJ2K4vkgoUGsNorqpafbFaC0vVwi7k-T06JIEUh90bnzrz8Cf68nk7TXI-hf2jk8GkGth1GAY2eWyHuK2EoEyUQ-0mtnG4AwC2qklpM-KGzAId70p0ZDWai6TVZ-PKujT6XO_ipSbD_q1e5wL8Wr8AO1upSimdmnZg8ig5lV3J4K0RtLpRnSYMrZzKvz-MQkj6qDf0V_C2eL1OVEKpAnaXwZKJaJ1wn"/>
+<div class="flex flex-col text-left">
+<span class="text-label-md font-label-md text-on-surface font-semibold leading-tight">Insp. R. Vance</span>
+<span class="text-label-sm font-label-sm text-outline leading-none">DOJ Fed-ID #941</span>
+</div>
+</div>
+</div>
+</header>
+<!-- ========================================== -->
+<!-- 2. MAIN LAYOUT (SideNav + Center Canvas)    -->
+<!-- ========================================== -->
+<div class="flex flex-1 overflow-hidden relative">
+<!-- SIDEBAR NAVIGATION (Shared Component Anchor) -->
+<aside class="flex flex-col justify-between h-full w-64 shrink-0 py-space-md px-space-sm fixed left-0 top-14 bottom-0 z-30 bg-surface-container-lowest border-r border-outline-variant shadow-sm overflow-y-auto">
+<div class="flex flex-col gap-space-md">
+<!-- Agency Emblem Seal Header -->
+<div class="flex items-center gap-space-sm px-space-md pb-space-sm border-b border-outline-variant">
+<div class="w-8 h-8 rounded bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined" data-icon="shield">shield</span>
+</div>
+<div class="flex flex-col">
+<span class="text-title-md font-title-md font-bold text-primary tracking-tight">CivicIntel Platform</span>
+<span class="text-body-sm font-body-sm text-outline">Agency Compliance v4.2</span>
+</div>
+</div>
+<!-- Primary CTA -->
+<button class="flex items-center justify-center gap-space-sm bg-primary text-on-primary py-2 px-space-md rounded-lg shadow-sm hover:bg-primary-container transition-colors duration-150 ease-in-out font-label-md text-label-md">
+<span class="material-symbols-outlined" data-icon="add_circle">add_circle</span>
+<span>New Document Ingestion</span>
+</button>
+<!-- Navigation Tabs: Exact JSON labels & icons, Orchestration Active -->
+<nav class="flex flex-col gap-1">
+<!-- 1. Dashboard -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<!-- 2. Departments -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance">account_balance</span>
+<span>Departments</span>
+</a>
+<!-- 3. URLs -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="link">link</span>
+<span>URLs</span>
+</a>
+<!-- 4. OCR -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="document_scanner">document_scanner</span>
+<span>OCR</span>
+</a>
+<!-- 5. Orchestration (ACTIVE AS SPECIFIED) -->
+<a class="flex items-center gap-space-sm bg-surface-container text-primary border-l-2 border-primary font-title-md text-title-md px-space-md py-space-sm rounded-r-lg transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="account_tree">account_tree</span>
+<span>Orchestration</span>
+</a>
+<!-- 6. Logs -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+<span>Logs</span>
+</a>
+<!-- 7. Manage Templates -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="topic">topic</span>
+<span>Manage Templates</span>
+</a>
+<!-- 8. Help & Support -->
+<a class="flex items-center gap-space-sm text-on-surface-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="support">support</span>
+<span>Help &amp; Support</span>
+</a>
+</nav>
+</div>
+<!-- Footer Compliance Tabs -->
+<div class="flex flex-col gap-1 border-t border-outline-variant pt-space-sm">
+<a class="flex items-center gap-space-sm text-on-surface-variant font-body-sm text-body-sm px-space-md py-1.5 rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-secondary" data-icon="verified_user">verified_user</span>
+<span>System Health</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant font-body-sm text-body-sm px-space-md py-1.5 rounded-lg hover:bg-surface-container-low hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined text-outline" data-icon="tune">tune</span>
+<span>Compliance Settings</span>
+</a>
+</div>
+</aside>
+<!-- ========================================== -->
+<!-- 3. WORKSPACE CANVAS CONTAINER (Offset 64)  -->
+<!-- ========================================== -->
+<main class="flex-1 flex flex-col pl-64 overflow-hidden">
+<!-- SUB-HEADER: EXECUTION CONTEXT & RUN CONTROLS -->
+<section class="h-16 px-gutter bg-surface-container-lowest border-b border-outline-variant flex items-center justify-between z-20">
+<!-- Metadata pills cluster -->
+<div class="flex items-center gap-space-md">
+<div class="flex items-center gap-2">
+<span class="text-label-sm font-label-sm text-outline">RUN ID</span>
+<span class="px-2 py-0.5 rounded bg-surface-container font-data-mono text-data-mono text-primary font-bold border border-outline-variant">ORCH-RUN-9021</span>
+</div>
+<div class="h-4 w-px bg-outline-variant"></div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-title-md" data-icon="description">description</span>
+<span class="text-title-md font-title-md text-on-surface font-semibold">Deed_Conveyance_2024.pdf</span>
+<span class="text-body-sm font-body-sm text-outline">(6 Pages)</span>
+</div>
+<div class="h-4 w-px bg-outline-variant"></div>
+<!-- Active Pipeline Pill -->
+<div class="flex items-center gap-2 px-2.5 py-1 bg-surface-container rounded-full border border-secondary">
+<span class="w-2 h-2 rounded-full bg-secondary-container animate-ping"></span>
+<span class="text-label-sm font-label-sm text-primary font-semibold">Multi-Engine Pipeline Active</span>
+</div>
+<!-- Live Clock -->
+<div class="flex items-center gap-1.5 px-2 py-1 bg-surface-container-low rounded border border-outline-variant font-data-mono text-data-mono text-on-surface-variant">
+<span class="material-symbols-outlined text-outline text-body-sm" data-icon="timer">timer</span>
+<span>Elapsed: 4.6s</span>
+</div>
+</div>
+<!-- Canvas Interaction Controls -->
+<div class="flex items-center gap-space-sm">
+<div class="flex items-center bg-surface-container-low rounded border border-outline-variant p-0.5">
+<button class="p-1 hover:bg-surface-container-lowest rounded text-on-surface-variant hover:text-primary transition-colors" title="Zoom Out">
+<span class="material-symbols-outlined text-body-md" data-icon="zoom_out">zoom_out</span>
+</button>
+<span class="px-2 text-label-sm font-label-sm font-data-mono text-on-surface">100%</span>
+<button class="p-1 hover:bg-surface-container-lowest rounded text-on-surface-variant hover:text-primary transition-colors" title="Zoom In">
+<span class="material-symbols-outlined text-body-md" data-icon="zoom_in">zoom_in</span>
+</button>
+<div class="w-px h-4 bg-outline-variant mx-1"></div>
+<button class="p-1 hover:bg-surface-container-lowest rounded text-on-surface-variant hover:text-primary transition-colors" title="Fit to Screen">
+<span class="material-symbols-outlined text-body-md" data-icon="center_focus_strong">center_focus_strong</span>
+</button>
+</div>
+<button class="p-1.5 rounded border border-outline-variant bg-surface-container-lowest hover:bg-surface-container-low text-on-surface transition-colors" title="Fullscreen Canvas">
+<span class="material-symbols-outlined" data-icon="fullscreen">fullscreen</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded bg-surface-container-lowest border border-outline-variant hover:bg-surface-container-low text-error text-label-md font-label-md font-semibold transition-colors" title="Pause Pipeline">
+<span class="material-symbols-outlined text-error" data-icon="pause_circle">pause_circle</span>
+<span>Pause Run</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded bg-primary text-on-primary hover:bg-primary-container text-label-md font-label-md font-semibold transition-colors shadow-sm">
+<span class="material-symbols-outlined text-on-primary" data-icon="download">download</span>
+<span>Export Trace</span>
+</button>
+</div>
+</section>
+<!-- ========================================== -->
+<!-- 4. INTERACTIVE DAG WORKSPACE & INSPECTOR   -->
+<!-- ========================================== -->
+<div class="flex-1 flex overflow-hidden relative">
+<!-- DAG CANVAS VIEWPORT -->
+<div class="flex-1 relative overflow-auto dag-canvas-bg p-space-xl flex items-center justify-center">
+<!-- Background SVG Vector Connectors -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none" style="min-width: 1100px; min-height: 650px;">
+<defs>
+<marker id="arrow" markerheight="6" markerwidth="6" orient="auto-start-reverse" refx="6" refy="5" viewbox="0 0 10 10">
+<path d="M 0 1 L 8 5 L 0 9 z" fill="#757682"></path>
+</marker>
+<marker id="arrow-active" markerheight="6" markerwidth="6" orient="auto-start-reverse" refx="6" refy="5" viewbox="0 0 10 10">
+<path d="M 0 1 L 8 5 L 0 9 z" fill="#006591"></path>
+</marker>
+</defs>
+<!-- Node 1 (Ingestion) -> Stage 2 Branches -->
+<path class="flow-active" d="M 235 340 C 290 340, 290 190, 360 190" fill="none" stroke="#006591" stroke-width="2"></path>
+<path d="M 235 340 C 290 340, 290 340, 360 340" fill="none" stroke="#757682" stroke-width="2"></path>
+<path class="flow-active" d="M 235 340 C 290 340, 290 490, 360 490" fill="none" stroke="#006591" stroke-width="2"></path>
+<!-- Branch 2 (Paddle) -> Fallback (TrOCR Stamp) -->
+<path d="M 610 340 C 650 340, 650 415, 680 415" fill="none" stroke="#ba1a1a" stroke-dasharray="4,4" stroke-width="1.5"></path>
+<!-- Parallel Branches -> Arbitrator Quorum -->
+<path d="M 610 190 C 720 190, 720 340, 780 340" fill="none" stroke="#c5c5d3" stroke-width="1.5"></path>
+<path d="M 610 490 C 720 490, 720 340, 780 340" fill="none" stroke="#c5c5d3" stroke-width="1.5"></path>
+<path d="M 830 440 C 850 440, 850 360, 860 360" fill="none" stroke="#c5c5d3" stroke-dasharray="3,3" stroke-width="1.5"></path>
+<!-- Arbitrator -> Output JSON Schema -->
+<path d="M 940 340 L 990 340" fill="none" marker-end="url(#arrow)" stroke="#c5c5d3" stroke-width="2"></path>
+</svg>
+<!-- DAG NODES GRID -->
+<div class="relative z-10 grid grid-cols-5 gap-10 items-center w-full max-w-6xl min-w-[980px]">
+<!-- 1. STAGE: INGESTION NODE -->
+<div class="flex flex-col gap-2">
+<span class="text-label-sm font-label-sm text-outline tracking-wider">STAGE 01: PRE-INGEST</span>
+<div class="bg-surface-container-lowest border-2 border-primary rounded shadow-sm p-space-md hover:border-secondary transition-all w-56 relative group cursor-pointer">
+<div class="flex items-center justify-between pb-2 border-b border-outline-variant mb-2">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-title-md" data-icon="file_open">file_open</span>
+<span class="text-label-md font-label-md text-on-surface font-semibold">PDF Preprocessing</span>
+</div>
+<!-- Emerald Completed Pill -->
+<span class="inline-flex items-center px-2 py-0.5 rounded text-label-sm font-label-sm font-bold bg-[#ecfdf5] text-[#065f46] border border-[#a7f3d0]">
+                    Done
+                  </span>
+</div>
+<div class="space-y-1.5 text-body-sm font-body-sm text-on-surface-variant">
+<div class="flex justify-between">
+<span class="text-outline">Operation:</span>
+<span class="font-medium text-on-surface">Deskew &amp; Binarize</span>
+</div>
+<div class="flex justify-between">
+<span class="text-outline">DPI Filter:</span>
+<span class="font-data-mono text-data-mono">300 DPI Clear</span>
+</div>
+<div class="flex justify-between">
+<span class="text-outline">Pages Ready:</span>
+<span class="font-data-mono text-data-mono">6 / 6 OK</span>
+</div>
+</div>
+<!-- Accent indicator line -->
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-[#10b981] rounded-l"></div>
+</div>
+</div>
+<!-- 2. STAGE: PARALLEL PROCESSING BRANCHES (3 Nodes Vertically Stacked) -->
+<div class="flex flex-col gap-5 col-span-2">
+<div class="flex items-center justify-between">
+<span class="text-label-sm font-label-sm text-outline tracking-wider">STAGE 02: PARALLEL OCR INFERENCE (3 ENGINES)</span>
+<span class="text-label-sm font-label-sm text-secondary font-semibold">Concurrent Sync</span>
+</div>
+<!-- Branch A: Surya Engine Node (SELECTED/ACTIVE) -->
+<div class="bg-surface-container-lowest border-2 border-secondary ring-2 ring-secondary-container/30 rounded shadow-md p-space-md w-72 relative cursor-pointer bg-gradient-to-r from-surface-container-low/40 to-surface-container-lowest">
+<div class="flex items-center justify-between pb-2 border-b border-outline-variant mb-2">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-secondary" data-icon="dashboard_customize">dashboard_customize</span>
+<div>
+<span class="text-label-md font-label-md text-on-surface font-bold block">Surya Engine</span>
+<span class="text-label-sm font-label-sm text-outline">Layout &amp; Entities</span>
+</div>
+</div>
+<!-- Active Violet/Primary Pill -->
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm font-bold bg-[#f5f3ff] text-[#5b21b6] border border-[#ddd6fe]">
+<span class="w-1.5 h-1.5 rounded-full bg-[#5b21b6] animate-pulse"></span>
+                    80% Active
+                  </span>
+</div>
+<div class="space-y-1.5 text-body-sm font-body-sm">
+<div class="flex justify-between items-center">
+<span class="text-outline">Progress:</span>
+<span class="font-data-mono text-data-mono font-semibold text-primary">Page 4 of 6</span>
+</div>
+<!-- Progress Bar -->
+<div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+<div class="bg-secondary-container h-full rounded-full" style="width: 80%"></div>
+</div>
+<div class="flex justify-between pt-1">
+<span class="text-outline">Confidence:</span>
+<span class="px-1.5 py-0.2 rounded text-label-sm font-label-sm font-data-mono font-bold bg-[#ecfdf5] text-[#065f46]">96.4%</span>
+</div>
+</div>
+<div class="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-secondary border-2 border-surface-container-lowest flex items-center justify-center text-on-secondary">
+<span class="text-[9px] font-bold">✓</span>
+</div>
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-secondary-container rounded-l"></div>
+</div>
+<!-- Branch B: Paddle Engine Node (COMPLETED) -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded shadow-sm p-space-md w-72 relative cursor-pointer hover:border-outline transition-colors">
+<div class="flex items-center justify-between pb-2 border-b border-outline-variant mb-2">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-outline" data-icon="electric_bolt">electric_bolt</span>
+<div>
+<span class="text-label-md font-label-md text-on-surface font-semibold block">Paddle Engine</span>
+<span class="text-label-sm font-label-sm text-outline">High-Speed Extraction</span>
+</div>
+</div>
+<span class="inline-flex items-center px-2 py-0.5 rounded text-label-sm font-label-sm font-bold bg-[#ecfdf5] text-[#065f46] border border-[#a7f3d0]">
+                    Completed
+                  </span>
+</div>
+<div class="space-y-1 text-body-sm font-body-sm text-on-surface-variant">
+<div class="flex justify-between">
+<span class="text-outline">Fields Parsed:</span>
+<span class="font-data-mono text-data-mono font-semibold text-on-surface">31 Fields</span>
+</div>
+<div class="flex justify-between">
+<span class="text-outline">Confidence:</span>
+<span class="px-1.5 py-0.2 rounded text-label-sm font-label-sm font-data-mono font-bold bg-[#ecfdf5] text-[#065f46]">93.8%</span>
+</div>
+<div class="flex justify-between">
+<span class="text-outline">Time Taken:</span>
+<span class="font-data-mono text-data-mono">1.12s total</span>
+</div>
+</div>
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-[#10b981] rounded-l"></div>
+</div>
+<!-- Branch C: Qwen Multimodal Node (ACTIVE) -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded shadow-sm p-space-md w-72 relative cursor-pointer hover:border-secondary transition-colors">
+<div class="flex items-center justify-between pb-2 border-b border-outline-variant mb-2">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-secondary" data-icon="psychology">psychology</span>
+<div>
+<span class="text-label-md font-label-md text-on-surface font-semibold block">Qwen Multimodal</span>
+<span class="text-label-sm font-label-sm text-outline">Visual Reasoning / Seals</span>
+</div>
+</div>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm font-bold bg-[#f5f3ff] text-[#5b21b6] border border-[#ddd6fe]">
+<span class="w-1.5 h-1.5 rounded-full bg-[#5b21b6] animate-pulse"></span>
+                    65% Active
+                  </span>
+</div>
+<div class="space-y-1.5 text-body-sm font-body-sm">
+<div class="flex justify-between">
+<span class="text-outline">Processing:</span>
+<span class="font-data-mono text-data-mono font-semibold text-primary">Page 3 of 6</span>
+</div>
+<div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+<div class="bg-secondary-container h-full rounded-full" style="width: 65%"></div>
+</div>
+<div class="flex justify-between pt-1">
+<span class="text-outline">Confidence:</span>
+<span class="px-1.5 py-0.2 rounded text-label-sm font-label-sm font-data-mono font-bold bg-[#ecfdf5] text-[#065f46]">95.1%</span>
+</div>
+</div>
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-secondary-container rounded-l"></div>
+</div>
+</div>
+<!-- 3. STAGE: FALLBACK & ARBITRATOR QUORUM -->
+<div class="flex flex-col gap-6">
+<!-- Specialized Fallback Node -->
+<div class="flex flex-col gap-1.5">
+<span class="text-label-sm font-label-sm text-error font-semibold">STAGE 02-B: FALLBACK HANDLER</span>
+<div class="bg-surface-container-lowest border-2 border-error/50 rounded shadow-sm p-space-md w-56 relative">
+<div class="flex items-center justify-between pb-1.5 border-b border-outline-variant mb-1.5">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-error text-body-lg" data-icon="warning">warning</span>
+<span class="text-label-md font-label-md text-on-surface font-semibold">TrOCR Stamp Handler</span>
+</div>
+</div>
+<span class="inline-flex items-center px-1.5 py-0.5 rounded text-label-sm font-label-sm font-bold bg-[#fffbeb] text-[#92400e] border border-[#fde68a] mb-2">
+                    Triggered: Low Conf Seal
+                  </span>
+<p class="text-body-sm font-body-sm text-outline">Re-evaluating notary embosser seal at 600 DPI zoom.</p>
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-error rounded-l"></div>
+</div>
+</div>
+<!-- Arbitrator Node (Consensus) -->
+<div class="flex flex-col gap-1.5">
+<span class="text-label-sm font-label-sm text-outline tracking-wider">STAGE 03: QUORUM</span>
+<div class="bg-surface-container-lowest border border-outline-variant rounded shadow-sm p-space-md w-56 relative opacity-75">
+<div class="flex items-center justify-between pb-1.5 border-b border-outline-variant mb-1.5">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-outline" data-icon="balance">balance</span>
+<span class="text-label-md font-label-md text-on-surface font-semibold">Arbitrator Node</span>
+</div>
+<span class="px-2 py-0.5 rounded text-label-sm font-label-sm text-outline bg-surface-container border border-outline-variant">
+                      Queued
+                    </span>
+</div>
+<p class="text-body-sm font-body-sm text-outline">Consensus rule 2-of-3 threshold across field bounding boxes.</p>
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-outline-variant rounded-l"></div>
+</div>
+</div>
+</div>
+<!-- 4. STAGE: FINAL OUTPUT NODE -->
+<div class="flex flex-col gap-2">
+<span class="text-label-sm font-label-sm text-outline tracking-wider">STAGE 04: OUTPUT</span>
+<div class="bg-surface-container-lowest border border-outline-variant rounded shadow-sm p-space-md w-56 relative opacity-75">
+<div class="flex items-center justify-between pb-2 border-b border-outline-variant mb-2">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary" data-icon="data_object">data_object</span>
+<span class="text-label-md font-label-md text-on-surface font-semibold">Normalized JSON</span>
+</div>
+<span class="px-2 py-0.5 rounded text-label-sm font-label-sm text-outline bg-surface-container border border-outline-variant">
+                    Queued
+                  </span>
+</div>
+<div class="space-y-1 text-body-sm font-body-sm text-outline">
+<div>Target: Federal NIST 800 Schema</div>
+<div>Sign &amp; Ingest to Archive</div>
+</div>
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-outline-variant rounded-l"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- ========================================== -->
+<!-- 5. RIGHT SIDEBAR: NODE INSPECTOR           -->
+<!-- ========================================== -->
+<aside class="w-80 border-l border-outline-variant bg-surface-container-lowest flex flex-col justify-between shadow-sm z-20">
+<!-- Inspector Header -->
+<div class="p-space-md border-b border-outline-variant flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-secondary" data-icon="tune">tune</span>
+<div>
+<h3 class="text-title-md font-title-md text-on-surface font-bold">Node Inspector</h3>
+<span class="text-label-sm font-label-sm text-outline">Active Focus: Surya OCR Node</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full text-label-sm font-label-sm font-bold bg-[#f5f3ff] text-[#5b21b6] border border-[#ddd6fe]">
+              Running
+            </span>
+</div>
+<!-- Inspector Content Body -->
+<div class="p-space-md flex-1 overflow-y-auto space-y-space-md">
+<!-- Hardware / Telemetry Bento Cards -->
+<div class="grid grid-cols-2 gap-space-sm">
+<div class="p- space-sm bg-surface-container-low border border-outline-variant rounded p-2.5">
+<span class="text-label-sm font-label-sm text-outline block mb-1">ACCELERATOR</span>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-body-md" data-icon="memory">memory</span>
+<span class="text-label-md font-label-md font-bold text-on-surface">NVIDIA H100</span>
+</div>
+<span class="text-body-sm font-body-sm text-outline">Allocated 16GB VRAM</span>
+</div>
+<div class="p- space-sm bg-surface-container-low border border-outline-variant rounded p-2.5">
+<span class="text-label-sm font-label-sm text-outline block mb-1">SPEED TELEMETRY</span>
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-secondary text-body-md" data-icon="speed">speed</span>
+<span class="text-label-md font-label-md font-bold text-on-surface font-data-mono">24.2 ms/pg</span>
+</div>
+<span class="text-body-sm font-body-sm text-outline">3.8x baseline pace</span>
+</div>
+</div>
+<!-- Page Inference Map -->
+<div>
+<div class="flex justify-between items-center mb-2">
+<span class="text-label-md font-label-md text-on-surface font-semibold">Document Page Map</span>
+<span class="text-label-sm font-label-sm text-outline font-data-mono">4 / 6 Active</span>
+</div>
+<div class="grid grid-cols-6 gap-1.5">
+<div class="h-10 bg-[#ecfdf5] border border-[#a7f3d0] rounded flex flex-col items-center justify-center">
+<span class="text-label-sm font-label-sm font-bold text-[#065f46]">P1</span>
+<span class="text-[9px] text-[#065f46]">100%</span>
+</div>
+<div class="h-10 bg-[#ecfdf5] border border-[#a7f3d0] rounded flex flex-col items-center justify-center">
+<span class="text-label-sm font-label-sm font-bold text-[#065f46]">P2</span>
+<span class="text-[9px] text-[#065f46]">100%</span>
+</div>
+<div class="h-10 bg-[#ecfdf5] border border-[#a7f3d0] rounded flex flex-col items-center justify-center">
+<span class="text-label-sm font-label-sm font-bold text-[#065f46]">P3</span>
+<span class="text-[9px] text-[#065f46]">100%</span>
+</div>
+<div class="h-10 bg-[#eff4ff] border-2 border-secondary rounded flex flex-col items-center justify-center animate-pulse">
+<span class="text-label-sm font-label-sm font-bold text-primary">P4</span>
+<span class="text-[9px] text-secondary font-bold">80%</span>
+</div>
+<div class="h-10 bg-surface-container border border-outline-variant rounded flex flex-col items-center justify-center text-outline">
+<span class="text-label-sm font-label-sm">P5</span>
+<span class="text-[9px]">-</span>
+</div>
+<div class="h-10 bg-surface-container border border-outline-variant rounded flex flex-col items-center justify-center text-outline">
+<span class="text-label-sm font-label-sm">P6</span>
+<span class="text-[9px]">-</span>
+</div>
+</div>
+</div>
+<!-- Extracted Fields Live Preview Table -->
+<div>
+<div class="flex items-center justify-between mb-2">
+<span class="text-label-md font-label-md text-on-surface font-semibold">Extracted Entity Fields</span>
+<span class="text-label-sm font-label-sm text-secondary hover:underline cursor-pointer">Live Stream</span>
+</div>
+<div class="border border-outline-variant rounded-lg overflow-hidden">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container text-outline text-label-sm font-label-sm border-b border-outline-variant">
+<th class="py-1.5 px-2 font-semibold">Entity Key</th>
+<th class="py-1.5 px-2 font-semibold">Parsed String</th>
+<th class="py-1.5 px-2 text-right font-semibold">Conf</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant text-body-sm font-body-sm">
+<!-- Grantor Name -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-2 px-2 font-medium text-on-surface">Grantor Name</td>
+<td class="py-2 px-2 text-primary font-semibold">MORGAN, ARTHUR T.</td>
+<td class="py-2 px-2 text-right">
+<span class="px-1.5 py-0.5 rounded text-label-sm font-label-sm font-data-mono font-bold bg-[#ecfdf5] text-[#065f46]">98.9%</span>
+</td>
+</tr>
+<!-- Parcel PIN -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-2 px-2 font-medium text-on-surface">Parcel PIN</td>
+<td class="py-2 px-2 font-data-mono text-data-mono text-on-surface-variant">08-22-401-019</td>
+<td class="py-2 px-2 text-right">
+<span class="px-1.5 py-0.5 rounded text-label-sm font-label-sm font-data-mono font-bold bg-[#ecfdf5] text-[#065f46]">99.2%</span>
+</td>
+</tr>
+<!-- Stated Value -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-2 px-2 font-medium text-on-surface">Value ($ USD)</td>
+<td class="py-2 px-2 font-data-mono text-data-mono text-on-surface-variant">$1,450,000.00</td>
+<td class="py-2 px-2 text-right">
+<span class="px-1.5 py-0.5 rounded text-label-sm font-label-sm font-data-mono font-bold bg-[#fffbeb] text-[#92400e]">91.4%</span>
+</td>
+</tr>
+<!-- Legal Section -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-2 px-2 font-medium text-on-surface">Subdivision</td>
+<td class="py-2 px-2 text-on-surface-variant">Oak Ridge Lot 4B</td>
+<td class="py-2 px-2 text-right">
+<span class="px-1.5 py-0.5 rounded text-label-sm font-label-sm font-data-mono font-bold bg-[#ecfdf5] text-[#065f46]">97.8%</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Parameters Card -->
+<div class="p-2.5 bg-surface-container rounded border border-outline-variant space-y-1">
+<span class="text-label-sm font-label-sm text-outline block">MODEL CONFIGURATION</span>
+<div class="text-body-sm font-body-sm text-on-surface flex justify-between">
+<span>Checkpoint:</span>
+<span class="font-data-mono text-data-mono">surya-layout-v2.1</span>
+</div>
+<div class="text-body-sm font-body-sm text-on-surface flex justify-between">
+<span>Beam Search:</span>
+<span class="font-data-mono text-data-mono">Width = 4</span>
+</div>
+</div>
+</div>
+<!-- Inspector Action Footer -->
+<div class="p-space-md border-t border-outline-variant bg-surface-container-low flex items-center justify-between">
+<button class="text-label-sm font-label-sm text-outline hover:text-primary transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-body-sm" data-icon="terminal">terminal</span>
+<span>Raw JSON Node</span>
+</button>
+<button class="px-3 py-1 bg-surface-container-lowest border border-outline-variant hover:bg-surface-container rounded text-label-md font-label-md font-semibold text-primary transition-colors">
+              Re-run Node
+            </button>
+</div>
+</aside>
+</div>
+<!-- ========================================== -->
+<!-- 6. BOTTOM BAR: LIVE AUDIT EVENT STREAM     -->
+<!-- ========================================== -->
+<footer class="h-12 bg-surface-container-lowest border-t border-outline-variant px-gutter flex items-center justify-between z-30">
+<!-- Event Stream Log Item -->
+<div class="flex items-center gap-space-md overflow-hidden text-body-sm font-body-sm">
+<div class="flex items-center gap-1.5 text-primary font-bold shrink-0">
+<span class="material-symbols-outlined text-body-md text-secondary" data-icon="monitoring">monitoring</span>
+<span class="text-label-md font-label-md">LIVE AUDIT STREAM:</span>
+</div>
+<!-- Active Milestones Stream -->
+<div class="flex items-center gap-space-lg overflow-x-auto whitespace-nowrap text-on-surface-variant font-data-mono text-data-mono">
+<div class="flex items-center gap-1.5">
+<span class="text-outline">14:02:11.104</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span>
+<span class="text-on-surface">Ingest/De-skew verified. Output written to memfs://run9021/p1-6</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="text-outline">14:02:12.340</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span>
+<span class="text-on-surface">Paddle OCR extracted 31 fields with 93.8% confidence</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="text-outline">14:02:13.780</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#ba1a1a] animate-ping"></span>
+<span class="text-[#991b1b] font-semibold">TrOCR Stamp Handler: Notary embosser threshold 68.4% &lt; 70% requirement. Triggered Fallback.</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="text-outline">14:02:15.220</span>
+<span class="w-1.5 h-1.5 rounded-full bg-secondary-container animate-pulse"></span>
+<span class="text-primary font-medium">Surya Engine completed Page 3 layout graph. Moving to Page 4.</span>
+</div>
+</div>
+</div>
+<!-- Stream status indicator -->
+<div class="flex items-center gap-2 pl-space-md shrink-0">
+<span class="w-2 h-2 rounded-full bg-[#10b981]"></span>
+<span class="text-label-sm font-label-sm text-outline">WebSocket Connected (84 ms)</span>
+</div>
+</footer>
+</main>
+</div>
+</body></html>

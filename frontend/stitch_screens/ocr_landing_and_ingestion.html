@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DocGov CivicIntel - OCR Document Ingestion</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Inter Google Font -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS with Forms and Container Queries -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "inverse-primary": "#b6c4ff",
+            "primary": "#00236f",
+            "on-secondary-fixed": "#001e2f",
+            "on-error": "#ffffff",
+            "surface-container-lowest": "#ffffff",
+            "on-tertiary": "#ffffff",
+            "inverse-surface": "#213145",
+            "on-background": "#0b1c30",
+            "surface": "#f8f9ff",
+            "tertiary-fixed-dim": "#d0bcff",
+            "surface-dim": "#cbdbf5",
+            "on-surface-variant": "#444651",
+            "on-secondary-container": "#004666",
+            "on-primary-fixed-variant": "#264191",
+            "tertiary-container": "#4e03b8",
+            "surface-container": "#e5eeff",
+            "tertiary": "#340081",
+            "inverse-on-surface": "#eaf1ff",
+            "surface-variant": "#d3e4fe",
+            "secondary": "#006591",
+            "surface-container-high": "#dce9ff",
+            "secondary-fixed": "#c9e6ff",
+            "outline": "#757682",
+            "on-primary": "#ffffff",
+            "on-secondary": "#ffffff",
+            "on-tertiary-fixed-variant": "#5516be",
+            "on-tertiary-fixed": "#23005c",
+            "secondary-container": "#39b8fd",
+            "outline-variant": "#c5c5d3",
+            "tertiary-fixed": "#e9ddff",
+            "on-error-container": "#93000a",
+            "primary-fixed": "#dce1ff",
+            "surface-tint": "#4059aa",
+            "on-primary-fixed": "#00164e",
+            "secondary-fixed-dim": "#89ceff",
+            "primary-fixed-dim": "#b6c4ff",
+            "on-primary-container": "#90a8ff",
+            "primary-container": "#1e3a8a",
+            "surface-bright": "#f8f9ff",
+            "error-container": "#ffdad6",
+            "surface-container-highest": "#d3e4fe",
+            "on-tertiary-container": "#b89cff",
+            "surface-container-low": "#eff4ff",
+            "on-surface": "#0b1c30",
+            "error": "#ba1a1a",
+            "on-secondary-fixed-variant": "#004c6e",
+            "background": "#f8f9ff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-xl": "2rem",
+            "space-sm": "0.5rem",
+            "gutter": "1.25rem",
+            "space-xs": "0.25rem",
+            "space-md": "1rem",
+            "margin": "1.5rem",
+            "space-lg": "1.5rem"
+          },
+          "fontFamily": {
+            "data-mono": ["Inter"],
+            "headline-lg": ["Inter"],
+            "display-lg-mobile": ["Inter"],
+            "title-md": ["Inter"],
+            "headline-sm": ["Inter"],
+            "body-md": ["Inter"],
+            "headline-md": ["Inter"],
+            "display-lg": ["Inter"],
+            "label-sm": ["Inter"],
+            "label-md": ["Inter"],
+            "body-sm": ["Inter"],
+            "body-lg": ["Inter"]
+          },
+          "fontSize": {
+            "data-mono": ["13px", { "lineHeight": "18px", "letterSpacing": "0em", "fontWeight": "500" }],
+            "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.015em", "fontWeight": "600" }],
+            "display-lg-mobile": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+            "title-md": ["16px", { "lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "600" }],
+            "headline-sm": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "600" }],
+            "body-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400" }],
+            "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "display-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "600" }],
+            "label-md": ["13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "500" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 20px;
+      line-height: 1;
+      letter-spacing: normal;
+      text-transform: none;
+      display: inline-block;
+      white-space: nowrap;
+      word-wrap: normal;
+      direction: ltr;
+      font-feature-settings: 'liga';
+      -webkit-font-smoothing: antialiased;
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen flex flex-col font-body-md text-body-md antialiased selection:bg-surface-container-highest">
+<!-- ================= TOP NAVBAR ================= -->
+<!-- TopNavBar from Shared Components JSON -->
+<header class="flex justify-between items-center h-14 px-gutter w-full sticky top-0 z-40 bg-surface-container-lowest dark:bg-inverse-surface border-b border-outline-variant dark:border-outline shadow-sm dark:shadow-none">
+<!-- Left: Brand + Search Bar -->
+<div class="flex items-center gap-space-lg w-full max-w-xl">
+<div class="flex items-center gap-space-sm shrink-0">
+<div class="w-8 h-8 rounded bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined" data-icon="policy">policy</span>
+</div>
+<span class="text-headline-sm font-headline-sm font-bold text-primary dark:text-primary-fixed tracking-tight">DocGov CivicIntel</span>
+</div>
+<!-- Integrated Search Input -->
+<div class="relative w-full max-w-md hidden sm:block">
+<span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-outline">
+<span class="material-symbols-outlined text-[18px]" data-icon="search">search</span>
+</span>
+<input class="w-full h-9 pl-9 pr-4 bg-surface text-on-surface border border-outline-variant rounded font-body-sm text-body-sm focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-colors duration-150 ease-in-out placeholder:text-outline" placeholder="Search templates, document batches, or hash ID..." type="text"/>
+</div>
+</div>
+<!-- Right: Trailing Actions & Officer Profile -->
+<div class="flex items-center gap-space-sm">
+<div class="flex items-center gap-1 text-on-surface-variant">
+<button aria-label="Notifications" class="p-2 rounded hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary transition-colors duration-150 ease-in-out relative" type="button">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-secondary ring-2 ring-surface-container-lowest"></span>
+</button>
+<button aria-label="Help" class="p-2 rounded hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary transition-colors duration-150 ease-in-out" type="button">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+</button>
+<button aria-label="Settings" class="p-2 rounded hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary transition-colors duration-150 ease-in-out" type="button">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</div>
+<div class="h-6 w-[1px] bg-outline-variant mx-1"></div>
+<!-- Officer Vance Profile Badge -->
+<div class="flex items-center gap-space-sm pl-1 cursor-pointer">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-title-md text-title-md ring-1 ring-outline-variant">
+          OV
+        </div>
+<div class="hidden lg:flex flex-col text-left">
+<span class="font-title-md text-body-sm font-semibold text-primary leading-tight">Officer Vance</span>
+<span class="font-label-sm text-label-sm text-outline tracking-wider">LEVEL 4 CLEARANCE</span>
+</div>
+</div>
+</div>
+</header>
+<!-- ================= MAIN BODY CONTAINER ================= -->
+<div class="flex flex-1 w-full relative">
+<!-- ================= SIDE NAVBAR ================= -->
+<!-- SideNavBar from Shared Components JSON -->
+<aside class="flex flex-col justify-between h-full w-64 shrink-0 py-space-md px-space-sm fixed left-0 top-14 bottom-0 z-30 bg-surface-container-lowest dark:bg-inverse-surface border-r border-outline-variant dark:border-outline shadow-sm dark:shadow-none overflow-y-auto">
+<div class="flex flex-col gap-space-md">
+<!-- Agency Emblem Header -->
+<div class="px-space-sm flex items-center gap-space-sm pb-space-sm border-b border-outline-variant">
+<div class="w-8 h-8 rounded bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="verified_user">verified_user</span>
+</div>
+<div>
+<div class="text-title-md font-title-md font-bold text-primary dark:text-primary-fixed">CivicIntel Platform</div>
+<div class="text-body-sm font-body-sm text-on-surface-variant font-medium">Agency Compliance v4.2</div>
+</div>
+</div>
+<!-- Ingestion Quick Action -->
+<button class="w-full h-9 bg-primary hover:bg-primary-container text-on-primary flex items-center justify-center gap-space-sm rounded font-label-md text-label-md transition-colors duration-150 shadow-sm" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="add_circle">add_circle</span>
+<span>New Document Ingestion</span>
+</button>
+<!-- Primary Navigation Tabs (8 Items from JSON) -->
+<nav class="flex flex-col gap-1">
+<!-- 1. Dashboard -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<!-- 2. Departments -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="account_balance">account_balance</span>
+<span>Departments</span>
+</a>
+<!-- 3. URLs -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="link">link</span>
+<span>URLs</span>
+</a>
+<!-- 4. OCR (ACTIVE TAB) -->
+<a class="flex items-center gap-space-sm bg-surface-container dark:bg-surface-container-high text-primary dark:text-primary-fixed border-l-2 border-primary dark:border-primary-fixed font-title-md text-title-md px-space-md py-space-sm rounded-r-lg" href="#">
+<span class="material-symbols-outlined" data-icon="document_scanner" data-weight="fill" style="font-variation-settings: 'FILL' 1;">document_scanner</span>
+<span>OCR</span>
+</a>
+<!-- 5. Orchestration -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="account_tree">account_tree</span>
+<span>Orchestration</span>
+</a>
+<!-- 6. Logs -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+<span>Logs</span>
+</a>
+<!-- 7. Manage Templates -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="topic">topic</span>
+<span>Manage Templates</span>
+</a>
+<!-- 8. Help & Support -->
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-space-sm rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="support">support</span>
+<span>Help &amp; Support</span>
+</a>
+</nav>
+</div>
+<!-- Footer Tabs (from JSON) -->
+<div class="flex flex-col gap-1 pt-space-md border-t border-outline-variant">
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-1.5 rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="verified_user">verified_user</span>
+<span>System Health</span>
+</a>
+<a class="flex items-center gap-space-sm text-on-surface-variant dark:text-outline-variant font-label-md text-label-md px-space-md py-1.5 rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-container hover:text-primary transition-colors duration-150 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="tune">tune</span>
+<span>Compliance Settings</span>
+</a>
+</div>
+</aside>
+<!-- ================= MAIN WORKSPACE CANVAS ================= -->
+<main class="flex-1 ml-64 p-margin min-h-[calc(100vh-56px)] bg-background">
+<div class="max-w-5xl mx-auto space-y-space-lg">
+<!-- Header Section -->
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-outline-variant">
+<div>
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[28px]" data-icon="document_scanner">document_scanner</span>
+<h1 class="text-headline-lg font-headline-lg text-primary tracking-tight">Document Intelligence &amp; Information Extraction</h1>
+</div>
+<p class="text-body-md font-body-md text-on-surface-variant mt-1 max-w-3xl">
+              Extract structured fields and verify critical records in 3 simple steps without complex engine configuration.
+            </p>
+</div>
+<div class="shrink-0 flex items-center">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 bg-surface-container rounded-full text-primary font-label-md text-label-md border border-outline-variant">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+              Ingestion Queue Active
+            </span>
+</div>
+</div>
+<!-- Stepper Indicator Banner -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-space-md shadow-sm">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md relative">
+<!-- Step 1: Completed / Active Setup -->
+<div class="flex items-center gap-space-md p-2 bg-surface-container-low rounded-lg border border-secondary-container/40">
+<div class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-label-md text-label-md shrink-0">
+<span class="material-symbols-outlined text-[18px]" data-icon="check">check</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="text-label-sm font-label-sm text-secondary font-semibold uppercase tracking-wider">Step 1</span>
+<span class="text-title-md font-title-md text-primary font-semibold truncate">Department &amp; Template</span>
+</div>
+</div>
+<!-- Step 2: Upload PDF Document (Currently Active) -->
+<div class="flex items-center gap-space-md p-2 bg-surface-container-high rounded-lg border-2 border-primary">
+<div class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-label-md text-label-md shrink-0">
+                2
+              </div>
+<div class="flex flex-col min-w-0">
+<span class="text-label-sm font-label-sm text-primary font-bold uppercase tracking-wider">Step 2 (Active)</span>
+<span class="text-title-md font-title-md text-primary font-bold truncate">Upload PDF Document</span>
+</div>
+</div>
+<!-- Step 3: Automated Extraction & Review -->
+<div class="flex items-center gap-space-md p-2 rounded-lg opacity-75">
+<div class="w-8 h-8 rounded-full bg-surface-container-high text-on-surface-variant flex items-center justify-center font-label-md text-label-md shrink-0 border border-outline-variant">
+                3
+              </div>
+<div class="flex flex-col min-w-0">
+<span class="text-label-sm font-label-sm text-outline uppercase tracking-wider">Step 3</span>
+<span class="text-title-md font-title-md text-on-surface-variant font-medium truncate">Automated Extraction &amp; Review</span>
+</div>
+</div>
+</div>
+</div>
+<!-- ================= CENTRAL FORM CARD ================= -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-sm overflow-hidden">
+<div class="p-space-lg space-y-space-lg">
+<!-- Row 1: Selectors (Department & Schema/Template) -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-lg">
+<!-- Department selector -->
+<div class="space-y-1.5">
+<label class="flex items-center justify-between text-label-md font-label-md text-on-surface font-semibold" for="dept-select">
+<span>Assigned Department &amp; Jurisdiction</span>
+<span class="text-outline font-normal text-body-sm">Required</span>
+</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-primary">
+<span class="material-symbols-outlined text-[20px]" data-icon="account_balance">account_balance</span>
+</div>
+<select class="w-full h-11 pl-10 pr-9 bg-surface text-on-surface border border-outline-variant rounded font-body-md text-body-md focus:border-secondary focus:ring-1 focus:ring-secondary transition-colors duration-150" id="dept-select">
+<option selected="">Department of Revenue &amp; Land Records (REV-01)</option>
+<option>Bureau of Vital Statistics &amp; Registrations (BVS-04)</option>
+<option>State Licensing &amp; Regulatory Agency (SLRA-02)</option>
+<option>Department of Commerce &amp; Public Contracts (DCPC-09)</option>
+</select>
+</div>
+<div class="flex items-center gap-1.5 text-body-sm font-body-sm text-outline mt-1">
+<span class="material-symbols-outlined text-[16px] text-secondary" data-icon="verified">verified</span>
+<span>Jurisdiction code verified under FIPS Federal Region IV</span>
+</div>
+</div>
+<!-- Schema/Template selector -->
+<div class="space-y-1.5">
+<label class="flex items-center justify-between text-label-md font-label-md text-on-surface font-semibold" for="template-select">
+<span>Extraction Schema &amp; Schema Rulepack</span>
+<span class="text-secondary font-medium text-body-sm">18 Target Fields Active</span>
+</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-primary">
+<span class="material-symbols-outlined text-[20px]" data-icon="schema">schema</span>
+</div>
+<select class="w-full h-11 pl-10 pr-9 bg-surface text-on-surface border border-outline-variant rounded font-body-md text-body-md focus:border-secondary focus:ring-1 focus:ring-secondary transition-colors duration-150" id="template-select">
+<option selected="">Deed of Conveyance &amp; Title Registration v2.1 (18 target fields)</option>
+<option>Standard Commercial Lease Agreement v1.4 (24 target fields)</option>
+<option>County Property Tax Assessment Certificate v3.0 (12 target fields)</option>
+<option>Affidavit of Heirs &amp; Inherited Estate Record v2.0 (15 target fields)</option>
+</select>
+</div>
+<div class="flex items-center gap-1.5 text-body-sm font-body-sm text-outline mt-1">
+<span class="material-symbols-outlined text-[16px]" data-icon="info">info</span>
+<span>Pre-configured key-value anchors for legal parcels &amp; grantor identifiers</span>
+</div>
+</div>
+</div>
+<!-- Row 2: Drag and Drop Upload Canvas -->
+<div class="space-y-2">
+<label class="text-label-md font-label-md text-on-surface font-semibold block">
+                Source Document Ingestion
+              </label>
+<!-- Upload Zone -->
+<div class="border-2 border-dashed border-outline-variant hover:border-secondary rounded-xl bg-surface p-space-xl flex flex-col items-center justify-center text-center transition-all duration-200 cursor-pointer group">
+<div class="w-14 h-14 rounded-full bg-surface-container flex items-center justify-center text-primary group-hover:scale-105 transition-transform duration-150 mb-space-md">
+<span class="material-symbols-outlined text-[32px]" data-icon="cloud_upload">cloud_upload</span>
+</div>
+<h3 class="text-title-md font-title-md text-on-surface font-semibold mb-1">
+                  Drag &amp; drop single or multi-page PDF here, or <span class="text-secondary underline underline-offset-2">Browse files</span>
+</h3>
+<p class="text-body-sm font-body-sm text-on-surface-variant max-w-lg mt-1">
+                  Supported formats: PDF (up to 75MB, scanned or digital). Automatic de-skewing and resolution enhancement enabled.
+                </p>
+<div class="mt-space-md flex flex-wrap items-center justify-center gap-3 text-label-sm font-label-sm text-outline">
+<span class="inline-flex items-center gap-1 bg-surface-container px-2.5 py-1 rounded">
+<span class="material-symbols-outlined text-[14px]" data-icon="tune">tune</span> Auto-Deskew &amp; Contrast
+                  </span>
+<span class="inline-flex items-center gap-1 bg-surface-container px-2.5 py-1 rounded">
+<span class="material-symbols-outlined text-[14px]" data-icon="security">security</span> Client-Side PII Screening
+                  </span>
+<span class="inline-flex items-center gap-1 bg-surface-container px-2.5 py-1 rounded">
+<span class="material-symbols-outlined text-[14px]" data-icon="high_quality">high_quality</span> 300+ DPI Normalization
+                  </span>
+</div>
+</div>
+<!-- Selected Document Chip Preview -->
+<div class="mt-space-md p-space-md bg-surface-container-low border border-outline-variant rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-md min-w-0">
+<div class="w-10 h-10 rounded bg-surface-container-high text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[24px]" data-icon="picture_as_pdf">picture_as_pdf</span>
+</div>
+<div class="min-w-0">
+<div class="flex items-center gap-2">
+<span class="text-body-md font-body-md font-semibold text-primary truncate">
+                        Land_Title_Deed_Registry_2024_08B.pdf
+                      </span>
+<!-- Status Pill High Confidence / Ready -->
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm font-semibold bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">
+<span class="material-symbols-outlined text-[14px]" data-icon="check_circle" data-weight="fill" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+                        Ready
+                      </span>
+</div>
+<div class="text-body-sm font-body-sm text-on-surface-variant flex items-center gap-2 mt-0.5">
+<span>4.8 MB</span>
+<span>•</span>
+<span>6 Pages</span>
+<span>•</span>
+<span class="text-secondary font-medium">Text Layer &amp; High-Res Scans Detected</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+<button class="px-3 py-1.5 text-body-sm font-body-sm font-medium text-secondary hover:bg-surface-container rounded transition-colors duration-150 flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="visibility">visibility</span>
+                    Preview
+                  </button>
+<button class="px-3 py-1.5 text-body-sm font-body-sm font-medium text-error hover:bg-error-container/40 rounded transition-colors duration-150 flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="delete">delete</span>
+                    Remove
+                  </button>
+</div>
+</div>
+</div>
+<!-- ================= OPTIONAL COLLAPSIBLE CARD ================= -->
+<div class="border border-outline-variant rounded-lg overflow-hidden bg-surface-container-lowest">
+<!-- Accordion Header -->
+<button class="w-full px-space-md py-3 bg-surface hover:bg-surface-container-low flex items-center justify-between text-left transition-colors duration-150" id="pipeline-toggle" onclick="document.getElementById('pipeline-content').classList.toggle('hidden'); document.getElementById('pipeline-arrow').classList.toggle('rotate-180');" type="button">
+<div class="flex items-center gap-space-sm text-on-surface font-title-md text-title-md font-semibold">
+<span class="material-symbols-outlined text-secondary" data-icon="tune">tune</span>
+<span>Advanced Pipeline Settings (Optional)</span>
+</div>
+<div class="flex items-center gap-2 text-outline">
+<span class="text-body-sm font-body-sm">Intelligent Auto-Select • 85% Threshold</span>
+<span class="material-symbols-outlined transition-transform duration-200" data-icon="keyboard_arrow_down" id="pipeline-arrow">keyboard_arrow_down</span>
+</div>
+</button>
+<!-- Collapsed Content -->
+<div class="p-space-md border-t border-outline-variant bg-surface-container-lowest space-y-space-md" id="pipeline-content">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-lg">
+<!-- OCR Engine Routing -->
+<div>
+<label class="block text-label-md font-label-md font-semibold text-on-surface mb-1">Default OCR Extraction Engine</label>
+<select class="w-full h-10 px-3 bg-surface border border-outline-variant rounded font-body-md text-body-md text-on-surface focus:border-secondary focus:ring-1 focus:ring-secondary">
+<option selected="">Intelligent Auto-Select (Surya v2.4 + PaddleOCR v2.7 fallback)</option>
+<option>Surya v2.4 Multi-Lingual Layout Engine</option>
+<option>PaddleOCR v2.7 Structural Form Engine</option>
+<option>Tesseract 5.3 Legacy Fast Fallback</option>
+</select>
+<p class="text-body-sm font-body-sm text-outline mt-1">Dynamically switches engines based on bounding layout complexity and skew.</p>
+</div>
+<!-- Confidence Threshold Slider -->
+<div>
+<div class="flex items-center justify-between text-label-md font-label-md font-semibold text-on-surface mb-1">
+<span>Human Review Confidence Threshold</span>
+<span class="text-primary font-bold font-data-mono">85%</span>
+</div>
+<input class="w-full h-2 bg-surface-variant rounded-lg appearance-none cursor-pointer accent-primary mt-2" max="98" min="60" type="range" value="85"/>
+<div class="flex justify-between text-label-sm font-label-sm text-outline mt-1">
+<span>Permissive (70%)</span>
+<span class="font-semibold text-primary">Standard (85%)</span>
+<span>Strict Compliance (95%)</span>
+</div>
+</div>
+</div>
+<!-- Toggles & Handwritten Check -->
+<div class="pt-space-sm border-t border-outline-variant/60 flex flex-wrap gap-space-lg items-center">
+<label class="flex items-center gap-space-sm cursor-pointer select-none">
+<input checked="" class="w-4 h-4 text-primary rounded border-outline focus:ring-secondary focus:ring-offset-0" type="checkbox"/>
+<span class="text-body-sm font-body-sm text-on-surface font-medium">Enable handwritten signatures and stamp margin check</span>
+</label>
+<label class="flex items-center gap-space-sm cursor-pointer select-none">
+<input checked="" class="w-4 h-4 text-primary rounded border-outline focus:ring-secondary focus:ring-offset-0" type="checkbox"/>
+<span class="text-body-sm font-body-sm text-on-surface font-medium">Generate searchable PDF/A-1b audit preservation record</span>
+</label>
+</div>
+</div>
+</div>
+</div>
+<!-- Card Footer & Actions -->
+<div class="px-space-lg py-space-md bg-surface-container-low border-t border-outline-variant flex flex-col sm:flex-row sm:items-center justify-between gap-space-md">
+<!-- Federal Security Badge -->
+<div class="flex items-center gap-2 text-outline font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[18px] text-primary" data-icon="lock">lock</span>
+<span>FIPS 140-3 &amp; NIST 800-53 Compliant Ingestion</span>
+<span class="hidden sm:inline">•</span>
+<span class="hidden sm:inline">256-bit Hardware Encrypted Pipeline</span>
+</div>
+<!-- Action Buttons -->
+<div class="flex items-center gap-space-md self-end sm:self-center">
+<button class="h-10 px-space-md bg-surface-container-lowest border border-outline hover:bg-surface text-on-surface rounded font-label-md text-label-md transition-colors duration-150" type="button">
+                Save as Draft Batch
+              </button>
+<button class="h-10 px-space-lg bg-primary hover:bg-primary-container text-on-primary rounded font-label-md text-label-md flex items-center gap-space-sm transition-colors duration-150 shadow-sm" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="bolt">bolt</span>
+<span>Process Document Now</span>
+<span class="material-symbols-outlined text-[18px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Secondary Information Section / Recent Pipeline Activity -->
+<div class="pt-space-sm">
+<div class="flex items-center justify-between mb-space-sm">
+<h2 class="text-title-md font-title-md text-on-surface font-semibold flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary" data-icon="history">history</span>
+              Recent Ingestion Batches in Revenue &amp; Land Records
+            </h2>
+<a class="text-secondary font-label-md text-label-md hover:underline" href="#">View All Pipeline Batches</a>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface border-b border-outline-variant text-label-sm font-label-sm text-outline">
+<th class="py-2.5 px-4 font-semibold">Document Title</th>
+<th class="py-2.5 px-4 font-semibold">Template Schema</th>
+<th class="py-2.5 px-4 font-semibold">Processed At</th>
+<th class="py-2.5 px-4 font-semibold text-right">Confidence</th>
+<th class="py-2.5 px-4 font-semibold text-right">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/60 font-body-sm text-body-sm">
+<tr class="hover:bg-surface transition-colors">
+<td class="py-3 px-4 font-medium text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-outline" data-icon="description">description</span>
+                      Parcel_Deed_Transfer_9941_Hamilton.pdf
+                    </td>
+<td class="py-3 px-4 text-on-surface-variant">Deed of Conveyance v2.1</td>
+<td class="py-3 px-4 text-outline font-data-mono">Today, 10:14 AM</td>
+<td class="py-3 px-4 text-right font-data-mono text-[#065F46] font-semibold">98.4%</td>
+<td class="py-3 px-4 text-right">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm font-semibold bg-[#ECFDF5] text-[#065F46] border border-[#A7F3D0]">
+                        Verified
+                      </span>
+</td>
+</tr>
+<tr class="hover:bg-surface transition-colors">
+<td class="py-3 px-4 font-medium text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-outline" data-icon="description">description</span>
+                      Quitclaim_Subdivision_B4_2024.pdf
+                    </td>
+<td class="py-3 px-4 text-on-surface-variant">Deed of Conveyance v2.1</td>
+<td class="py-3 px-4 text-outline font-data-mono">Yesterday, 16:42 PM</td>
+<td class="py-3 px-4 text-right font-data-mono text-[#92400E] font-semibold">78.1%</td>
+<td class="py-3 px-4 text-right">
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-label-sm font-label-sm font-semibold bg-[#FFFBEB] text-[#92400E] border border-[#FDE68A]">
+                        Review Needed
+                      </span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>
