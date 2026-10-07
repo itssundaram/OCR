@@ -1,7 +1,6 @@
 """
-DOCINT — Surya Pipeline V2
-Uses Surya Layout detection, Surya OCR for text, TrOCR for fallback, and TATR for tables.
-Replaces the old stub.
+DOCINT — Tesseract Pipeline
+Uses PPStructure for layout detection and Tesseract for text OCR.
 """
 from __future__ import annotations
 
@@ -11,10 +10,9 @@ from PIL import Image
 from app.pipelines.base import OCRPipeline, PipelineCapabilities, PipelineResult, FieldResult, TableResult
 from app.pipelines.registry import register_pipeline
 from app.ocr.preprocessing import preprocess_page
-from app.ocr.surya_ocr_engine import SuryaOCREngine
-from app.ocr.surya_layout_engine import SuryaLayoutEngine
-from app.ocr.tatr_engine import TATRTableEngine
-from app.ocr.handwriting_ocr import HandwritingOCREngine
+from app.ocr.tesseract import TesseractOCREngine
+from app.ocr.ppstructure_layout_engine import PPStructureLayoutEngine
+from app.ocr.img2table_engine import extract_tables_from_image
 from app.ai.orchestrator import ai_orchestrator
 from app.ocr.base import OCRPage, OCRResult, OCRLine
 from app.core.config import settings
@@ -22,28 +20,26 @@ from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
-@register_pipeline("surya")
-class SuryaPipeline(OCRPipeline):
+@register_pipeline("tesseract")
+class TesseractPipeline(OCRPipeline):
     @property
     def name(self) -> str:
-        return "surya"
+        return "tesseract"
 
     @property
     def capabilities(self) -> PipelineCapabilities:
         return PipelineCapabilities(
             supports_layout_detection=True,
             supports_tables=True,
-            supports_handwriting=True,
+            supports_handwriting=False,
             supports_vision=False,
-            requires_gpu=settings.GPU_ENABLED,
-            model_name="surya+tatr",
+            requires_gpu=settings.GPU_ENABLED, # PPStructure can use GPU
+            model_name="tesseract+ppstructure",
         )
         
     def __init__(self):
-        self.surya_ocr = SuryaOCREngine()
-        self.layout_engine = SuryaLayoutEngine()
-        self.tatr = TATRTableEngine()
-        self.trocr = None
+        self.tesseract = TesseractOCREngine()
+        self.layout_engine = PPStructureLayoutEngine()
 
     def extract_fields(
         self,
@@ -64,7 +60,7 @@ class SuryaPipeline(OCRPipeline):
         
         preprocessed_pages = []
         for img in pages:
-            preprocessed_pages.append(preprocess_page(img, {"deskew": True, "orient": True}))
+            preprocessed_pages.append(preprocess_page(img, {"greyscale": True}))
             
         if event_callback:
             event_callback("PREPROCESS_DONE")
@@ -89,32 +85,33 @@ class SuryaPipeline(OCRPipeline):
             regions = regions_by_page[p_idx]
             page_ocr_lines = []
             
+            # Simple spatial matching heuristics could go here.
+            # But the requirement is to use layout detection to extract text, and if overall conf < 0.8, use LLM.
+            # So let's run OCR on all Text/Title regions to get text for the page.
+            
+            # For each field in template, we could try to find its region.
+            # To keep it robust, we'll OCR all text-like regions, gather all text, and if we can't extract all fields, use LLM.
+            
             text_regions = [r for r in regions if r.region_type in ("Text", "Title", "List-item", "Caption", "Table")]
             for r in text_regions:
-                lines, conf = self.surya_ocr.process_region(r.cropped_image)
-                
-                # TrOCR fallback for handwriting
-                if conf < settings.HANDWRITING_FALLBACK_THRESHOLD and settings.HANDWRITING_FALLBACK_ENABLED:
-                    if not self.trocr:
-                        self.trocr = HandwritingOCREngine()
-                    hw_text, hw_conf = self.trocr.process_region(r.cropped_image)
-                    if hw_conf > conf and hw_text:
-                        lines = [OCRLine(text=hw_text, bbox=r.bbox, confidence=hw_conf)]
-                
+                lines, conf = self.tesseract.process_region(r.cropped_image)
+                # Adjust bboxes
                 for line in lines:
-                    if line.bbox:
-                        line.bbox.x1 += r.bbox.x1
-                        line.bbox.y1 += r.bbox.y1
-                        line.bbox.x2 += r.bbox.x1
-                        line.bbox.y2 += r.bbox.y1
+                    line.bbox.x1 += r.bbox.x1
+                    line.bbox.y1 += r.bbox.y1
+                    line.bbox.x2 += r.bbox.x1
+                    line.bbox.y2 += r.bbox.y1
                     page_ocr_lines.append(line)
                     
             ocr_lines_by_page.append(page_ocr_lines)
             
         if event_callback:
-            event_callback("OCR_DONE", {"fields_found": 0, "avg_confidence": 0.0})
+            event_callback("OCR_DONE", {"fields_found": 0, "avg_confidence": 0.0}) # Initial pass doesn't resolve fields natively unless using Regex/Rules
             event_callback("LLM_FALLBACK_STARTED", {"reason": "always_use_llm_for_now"})
             
+        # Since Tesseract + Layout doesn't natively map to fields without rules, we'll pass to LLM
+        # to map the extracted text to fields.
+        
         ocr_pages_obj = []
         for i, lines in enumerate(ocr_lines_by_page):
             ocr_pages_obj.append(OCRPage(
@@ -124,7 +121,7 @@ class SuryaPipeline(OCRPipeline):
                 lines=lines
             ))
             
-        ocr_result = OCRResult(pages=ocr_pages_obj, engine_name="surya", engine_version="2", ocr_method="layout+surya")
+        ocr_result = OCRResult(pages=ocr_pages_obj, engine_name="tesseract", engine_version="5", ocr_method="layout+tesseract")
         
         ai_result = ai_orchestrator.run_smart_extraction(
             ocr_result,
@@ -164,6 +161,7 @@ class SuryaPipeline(OCRPipeline):
             
             total_conf += conf
             
+            # Heuristic crop image: we could try to find the bounding box of the extracted text in ocr_lines
             bbox = None
             crop_image = None
             if field_val and isinstance(field_val, str):
@@ -192,7 +190,7 @@ class SuryaPipeline(OCRPipeline):
                 page_number=p_idx + 1 if bbox else 1,
                 bbox=bbox,
                 crop_image=crop_image,
-                extraction_method="surya+llm",
+                extraction_method="tesseract+llm",
                 fallback_method="llm"
             ))
             
@@ -211,12 +209,15 @@ class SuryaPipeline(OCRPipeline):
         )
 
     def extract_tables(self, pages: list[Image.Image], job_id: str) -> list[TableResult]:
+        # Implementation of table extraction
         tables = []
         for i, img in enumerate(pages):
             regions = self.layout_engine.detect_layout(img)
             table_regions = [r for r in regions if r.region_type == "Table"]
             for r in table_regions:
-                page_tables = self.tatr.extract_tables(r.cropped_image)
+                buf = io.BytesIO()
+                r.cropped_image.save(buf, format="PNG")
+                page_tables = extract_tables_from_image(buf.getvalue())
                 
                 for t in page_tables:
                     tables.append(TableResult(
@@ -225,6 +226,6 @@ class SuryaPipeline(OCRPipeline):
                         rows=t.rows,
                         headers=t.headers,
                         markdown=t.markdown,
-                        extraction_method="tatr"
+                        extraction_method="img2table"
                     ))
         return tables

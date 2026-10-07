@@ -26,8 +26,23 @@ def list_available_pipelines():
     for name in list_pipelines():
         pipeline = get_pipeline(name)
         caps = pipeline.capabilities
+        
+        desc = ""
+        stack = []
+        if name == "tesseract":
+            desc = "CPU-based pipeline utilizing PPStructure for layout detection and Tesseract for text extraction."
+            stack = ["PPStructure", "Tesseract", "img2table", "LLM Fallback"]
+        elif name == "surya":
+            desc = "GPU-accelerated pipeline utilizing Surya's models for document understanding."
+            stack = ["Surya Layout", "Surya OCR", "TrOCR", "TATR", "LLM Fallback"]
+        elif name == "paddle":
+            desc = "GPU-accelerated pipeline utilizing PaddleOCR for robust text extraction."
+            stack = ["PPStructure", "PaddleOCR", "TrOCR", "TATR", "LLM Fallback"]
+            
         pipelines.append({
             "name": pipeline.name,
+            "description": desc,
+            "stack": stack,
             "supports_layout_detection": caps.supports_layout_detection,
             "supports_tables": caps.supports_tables,
             "supports_handwriting": caps.supports_handwriting,

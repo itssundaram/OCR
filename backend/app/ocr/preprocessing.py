@@ -133,6 +133,8 @@ def preprocess_page_with_metadata(img: Image.Image, config: dict | None = None) 
         if cfg.get("crop_borders", True):
             img = crop_blank_borders(img)
             applied["crop_borders"] = True
+            
+        logger.info("preprocessing_completed", operations_applied=applied)
         return img, {"operations_applied": applied, "config": cfg}
     except Exception as e:
         logger.warning("preprocessing_failed", error=str(e), operations_applied=applied)

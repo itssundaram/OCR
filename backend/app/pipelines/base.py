@@ -20,6 +20,7 @@ class FieldResult:
     page_number: int
     bbox: dict | None = None          # {x1,y1,x2,y2}
     crop_image: Image.Image | None = None
+    crop_asset_id: str | None = None
     extraction_method: str = ""
     fallback_method: str = ""
     raw_text: str = ""
@@ -46,6 +47,7 @@ class PipelineResult:
     processing_time_ms: int = 0
     error_message: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
+    step_events: list[dict] = field(default_factory=list)
 
 class OCRPipeline(ABC):
     """Plugin interface — all pipelines implement this."""
@@ -58,11 +60,11 @@ class OCRPipeline(ABC):
     @abstractmethod
     def capabilities(self) -> PipelineCapabilities: ...
 
-    @abstractmethod
-    def preprocess(self, image: Image.Image, config: dict) -> Image.Image: ...
+    def preprocess(self, image: Image.Image, config: dict) -> Image.Image:
+        return image
 
-    @abstractmethod
-    def detect_regions(self, image: Image.Image) -> list[dict]: ...
+    def detect_regions(self, image: Image.Image) -> list[dict]:
+        return []
 
     @abstractmethod
     def extract_fields(
@@ -77,6 +79,7 @@ class OCRPipeline(ABC):
         doc_type: str = "UNKNOWN",
         template_version: int = 1,
         extraction_instructions: str | None = None,
+        event_callback=None,
     ) -> PipelineResult:
         """native_texts: per-page text PyMuPDF already extracted (empty string for a
         scanned page with none) — pipelines that can skip OCR on a native-text page
@@ -105,8 +108,15 @@ class OCRPipeline(ABC):
         start = time.perf_counter()
         template_fields = template.get("fields", []) if isinstance(template, dict) else []
 
-        if event_callback:
-            event_callback("PIPELINE_STARTED", {"pipeline": self.name})
+        step_events = []
+        
+        def _internal_event_callback(step_name: str, data: dict = None):
+            event = {"step_name": step_name, "data": data or {}}
+            step_events.append(event)
+            if event_callback:
+                event_callback(step_name, data)
+
+        _internal_event_callback("PIPELINE_STARTED", {"pipeline": self.name})
 
         try:
             result = self.extract_fields(
@@ -119,27 +129,25 @@ class OCRPipeline(ABC):
                 doc_type=template.get("doc_type", "UNKNOWN") if isinstance(template, dict) else "UNKNOWN",
                 template_version=template.get("template_version", 1) if isinstance(template, dict) else 1,
                 extraction_instructions=template.get("extraction_instructions") if isinstance(template, dict) else None,
+                event_callback=_internal_event_callback,
             )
+            result.step_events = step_events
         except Exception as exc:
-            if event_callback:
-                event_callback("PIPELINE_FAILED", {"pipeline": self.name, "error": str(exc)})
+            _internal_event_callback("PIPELINE_FAILED", {"pipeline": self.name, "error": str(exc)})
             return PipelineResult(
                 pipeline_name=self.name,
                 status="failed",
                 error_message=str(exc),
                 processing_time_ms=int((time.perf_counter() - start) * 1000),
+                step_events=step_events,
             )
 
         try:
             result.tables = self.extract_tables(pages, job_id)
         except Exception as table_exc:
-            # A failed table step does not fail the whole pipeline run — fields
-            # already extracted are still useful (matches master prompt section 48:
-            # partial success, not all-or-nothing).
             result.status = "partial"
             result.metadata.setdefault("warnings", []).append(f"extract_tables failed: {table_exc}")
 
         result.processing_time_ms = int((time.perf_counter() - start) * 1000)
-        if event_callback:
-            event_callback("PIPELINE_COMPLETED", {"pipeline": self.name, "status": result.status})
+        _internal_event_callback("PIPELINE_COMPLETED", {"pipeline": self.name, "status": result.status, "overall_confidence": result.overall_confidence})
         return result

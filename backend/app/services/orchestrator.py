@@ -41,7 +41,7 @@ from app.db.models import (
 )
 from app.pipelines.registry import get_pipeline
 from app.ai.field_fallback import classify_all_fields
-from app.ai.consensus import compare_pipeline_results, overall_consensus_rate
+from app.ai.consensus import compare_pipeline_results, _normalize, overall_consensus_rate
 from app.ocr.image_extractor import extract_pages_as_images_with_metadata
 from app.services.asset_service import get_asset_service
 from app.services.extractor import (
@@ -56,6 +56,7 @@ logger = get_logger(__name__)
 
 
 def build_field_extraction_rows_from_pipeline_result(
+    db,
     job_id: str,
     pipeline_run_id: str,
     pipeline_result,
@@ -79,9 +80,23 @@ def build_field_extraction_rows_from_pipeline_result(
         s.field_name: s
         for s in classify_all_fields(conf_by_field, threshold)
     }
+    asset_service = get_asset_service()
     rows = []
     for f in pipeline_result.fields:
         status = statuses.get(f.field_name)
+        bbox_json = f.bbox or {}
+        
+        if f.crop_image:
+            try:
+                page_n = f.page_number or 1
+                crop_path = asset_service.save_crop(job_id, f.field_name, page_n, f.crop_image)
+                asset = Asset(asset_type="crop_image", file_path=crop_path, mime_type="image/png")
+                db.add(asset)
+                db.flush()
+                bbox_json["crop_asset_id"] = asset.id
+            except Exception:
+                logger.error("orchestrator_crop_asset_save_failed", job_id=job_id, field_name=f.field_name, exc_info=True)
+
         rows.append({
             "job_id": job_id,
             "pipeline_run_id": pipeline_run_id,
@@ -90,7 +105,7 @@ def build_field_extraction_rows_from_pipeline_result(
             "confidence": f.confidence,
             "extraction_method": f.extraction_method or pipeline_result.pipeline_name,
             "fallback_method": "needs_review" if status and status.needs_review else None,
-            "bbox_json": f.bbox,
+            "bbox_json": bbox_json,
             "page_id": (page_ids or {}).get(f.page_number),
             "is_final": is_final,
         })
@@ -189,8 +204,14 @@ def run_single_pipeline_job(job_id: str, pipeline_name: str) -> None:
             db.add(pipeline_run)
             db.flush()
             _record_event(db, job.id, "PIPELINE_STARTED", pipeline_run_id=pipeline_run.id, status="RUNNING")
+            db.commit()
 
-            result = pipeline.run(images, _template_dict(template, native_texts), job.id)
+            def _single_event_callback(step_name: str, data: dict = None):
+                with SessionLocal() as _db:
+                    _record_event(_db, job.id, step_name, pipeline_run_id=pipeline_run.id, status="RUNNING", metadata=data)
+                    _db.commit()
+
+            result = pipeline.run(images, _template_dict(template, native_texts), job.id, event_callback=_single_event_callback)
 
             pipeline_run.status = "COMPLETED" if result.status == "completed" else result.status.upper()
             pipeline_run.completed_at = datetime.datetime.now(datetime.timezone.utc)
@@ -206,7 +227,7 @@ def run_single_pipeline_job(job_id: str, pipeline_name: str) -> None:
                 raise RuntimeError(result.error_message or f"Pipeline '{pipeline_name}' failed with no error message.")
 
             rows = build_field_extraction_rows_from_pipeline_result(
-                job.id, pipeline_run.id, result, is_final=1, page_ids=page_ids,
+                db, job.id, pipeline_run.id, result, is_final=1, page_ids=page_ids,
             )
             for row in rows:
                 db.add(FieldExtraction(**row))
@@ -219,11 +240,45 @@ def run_single_pipeline_job(job_id: str, pipeline_name: str) -> None:
                     metadata={"fields": flagged, "threshold": settings.CONFIDENCE_THRESHOLD},
                 )
 
+            # Build the ResponseBuilder-compatible envelope for the frontend
+            fields_out = {}
+            for r in rows:
+                fields_out[r["field_name"]] = {
+                    "value": r["field_value"],
+                    "confidence": r["confidence"],
+                    "found": bool(r["field_value"]),
+                    "match_strategy": r.get("extraction_method"),
+                    "source_page": r.get("page_id"),
+                }
+
+            tables_out = []
+            for t in result.tables:
+                tables_out.append({
+                    "table_name": f"Table_{t.table_index}",
+                    "rows": t.rows
+                })
+
+            envelope = {
+                "success": result.status == "completed",
+                "department": template.department.slug if template.department else "GENERAL",
+                "doc_type": template.code,
+                "template_version": template.version,
+                "extraction_method": pipeline_name,
+                "ocr_method": pipeline_name,
+                "confidence": round(result.overall_confidence, 4),
+                "pages_processed": len(page_ids),
+                "fields": fields_out,
+                "tables": tables_out,
+            }
+
+            ocr_metadata = result.metadata.get("ocr_metadata", {})
+            ocr_metadata.update({"mode": "single_pipeline", "pipeline": pipeline_name})
+
             db.add(ProcessingResult(
                 job_id=job.id,
-                extracted_json={r["field_name"]: r["field_value"] for r in rows},
+                extracted_json=envelope,
                 confidence_json=[{"field": r["field_name"], "confidence": r["confidence"]} for r in rows],
-                ocr_metadata_json={"mode": "single_pipeline", "pipeline": pipeline_name},
+                ocr_metadata_json=ocr_metadata,
             ))
 
             job_status = "WARNING" if flagged else "COMPLETED"
@@ -269,58 +324,70 @@ def run_pipeline_comparison_job(job_id: str, pipeline_names: list[str]) -> None:
             results_by_pipeline: dict[str, dict] = {}  # name -> {field_name: (value, confidence)}
             pipeline_statuses: dict[str, str] = {}
 
-            def _run_one(name: str, pipeline):
-                # IMPORTANT: this runs inside a worker thread while other
-                # pipelines' threads are also running — it must not touch the
-                # shared SQLAlchemy `db` session (Session is not thread-safe
-                # for concurrent use). Only the actual pipeline inference
-                # happens here; every DB write happens back in the main
-                # thread below, once all futures are collected.
-                return name, pipeline.run(images, template_dict, job.id)
+            pr_ids = {}
+            for name in pipeline_names:
+                pipeline_run = PipelineRun(
+                    job_id=job.id,
+                    pipeline_name=name,
+                    status="RUNNING",
+                    started_at=datetime.datetime.now(datetime.timezone.utc),
+                )
+                db.add(pipeline_run)
+                db.flush()
+                pr_ids[name] = pipeline_run.id
+                _record_event(db, job.id, "PIPELINE_STARTED", pipeline_run_id=pipeline_run.id, status="RUNNING")
+            db.commit()
 
-            # Phase 12: these pipelines genuinely run concurrently now — this
-            # is the real cross-pipeline parallelism Phase 12's concurrency
-            # guard (app/core/concurrency.py) exists to bound once benchmarked.
+            def _run_one(name: str, pipeline, pr_id: str):
+                def _comp_event_callback(step_name: str, data: dict = None):
+                    with SessionLocal() as _db:
+                        _record_event(_db, job.id, step_name, pipeline_run_id=pr_id, status="RUNNING", metadata=data)
+                        _db.commit()
+                        
+                # IMPORTANT: Only the actual pipeline inference happens in the thread.
+                # DB writes within the thread use their own short-lived SessionLocal.
+                return name, pr_id, pipeline.run(images, template_dict, job.id, event_callback=_comp_event_callback)
+
+            # Phase 12: these pipelines genuinely run concurrently now
             max_workers = max(1, min(len(pipelines), settings.OCR_MAX_WORKERS))
             raw_results: dict[str, object] = {}
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                futures = {executor.submit(_run_one, name, p): name for name, p in pipelines.items()}
+                futures = {executor.submit(_run_one, name, p, pr_ids[name]): name for name, p in pipelines.items()}
                 for future in as_completed(futures):
                     name = futures[future]
                     try:
-                        pname, result = future.result()
-                        raw_results[pname] = result
+                        pname, pr_id, result = future.result()
+                        raw_results[pname] = (pr_id, result)
                     except Exception as pipeline_exc:
                         logger.error("orchestrator_pipeline_run_errored", job_id=job_id, pipeline=name, error=str(pipeline_exc))
                         pipeline_statuses[name] = "FAILED"
                         results_by_pipeline[name] = {}
 
-            # All DB writes happen here, sequentially, on the single `db`
-            # session — safe now that every thread above has finished.
-            for name, result in raw_results.items():
-                pipeline_run = PipelineRun(
-                    job_id=job.id, pipeline_name=name,
-                    status="COMPLETED" if result.status == "completed" else result.status.upper(),
-                    started_at=datetime.datetime.now(datetime.timezone.utc),
-                    completed_at=datetime.datetime.now(datetime.timezone.utc),
-                    overall_confidence=result.overall_confidence,
-                    error_message=result.error_message,
-                    metadata_json=result.metadata,
-                )
-                db.add(pipeline_run)
-                db.flush()
-                _record_event(db, job.id, "PIPELINE_STARTED", pipeline_run_id=pipeline_run.id, status="RUNNING")
-                _record_event(db, job.id, "PIPELINE_COMPLETED", pipeline_run_id=pipeline_run.id, status=pipeline_run.status)
+            field_rows_by_pipeline: dict[str, dict[str, dict]] = {}
+
+            # All DB writes happen here sequentially.
+            for name, (pr_id, result) in raw_results.items():
+                pipeline_run = db.get(PipelineRun, pr_id)
+                if not pipeline_run:
+                    continue
+                pipeline_run.status = "COMPLETED" if result.status == "completed" else result.status.upper()
+                pipeline_run.completed_at = datetime.datetime.now(datetime.timezone.utc)
+                pipeline_run.overall_confidence = result.overall_confidence
+                pipeline_run.error_message = result.error_message
+                pipeline_run.metadata_json = result.metadata
+                
+                _record_event(db, job.id, "PIPELINE_COMPLETED", pipeline_run_id=pr_id, status=pipeline_run.status)
                 pipeline_statuses[name] = pipeline_run.status
 
                 rows = build_field_extraction_rows_from_pipeline_result(
-                    job.id, pipeline_run.id, result, is_final=0, page_ids=page_ids,
+                    db, job.id, pr_id, result, is_final=0, page_ids=page_ids,
                 )
                 for row in rows:
                     db.add(FieldExtraction(**row))
 
+                field_rows_by_pipeline[name] = {r["field_name"]: r for r in rows}
                 results_by_pipeline[name] = {
-                    r["field_name"]: (r["field_value"], r["confidence"] or 0.0) for r in rows
+                    r["field_name"]: (r["field_value"], r["confidence"] or 0.0, r["bbox_json"], r["page_id"]) for r in rows
                 }
 
             db.flush()
@@ -347,6 +414,13 @@ def run_pipeline_comparison_job(job_id: str, pipeline_names: list[str]) -> None:
 
             flagged = []
             for c in comparisons:
+                best_row = None
+                for v in c.values:
+                    if _normalize(v.value) == _normalize(c.consensus_value):
+                        best_row = field_rows_by_pipeline.get(v.pipeline_name, {}).get(c.field_name)
+                        if best_row:
+                            break
+                            
                 db.add(FieldExtraction(
                     job_id=job.id,
                     pipeline_run_id=consensus_run.id,
@@ -356,6 +430,8 @@ def run_pipeline_comparison_job(job_id: str, pipeline_names: list[str]) -> None:
                     extraction_method="consensus",
                     fallback_method="needs_review" if c.needs_review else None,
                     is_final=1,
+                    bbox_json=best_row["bbox_json"] if best_row else None,
+                    page_id=best_row["page_id"] if best_row else None,
                 ))
                 if c.needs_review:
                     flagged.append(c.field_name)
@@ -388,6 +464,26 @@ def run_pipeline_comparison_job(job_id: str, pipeline_names: list[str]) -> None:
                     "consensus_rate": consensus_rate,
                     "total_fields": len(comparisons),
                     "flagged_fields": flagged,
+                    "raw_results": {
+                        p_name: {
+                            "tables": [
+                                {
+                                    "table_index": t.table_index,
+                                    "page_number": t.page_number,
+                                    "headers": t.headers,
+                                    "rows": t.rows,
+                                    "confidence": t.confidence,
+                                    "bbox": t.bbox,
+                                    "extraction_method": t.extraction_method,
+                                } for t in res.tables
+                            ],
+                            "raw_text_per_page": res.raw_text_per_page or [
+                                "\n".join(line.get("text", "") for line in page.get("lines", []))
+                                for page in res.metadata.get("ocr_metadata", {}).get("pages", [])
+                            ],
+                            "fields": { f.field_name: {"value": f.value, "confidence": f.confidence} for f in res.fields }
+                        } for p_name, (pr_id, res) in raw_results.items()
+                    }
                 },
             ))
 

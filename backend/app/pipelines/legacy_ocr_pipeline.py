@@ -141,16 +141,29 @@ class LegacyOCRPipeline(OCRPipeline):
         )
 
         conf_by_field = {c.field_name: c.confidence_score for c in ai_result.confidence_scores}
-        fields = [
-            FieldResult(
-                field_name=field_name,
-                value="" if field_value is None else str(field_value),
-                confidence=conf_by_field.get(field_name, 0.0),
-                page_number=1,  # same per-field page-attribution gap as QwenPipeline today
-                extraction_method=ai_result.engine_name,
+        envelope = ai_result.parsed_data or {}
+        raw_fields = envelope.get("fields", envelope)
+        fields = []
+        for field_name, field_data in raw_fields.items():
+            if field_name == "tables":
+                continue
+                
+            if isinstance(field_data, dict) and "value" in field_data:
+                field_val = field_data.get("value")
+                field_conf = field_data.get("confidence")
+            else:
+                field_val = field_data
+                field_conf = conf_by_field.get(field_name)
+
+            fields.append(
+                FieldResult(
+                    field_name=field_name,
+                    value="" if field_val is None else str(field_val),
+                    confidence=field_conf or 0.0,
+                    page_number=1,  # same per-field page-attribution gap as QwenPipeline today
+                    extraction_method=ai_result.engine_name,
+                )
             )
-            for field_name, field_value in (ai_result.parsed_data or {}).items()
-        ]
 
         overall_conf = (
             sum(c.confidence_score for c in ai_result.confidence_scores) / len(ai_result.confidence_scores)

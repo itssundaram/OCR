@@ -32,11 +32,13 @@ class BaseRepository(Generic[T]):
         stmt = select(self.model_cls).offset(skip).limit(limit)
         return self.session.execute(stmt).scalars().all()
 
-    def list_all(self, filters: dict | None = None, skip: int = 0, limit: int = 1000) -> List[T]:
+    def list_all(self, filters: dict | None = None, skip: int = 0, limit: int = 1000, order_by: Any = None) -> List[T]:
         stmt = select(self.model_cls)
         if filters:
             for key, value in filters.items():
                 stmt = stmt.where(getattr(self.model_cls, key) == value)
+        if order_by is not None:
+            stmt = stmt.order_by(order_by)
         stmt = stmt.offset(skip).limit(limit)
         return self.session.execute(stmt).scalars().all()
 

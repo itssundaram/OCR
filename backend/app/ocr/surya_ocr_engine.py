@@ -22,7 +22,10 @@ class SuryaOCREngine(OCREngine):
 
     def __init__(self) -> None:
         self._is_loaded = False
-        self._recognition_predictor = None
+        self.det_model = None
+        self.det_processor = None
+        self.rec_model = None
+        self.rec_processor = None
 
     @property
     def engine_name(self) -> str:
@@ -30,7 +33,7 @@ class SuryaOCREngine(OCREngine):
 
     @property
     def engine_version(self) -> str:
-        return "2.0.0"
+        return "0.5.0"
 
     def load_model(self) -> None:
         if self._is_loaded:
@@ -38,22 +41,20 @@ class SuryaOCREngine(OCREngine):
 
         logger.info("loading_surya_ocr_models")
         try:
-            from surya.recognition import RecognitionPredictor
-            self._recognition_predictor = RecognitionPredictor()
+            from surya.model.detection.model import load_model as load_det_model, load_processor as load_det_processor
+            from surya.model.recognition.model import load_model as load_rec_model
+            from surya.model.recognition.processor import load_processor as load_rec_processor
+
+            self.det_processor = load_det_processor()
+            self.det_model = load_det_model()
+            self.rec_model = load_rec_model()
+            self.rec_processor = load_rec_processor()
+            
             self._is_loaded = True
             logger.info("surya_ocr_models_loaded")
         except Exception as exc:
             logger.error("surya_ocr_load_failed", error=str(exc))
             raise RuntimeError(f"Failed to load Surya OCR models: {exc}")
-
-    def _extract_text_from_html(self, html: str) -> str:
-        """Surya OCR 2 returns text in an HTML representation for structure. Strip tags."""
-        if not html:
-            return ""
-        # Simple tag stripping for line-level text
-        text = re.sub(r'<[^>]+>', ' ', html)
-        # unescape html entities if needed, but simple whitespace collapse is enough here
-        return " ".join(text.split())
 
     def process_images(self, images: list[Image.Image]) -> OCRResult:
         """
@@ -66,21 +67,23 @@ class SuryaOCREngine(OCREngine):
         
         ocr_pages: list[OCRPage] = []
         try:
-            # For full page, surya RecognitionPredictor handles layout implicitly if we just pass images
-            predictions = self._recognition_predictor(images)
+            from surya.ocr import run_ocr
+            # surya-ocr 0.5.0 run_ocr requires languages per image
+            langs = [["en"] for _ in images]
+            predictions = run_ocr(images, langs, self.det_model, self.det_processor, self.rec_model, self.rec_processor)
             
             for i, (img, pred) in enumerate(zip(images, predictions)):
                 width, height = img.size
                 
                 ocr_lines = []
-                for block in pred.blocks:
-                    polygon = block.polygon
+                for line in pred.text_lines:
+                    polygon = line.polygon
                     x_coords = [p[0] for p in polygon]
                     y_coords = [p[1] for p in polygon]
                     x1, y1 = min(x_coords), min(y_coords)
                     x2, y2 = max(x_coords), max(y_coords)
                     
-                    text = self._extract_text_from_html(block.html)
+                    text = line.text
                     if not text.strip():
                         continue
                         
@@ -88,7 +91,7 @@ class SuryaOCREngine(OCREngine):
                         OCRLine(
                             text=text,
                             bbox=BoundingBox(x1=x1, y1=y1, x2=x2, y2=y2),
-                            confidence=block.confidence if block.confidence is not None else 1.0,
+                            confidence=line.confidence if line.confidence is not None else 1.0,
                         )
                     )
                 
@@ -118,9 +121,11 @@ class SuryaOCREngine(OCREngine):
             self.load_model()
             
         try:
-            predictions = self._recognition_predictor([region_image])
+            from surya.ocr import run_ocr
+            langs = [["en"]]
+            predictions = run_ocr([region_image], langs, self.det_model, self.det_processor, self.rec_model, self.rec_processor)
             
-            if not predictions or not predictions[0].blocks:
+            if not predictions or not predictions[0].text_lines:
                 return [], 0.0
                 
             pred = predictions[0]
@@ -128,18 +133,18 @@ class SuryaOCREngine(OCREngine):
             total_conf = 0.0
             count = 0
             
-            for block in pred.blocks:
-                polygon = block.polygon
+            for line in pred.text_lines:
+                polygon = line.polygon
                 x_coords = [p[0] for p in polygon]
                 y_coords = [p[1] for p in polygon]
                 x1, y1 = min(x_coords), min(y_coords)
                 x2, y2 = max(x_coords), max(y_coords)
                 
-                text = self._extract_text_from_html(block.html)
+                text = line.text
                 if not text.strip():
                     continue
                     
-                conf = block.confidence if block.confidence is not None else 1.0
+                conf = line.confidence if line.confidence is not None else 1.0
                 lines.append(
                     OCRLine(
                         text=text,

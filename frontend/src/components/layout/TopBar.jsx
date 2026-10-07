@@ -1,40 +1,27 @@
 import React from 'react';
-import { Search, Menu } from 'lucide-react';
+import { Search, Menu, Bell, Mail, RefreshCw, Server, Zap, ShieldAlert, Rocket } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
-
-const TITLES = {
-  dashboard: 'Dashboard',
-  manage: 'Manage Departments & Templates',
-  'generate-url': 'Generate URL',
-  ocr: 'OCR — Single Pipeline',
-  logs: 'Logs',
-  orchestration: 'Orchestration',
-  help: 'Help & Support',
-};
 
 const TopBar = ({ toggleSidebar }) => {
   const location = useLocation();
 
-  const pathParts = location.pathname.split('/').filter(Boolean);
-  const title = TITLES[pathParts[0]] || 'DocInt';
-
   return (
-    <header className="topbar">
-      <div className="topbar-left" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <button onClick={toggleSidebar} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex' }}>
-          <Menu size={24} />
+    <header className="topbar flex items-center justify-between border-b border-border-color bg-white w-full h-[60px] px-4">
+      <div className="flex items-center gap-4 flex-1">
+        <button onClick={toggleSidebar} className="text-secondary hover:text-primary transition-colors bg-transparent border-none cursor-pointer">
+          <Menu size={20} />
         </button>
-        <h2 className="page-title">{title}</h2>
-      </div>
-
-      <div className="topbar-center">
-        <div className="search-container">
-          <Search className="search-icon" size={18} />
-          <input type="text" placeholder="Search documents, templates..." className="search-input" />
+        <div className="search-container flex items-center bg-bg-tertiary px-3 py-1.5 rounded-md border border-border-color max-w-[400px] w-full">
+          <Search className="text-tertiary mr-2" size={16} />
+          <input type="text" placeholder="Search documents, executions, templates, audit logs" className="bg-transparent border-none outline-none text-sm w-full text-primary placeholder-tertiary font-medium" />
         </div>
       </div>
 
-      <div className="topbar-right" />
+      <div className="flex items-center gap-4">
+        <div className="w-8 h-8 rounded-full bg-border-color border border-border-color overflow-hidden flex items-center justify-center cursor-pointer">
+          <ShieldAlert size={18} className="text-tertiary" />
+        </div>
+      </div>
     </header>
   );
 };

@@ -1,7 +1,6 @@
 """
-DOCINT — Surya Pipeline V2
-Uses Surya Layout detection, Surya OCR for text, TrOCR for fallback, and TATR for tables.
-Replaces the old stub.
+DOCINT — PaddleOCR Pipeline
+Uses PPStructure for layout detection, PaddleOCR for text, TrOCR for fallback, and TATR for tables.
 """
 from __future__ import annotations
 
@@ -11,8 +10,8 @@ from PIL import Image
 from app.pipelines.base import OCRPipeline, PipelineCapabilities, PipelineResult, FieldResult, TableResult
 from app.pipelines.registry import register_pipeline
 from app.ocr.preprocessing import preprocess_page
-from app.ocr.surya_ocr_engine import SuryaOCREngine
-from app.ocr.surya_layout_engine import SuryaLayoutEngine
+from app.ocr.paddle_ocr_engine import PaddleOCREngine
+from app.ocr.ppstructure_layout_engine import PPStructureLayoutEngine
 from app.ocr.tatr_engine import TATRTableEngine
 from app.ocr.handwriting_ocr import HandwritingOCREngine
 from app.ai.orchestrator import ai_orchestrator
@@ -22,11 +21,11 @@ from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
-@register_pipeline("surya")
-class SuryaPipeline(OCRPipeline):
+@register_pipeline("paddle")
+class PaddlePipeline(OCRPipeline):
     @property
     def name(self) -> str:
-        return "surya"
+        return "paddle"
 
     @property
     def capabilities(self) -> PipelineCapabilities:
@@ -36,12 +35,12 @@ class SuryaPipeline(OCRPipeline):
             supports_handwriting=True,
             supports_vision=False,
             requires_gpu=settings.GPU_ENABLED,
-            model_name="surya+tatr",
+            model_name="paddleocr+tatr",
         )
         
     def __init__(self):
-        self.surya_ocr = SuryaOCREngine()
-        self.layout_engine = SuryaLayoutEngine()
+        self.paddle = PaddleOCREngine()
+        self.layout_engine = PPStructureLayoutEngine()
         self.tatr = TATRTableEngine()
         self.trocr = None
 
@@ -64,7 +63,7 @@ class SuryaPipeline(OCRPipeline):
         
         preprocessed_pages = []
         for img in pages:
-            preprocessed_pages.append(preprocess_page(img, {"deskew": True, "orient": True}))
+            preprocessed_pages.append(preprocess_page(img, {"greyscale": True}))
             
         if event_callback:
             event_callback("PREPROCESS_DONE")
@@ -86,29 +85,15 @@ class SuryaPipeline(OCRPipeline):
         ocr_lines_by_page = []
         
         for p_idx, img in enumerate(preprocessed_pages):
-            regions = regions_by_page[p_idx]
             page_ocr_lines = []
             
-            text_regions = [r for r in regions if r.region_type in ("Text", "Title", "List-item", "Caption", "Table")]
-            for r in text_regions:
-                lines, conf = self.surya_ocr.process_region(r.cropped_image)
+            # Run PaddleOCR on the full page image directly.
+            # Paddle's detection model fails on tight crops, so we don't use regions here.
+            text_res = self.paddle.process_images([img])
+            
+            if text_res.pages and text_res.pages[0].lines:
+                page_ocr_lines = text_res.pages[0].lines
                 
-                # TrOCR fallback for handwriting
-                if conf < settings.HANDWRITING_FALLBACK_THRESHOLD and settings.HANDWRITING_FALLBACK_ENABLED:
-                    if not self.trocr:
-                        self.trocr = HandwritingOCREngine()
-                    hw_text, hw_conf = self.trocr.process_region(r.cropped_image)
-                    if hw_conf > conf and hw_text:
-                        lines = [OCRLine(text=hw_text, bbox=r.bbox, confidence=hw_conf)]
-                
-                for line in lines:
-                    if line.bbox:
-                        line.bbox.x1 += r.bbox.x1
-                        line.bbox.y1 += r.bbox.y1
-                        line.bbox.x2 += r.bbox.x1
-                        line.bbox.y2 += r.bbox.y1
-                    page_ocr_lines.append(line)
-                    
             ocr_lines_by_page.append(page_ocr_lines)
             
         if event_callback:
@@ -124,7 +109,7 @@ class SuryaPipeline(OCRPipeline):
                 lines=lines
             ))
             
-        ocr_result = OCRResult(pages=ocr_pages_obj, engine_name="surya", engine_version="2", ocr_method="layout+surya")
+        ocr_result = OCRResult(pages=ocr_pages_obj, engine_name="paddle", engine_version="2", ocr_method="layout+paddle")
         
         ai_result = ai_orchestrator.run_smart_extraction(
             ocr_result,
@@ -192,7 +177,7 @@ class SuryaPipeline(OCRPipeline):
                 page_number=p_idx + 1 if bbox else 1,
                 bbox=bbox,
                 crop_image=crop_image,
-                extraction_method="surya+llm",
+                extraction_method="paddle+llm",
                 fallback_method="llm"
             ))
             

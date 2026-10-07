@@ -7,5 +7,9 @@ export const processingService = {
 
   getJob: async (jobId) => {
     return await api.get(`/processing/${jobId}`);
+  },
+  
+  getPipelineSteps: async (jobId) => {
+    return await api.get(`/processing/${jobId}/pipeline-steps`);
   }
 };

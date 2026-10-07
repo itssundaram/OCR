@@ -40,6 +40,16 @@ def list_templates(department_slug: str | None = None, db: Session = Depends(get
     return APIResponse(data=templates)
 
 
+@router.get("/id/{template_id}", response_model=APIResponse[TemplateResponse])
+def get_template_by_id(template_id: int, db: Session = Depends(get_db)):
+    """Get a specific template by ID."""
+    repo = TemplateRepository(db)
+    template = repo.get_by_id(template_id)
+    if not template:
+        raise DocIntError(f"Template {template_id} not found.", "TEMPLATE_NOT_FOUND")
+    return APIResponse(data=template)
+
+
 @router.get("/{department_slug}/{template_code}", response_model=APIResponse[TemplateResponse])
 def get_active_template(department_slug: str, template_code: str, db: Session = Depends(get_db)):
     """Get the active template for a department and template code."""

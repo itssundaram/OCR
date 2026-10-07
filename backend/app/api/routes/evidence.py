@@ -121,6 +121,15 @@ def get_field_evidence_image(job_id: str, field_name: str, db: Session = Depends
         raise DocIntError("Stored page image could not be read.", "EVIDENCE_IMAGE_UNREADABLE")
 
     bbox = field_row.bbox_json
+    if bbox and "crop_asset_id" in bbox:
+        crop_asset = db.get(Asset, bbox["crop_asset_id"])
+        if crop_asset and os.path.exists(crop_asset.file_path):
+            try:
+                with open(crop_asset.file_path, "rb") as f:
+                    return Response(content=f.read(), media_type="image/png")
+            except Exception:
+                logger.error("evidence_crop_asset_read_failed", job_id=job_id, field_name=field_name, exc_info=True)
+
     if bbox and all(k in bbox for k in ("x1", "y1", "x2", "y2")):
         try:
             x1, y1, x2, y2 = int(bbox["x1"]), int(bbox["y1"]), int(bbox["x2"]), int(bbox["y2"])

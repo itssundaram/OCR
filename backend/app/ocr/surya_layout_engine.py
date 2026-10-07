@@ -30,7 +30,8 @@ class LayoutRegion:
 class SuryaLayoutEngine:
     def __init__(self):
         self._is_loaded = False
-        self._layout_predictor = None
+        self._det_model = None
+        self._det_processor = None
 
     def load_model(self) -> None:
         if self._is_loaded:
@@ -38,8 +39,10 @@ class SuryaLayoutEngine:
             
         logger.info("loading_surya_layout_model")
         try:
-            from surya.layout import LayoutPredictor
-            self._layout_predictor = LayoutPredictor()
+            from surya.model.detection.model import load_model, load_processor
+            from surya.settings import settings
+            self._det_processor = load_processor(checkpoint=settings.LAYOUT_MODEL_CHECKPOINT)
+            self._det_model = load_model(checkpoint=settings.LAYOUT_MODEL_CHECKPOINT)
             self._is_loaded = True
             logger.info("surya_layout_loaded")
         except Exception as e:
@@ -51,8 +54,8 @@ class SuryaLayoutEngine:
             self.load_model()
             
         try:
-            # LayoutPredictor returns a list of LayoutResult
-            layout_predictions = self._layout_predictor([image])
+            from surya.layout import batch_layout_detection
+            layout_predictions = batch_layout_detection([image], self._det_model, self._det_processor)
             
             if not layout_predictions:
                 return []
@@ -61,7 +64,8 @@ class SuryaLayoutEngine:
             regions = []
             
             for box in pred.bboxes:
-                if box.confidence is not None and box.confidence < settings.SURYA_LAYOUT_CONFIDENCE_THRESHOLD:
+                # surya-ocr 0.5 LayoutBox has .label, .polygon, .confidence
+                if hasattr(box, "confidence") and box.confidence is not None and box.confidence < settings.SURYA_LAYOUT_CONFIDENCE_THRESHOLD:
                     continue
                     
                 # Compute bbox from polygon
@@ -84,7 +88,7 @@ class SuryaLayoutEngine:
                 region = LayoutRegion(
                     region_type=box.label,
                     bbox=BoundingBox(x1=x1, y1=y1, x2=x2, y2=y2),
-                    confidence=box.confidence if box.confidence is not None else 1.0,
+                    confidence=box.confidence if hasattr(box, "confidence") and box.confidence is not None else 1.0,
                     cropped_image=cropped_img
                 )
                 regions.append(region)

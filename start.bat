@@ -9,7 +9,7 @@ echo   DOCINT — Offline AI Document Intelligence Platform
 echo ============================================================
 echo.
 
-echo [0/3] Cleaning up any previous DOCINT processes on ports 8000/5173...
+echo [0/3] Cleaning up any previous DOCINT processes on ports 8001/5173...
 if exist "stop.bat" call stop.bat --silent
 echo.
 
@@ -62,8 +62,8 @@ rem echo [OK]   Migrations applied.
 rem echo.
 
 
-echo [2/3] Starting FastAPI backend (Port 8000)...
-start "DOCINT-API" cmd /k "cd /d %~dp0backend && call venv\Scripts\activate.bat && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+echo [2/3] Starting FastAPI backend (Port 8001)...
+start "DOCINT-API" cmd /k "cd /d %~dp0backend && call venv\Scripts\activate.bat && python -m uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload"
 echo        Starting RQ Worker...
 start "DOCINT-WORKER" cmd /k "cd /d %~dp0backend && call venv\Scripts\activate.bat && python run_worker.py"
 timeout /t 4 /nobreak > nul
@@ -76,15 +76,15 @@ if not exist "frontend\node_modules" (
     call npm install
     cd ..
 )
-start "DOCINT-FRONTEND" cmd /k "cd /d %~dp0frontend && npm run dev"
+start "DOCINT-FRONTEND" cmd /k "cd /d %~dp0frontend && npm run dev -- --host"
 timeout /t 3 /nobreak > nul
 echo.
 echo ============================================================
 echo   DOCINT is starting. Check the windows above for logs.
 echo.
-echo   API:      http://localhost:8000
-echo   API Docs: http://localhost:8000/docs
-echo   Health:   http://localhost:8000/api/v1/health
+echo   API:      http://localhost:8001
+echo   API Docs: http://localhost:8001/docs
+echo   Health:   http://localhost:8001/api/v1/health
 echo   Frontend: http://localhost:5173
 echo ============================================================
 echo.

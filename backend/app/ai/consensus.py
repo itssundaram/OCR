@@ -40,6 +40,8 @@ class PipelineFieldValue:
     pipeline_name: str
     value: str | None
     confidence: float
+    bbox_json: dict | None = None
+    page_id: str | None = None
 
 
 @dataclass
@@ -130,6 +132,8 @@ def compare_pipeline_results(
                 pipeline_name=pname,
                 value=pfields[field_name][0],
                 confidence=pfields[field_name][1],
+                bbox_json=pfields[field_name][2],
+                page_id=pfields[field_name][3],
             )
             for pname, pfields in results_by_pipeline.items()
             if field_name in pfields

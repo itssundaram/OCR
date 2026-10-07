@@ -6,6 +6,10 @@ export const templatesService = {
     return await api.get(`/templates${query}`);
   },
 
+  getTemplate: async (templateId) => {
+    return await api.get(`/templates/id/${templateId}`);
+  },
+
   createTemplate: async (departmentSlug, data) => {
     return await api.post(`/templates/${departmentSlug}`, data);
   },

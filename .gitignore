@@ -51,3 +51,12 @@ oracle_migration.sql
 # ── Logs ─────────────────────────────────────────────────────────────────────
 *.log
 backend/offline_package/*.whl
+
+# ── Untracked scratch & data files ───────────────────────────────────────────
+backend/data/
+backend/debug_*.txt
+backend/test_*.txt
+backend/pp_help.txt
+backend/fix_sequences.py
+backend/bin/
+.scannerwork/

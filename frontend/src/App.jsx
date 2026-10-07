@@ -4,6 +4,8 @@ import AppShell from './components/layout/AppShell';
 
 import Dashboard from './pages/Dashboard';
 import ManagePage from './pages/ManagePage';
+import TemplateEditorPage from './pages/TemplateEditorPage';
+import ResultsPage from './pages/ResultsPage';
 import GenerateUrlPage from './pages/GenerateUrlPage';
 import OcrPage from './pages/OcrPage';
 import LogsPage from './pages/LogsPage';
@@ -18,6 +20,8 @@ function App() {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="manage" element={<ManagePage />} />
+        <Route path="manage/template/:id" element={<TemplateEditorPage />} />
+        <Route path="results" element={<ResultsPage />} />
         <Route path="generate-url" element={<GenerateUrlPage />} />
         <Route path="ocr" element={<OcrPage />} />
         <Route path="logs" element={<LogsPage />} />

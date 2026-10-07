@@ -61,7 +61,7 @@ def _resolve_department_and_template(db: Session, department_slug: str, template
     return template
 
 
-def _save_uploaded_file_and_create_job(db: Session, file: UploadFile, template: Template) -> tuple[str, str]:
+def _save_uploaded_file_and_create_job(db: Session, file: UploadFile, template: Template, pipeline_mode: str = "single_pipeline") -> tuple[str, str]:
     """Shared upload mechanics for all three flows above: validate, store the
     file, create the Document + ProcessingJob rows. Returns (doc_id, job_id);
     caller commits and dispatches."""
@@ -104,6 +104,7 @@ def _save_uploaded_file_and_create_job(db: Session, file: UploadFile, template: 
         template_id=template.id,
         template_version=template.version,
         status="QUEUED",
+        pipeline_mode=pipeline_mode,
     )
     db.add(new_job)
     db.commit()
@@ -250,7 +251,7 @@ def extract_document_with_comparison(
         raise DocIntError("Select at least two pipelines to compare.", "INSUFFICIENT_PIPELINES")
 
     template = _resolve_department_and_template(db, department_slug, template_code)
-    doc_id, job_id = _save_uploaded_file_and_create_job(db, file, template)
+    doc_id, job_id = _save_uploaded_file_and_create_job(db, file, template, pipeline_mode="orchestration")
 
     dispatched_via = _dispatch_job(
         "app.workers.tasks.run_pipeline_comparison_job", job_id, (pipelines,),

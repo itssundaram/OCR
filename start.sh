@@ -30,20 +30,20 @@ cd backend && python scripts/check_models.py || true; cd ..
 
 echo "[5/6] Starting FastAPI backend + Worker..."
 cd backend
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload &
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload &
 API_PID=$!
 python -m app.workers.main &
 WORKER_PID=$!
 cd ..; sleep 4
 
 echo "[6/6] Starting Frontend (Port 5173)..."
-cd frontend && npm run dev &
+cd frontend && npm run dev -- --host &
 FRONTEND_PID=$!; cd ..
 
 echo ""
 echo "============================================================"
-echo "  API:      http://localhost:8000"
-echo "  Health:   http://localhost:8000/api/v1/health"
+echo "  API:      http://localhost:8001"
+echo "  Health:   http://localhost:8001/api/v1/health"
 echo "  Frontend: http://localhost:5173"
 echo "============================================================"
 echo "Press Ctrl+C to stop all services."
