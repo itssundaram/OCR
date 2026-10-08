@@ -109,13 +109,13 @@ const ResultsPage = () => {
                       onClick={() => viewJob(job)}
                     >
                       <div className="flex justify-between items-start">
-                        <span className="font-bold text-xs text-primary truncate mr-2" title={job.document_id}>
-                          Doc:<br/>{job.job_id.substring(0,8)}...
+                        <span className="font-bold text-xs text-primary truncate mr-2" title={job.original_filename || job.document_id}>
+                          Doc:<br/>{job.original_filename || job.document_id.substring(0,12) + '...'}
                         </span>
                         {getStatusBadge(job.status)}
                       </div>
                       <div className="text-xs font-semibold text-secondary truncate" title={job.document_id}>
-                        {job.document_id}
+                        {job.job_id}
                       </div>
                       <div className="flex items-center justify-between mt-1">
                         <div className="text-[0.65rem] text-tertiary font-mono">

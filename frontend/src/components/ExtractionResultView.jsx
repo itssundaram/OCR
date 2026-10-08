@@ -49,14 +49,29 @@ const ExtractionResultView = ({
   let displayAvgConf = avgConf * 100;
   if (displayAvgConf > 97.5) displayAvgConf = 97.5;
 
+  let avgConfColorClass = 'bg-green-50 text-green-700 border-green-200';
+  let AvgConfIcon = CheckCircle2;
+  if (displayAvgConf < 60) {
+    avgConfColorClass = 'bg-red-50 text-red-700 border-red-200';
+    AvgConfIcon = XCircle;
+  } else if (displayAvgConf < 85) {
+    avgConfColorClass = 'bg-yellow-50 text-yellow-700 border-yellow-200';
+    AvgConfIcon = Flag;
+  }
+
   const latencyStr = (() => {
-    if (activeJob.created_at && activeJob.completed_at) {
+    if (activeJob.started_at && activeJob.completed_at) {
+      const started = new Date(activeJob.started_at);
+      const completed = new Date(activeJob.completed_at);
+      const diffMs = completed - started;
+      if (!isNaN(diffMs)) return (diffMs / 1000).toFixed(2) + 's';
+    } else if (activeJob.created_at && activeJob.completed_at) {
       const created = new Date(activeJob.created_at);
       const completed = new Date(activeJob.completed_at);
       const diffMs = completed - created;
       if (!isNaN(diffMs)) return (diffMs / 1000).toFixed(2) + 's';
     }
-    return '1.42s';
+    return '-';
   })();
 
   if (!isFinished && status !== 'FAILED') {
@@ -109,17 +124,23 @@ const ExtractionResultView = ({
           <div className="w-px h-8 bg-gray-200"></div>
           <div className="flex flex-col gap-1">
             <span className="text-gray-400 font-sans text-[0.65rem] uppercase tracking-wider font-bold">DOCUMENT FILE</span>
-            <span className="text-primary font-medium">{activeJob.document_id || 'manifest_inspection.pdf'}</span>
+            <span className="text-primary font-medium truncate max-w-[200px]" title={activeJob.original_filename || activeJob.document_id}>{activeJob.original_filename || activeJob.document_id || 'Unknown Document'}</span>
           </div>
           <div className="w-px h-8 bg-gray-200"></div>
           <div className="flex flex-col gap-1">
             <span className="text-gray-400 font-sans text-[0.65rem] uppercase tracking-wider font-bold">PARSER TEMPLATE</span>
-            <span className="text-primary font-medium">{activeJob.template_code || 'engine_chasis_v1'}</span>
+            <span className="text-primary font-medium">{activeJob.template_code || 'Unknown Template'}</span>
           </div>
           <div className="w-px h-8 bg-gray-200"></div>
           <div className="flex flex-col gap-1">
             <span className="text-gray-400 font-sans text-[0.65rem] uppercase tracking-wider font-bold">INGESTION ENGINE</span>
-            <span className="text-primary font-medium text-blue-700">{activeJob.ai_engine === 'qwen' ? 'Qwen 2.5-VL Vision Segmenter' : 'Surya Engine'}</span>
+            <span className="text-primary font-medium text-blue-700">
+              {activeJob.pipeline_mode === 'paddle' ? 'PaddleOCR + Ollama' : 
+               activeJob.pipeline_mode === 'surya' ? 'Surya OCR + Ollama' : 
+               activeJob.pipeline_mode === 'tesseract' ? 'Tesseract + Ollama' : 
+               activeJob.pipeline_mode === 'orchestration' ? 'Orchestration Engine' : 
+               (activeJob.pipeline_mode || 'Unknown Engine').toUpperCase()}
+            </span>
           </div>
           <div className="w-px h-8 bg-gray-200"></div>
           <div className="flex flex-col gap-1">
@@ -196,7 +217,7 @@ const ExtractionResultView = ({
                   <div className="text-lg font-bold text-primary font-heading">Key Value Pairs</div>
                   <div className="flex items-center gap-4">
                     <span className="text-xs font-bold text-gray-500 font-mono tracking-widest">{extractedCount} / {totalFields}</span>
-                    {totalFields > 0 && <Badge className="bg-green-50 text-green-700 border border-green-200 text-[0.65rem] px-2 py-1 font-bold flex items-center gap-1"><CheckCircle2 size={12}/> {displayAvgConf.toFixed(1)}% Avg Confidence</Badge>}
+                    {totalFields > 0 && <Badge className={`border text-[0.65rem] px-2 py-1 font-bold flex items-center gap-1 ${avgConfColorClass}`}><AvgConfIcon size={12}/> {displayAvgConf.toFixed(1)}% Avg Confidence</Badge>}
                   </div>
                 </div>
 
@@ -211,6 +232,16 @@ const ExtractionResultView = ({
                           let displayConf = conf * 100;
                           if (displayConf > 97.5) displayConf = 97.5;
                           
+                          let confColor = 'text-green-600';
+                          let ConfIcon = CheckCircle2;
+                          if (displayConf < 60) {
+                            confColor = 'text-red-600';
+                            ConfIcon = XCircle;
+                          } else if (displayConf < 85) {
+                            confColor = 'text-yellow-600';
+                            ConfIcon = Flag;
+                          }
+                          
                           return (
                             <div key={key} className="flex flex-col rounded-lg border bg-white shadow-sm overflow-hidden animate-fade-in-up border-gray-200">
                               <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white">
@@ -224,8 +255,8 @@ const ExtractionResultView = ({
                                 </div>
                                 <div className="flex items-center gap-2">
                                   {data?.found && (
-                                    <div className="flex items-center gap-1.5 font-bold text-xs text-green-600">
-                                      <CheckCircle2 size={14} /> Confidence: {displayConf.toFixed(1)}%
+                                    <div className={`flex items-center gap-1.5 font-bold text-xs ${confColor}`}>
+                                      <ConfIcon size={14} /> Confidence: {displayConf.toFixed(1)}%
                                     </div>
                                   )}
                                 </div>

@@ -166,23 +166,39 @@ class TesseractPipeline(OCRPipeline):
             crop_image = None
             if field_val and isinstance(field_val, str):
                 import re
+                from difflib import SequenceMatcher
                 norm_field = re.sub(r'[^a-z0-9]', '', field_val.lower())
                 if len(norm_field) >= 2:
+                    best_match_score = 0.0
+                    best_line = None
+                    best_p_idx = -1
+                    
                     for p_idx, lines in enumerate(ocr_lines_by_page):
                         for line in lines:
                             norm_line = re.sub(r'[^a-z0-9]', '', line.text.lower())
-                            if norm_field in norm_line or (len(norm_line) >= 4 and norm_line in norm_field):
-                                bbox = {"x1": line.bbox.x1, "y1": line.bbox.y1, "x2": line.bbox.x2, "y2": line.bbox.y2}
-                                pad = 10
-                                c_x1 = max(0, int(bbox["x1"]) - pad)
-                                c_y1 = max(0, int(bbox["y1"]) - pad)
-                                c_x2 = min(preprocessed_pages[p_idx].width, int(bbox["x2"]) + pad)
-                                c_y2 = min(preprocessed_pages[p_idx].height, int(bbox["y2"]) + pad)
-                                crop_image = preprocessed_pages[p_idx].crop((c_x1, c_y1, c_x2, c_y2))
-                                break
-                        if bbox:
-                            break
-                        
+                            
+                            score = SequenceMatcher(None, norm_field, norm_line).ratio()
+                            if len(norm_line) > len(norm_field):
+                                for i in range(len(norm_line) - len(norm_field) + 1):
+                                    sub_score = SequenceMatcher(None, norm_field, norm_line[i:i+len(norm_field)]).ratio()
+                                    score = max(score, sub_score)
+                            
+                            if norm_field in norm_line:
+                                score = 1.0
+                                        
+                            if score > best_match_score:
+                                best_match_score = score
+                                best_line = line
+                                best_p_idx = p_idx
+                                
+                    if best_line and best_match_score > 0.6:
+                        bbox = {"x1": best_line.bbox.x1, "y1": best_line.bbox.y1, "x2": best_line.bbox.x2, "y2": best_line.bbox.y2}
+                        pad = 10
+                        c_x1 = max(0, int(bbox["x1"]) - pad)
+                        c_y1 = max(0, int(bbox["y1"]) - pad)
+                        c_x2 = min(preprocessed_pages[best_p_idx].width, int(bbox["x2"]) + pad)
+                        c_y2 = min(preprocessed_pages[best_p_idx].height, int(bbox["y2"]) + pad)
+                        crop_image = preprocessed_pages[best_p_idx].crop((c_x1, c_y1, c_x2, c_y2))
             fields_out.append(FieldResult(
                 field_name=field_name,
                 value="" if field_val is None else str(field_val),

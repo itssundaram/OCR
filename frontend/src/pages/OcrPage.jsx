@@ -238,11 +238,11 @@ const OcrPage = () => {
             </div>
           </CardContent></Card>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6 flex-1 overflow-hidden h-full">
-            {/* Left Column */}
-            <div className="flex flex-col gap-6 overflow-y-auto">
-              <Card className="border shadow-sm rounded-lg flex flex-col h-full bg-white">
-                <CardContent className="p-6 flex flex-col h-full gap-8">
+          <div className="flex justify-center flex-1 overflow-hidden h-full">
+            {/* Center Column */}
+            <div className="flex flex-col gap-6 overflow-y-auto w-full max-w-3xl">
+              <Card className="border shadow-sm rounded-lg flex flex-col bg-white">
+                <CardContent className="p-6 flex flex-col gap-8">
                   {/* Document Info Header */}
                   <div className="flex items-start gap-4">
                     <div className="p-3 bg-blue-50 rounded-lg border border-blue-100 text-blue-600 shadow-sm mt-1">
@@ -340,86 +340,6 @@ const OcrPage = () => {
               </Card>
             </div>
 
-            {/* Right Column */}
-            <div className="flex flex-col gap-6 overflow-y-auto">
-              {/* Execution Telemetry Card */}
-              <Card className="border shadow-sm rounded-lg overflow-hidden bg-white">
-                <CardHeader className="bg-white border-b border-border-color pb-3 pt-4 px-4 flex flex-row justify-between items-center">
-                  <div className="flex items-center gap-2 font-bold text-primary">
-                    <CheckCircle2 size={16} className="text-[#1e3a8a]" /> Execution Telemetry
-                  </div>
-                  <Badge className="bg-green-50 text-green-700 border border-green-200 text-[0.65rem] py-0.5 px-2 uppercase font-bold tracking-wider rounded-sm shadow-sm">LIVE FEED</Badge>
-                </CardHeader>
-                <CardContent className="p-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="border border-gray-100 bg-gray-50 p-3 rounded text-center shadow-sm">
-                      <div className="text-[0.65rem] text-secondary font-bold uppercase tracking-wider mb-1">CONFIDENCE INDEX</div>
-                      <div className="text-xl font-bold text-[#1e3a8a]">99.82%</div>
-                      <div className="text-[0.65rem] text-green-600 mt-1 font-semibold">Zero hallucinations</div>
-                    </div>
-                    <div className="border border-gray-100 bg-gray-50 p-3 rounded text-center shadow-sm">
-                      <div className="text-[0.65rem] text-secondary font-bold uppercase tracking-wider mb-1">INFERENCE RATE</div>
-                      <div className="text-xl font-bold text-[#1e3a8a]">42 tok/s</div>
-                      <div className="text-[0.65rem] text-gray-500 mt-1">RTX 5060 Ti FP16</div>
-                    </div>
-                    <div className="border border-gray-100 bg-gray-50 p-3 rounded text-center shadow-sm">
-                      <div className="text-[0.65rem] text-secondary font-bold uppercase tracking-wider mb-1">MEMORY OVERHEAD</div>
-                      <div className="text-xl font-bold text-[#1e3a8a]">4,288 MB</div>
-                      <div className="text-[0.65rem] text-gray-500 mt-1">Safe headroom (72%)</div>
-                    </div>
-                    <div className="border border-gray-100 bg-gray-50 p-3 rounded text-center shadow-sm">
-                      <div className="text-[0.65rem] text-secondary font-bold uppercase tracking-wider mb-1">AUDIT PROOF HASH</div>
-                      <div className="text-xl font-bold text-[#1e3a8a]">SHA-256</div>
-                      <div className="text-[0.65rem] text-green-600 mt-1 font-semibold">FIPS compliant</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Console Stream */}
-              <Card className="border shadow-sm rounded-lg overflow-hidden bg-[#242930] text-gray-300">
-                <CardHeader className="border-b border-[#3b4252] pb-2 pt-3 px-4 flex flex-row justify-between items-center bg-[#1e2227]">
-                  <div className="flex items-center gap-2 font-mono text-[0.7rem] font-bold tracking-widest uppercase text-gray-400">
-                    <ChevronRight size={14} className="text-blue-400" /> Console Stream • stdout
-                  </div>
-                  <div className="flex items-center gap-2 text-[0.6rem] font-mono tracking-widest text-gray-400">
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div> PORT: 5173
-                  </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div className="p-4 font-mono text-[0.7rem] flex flex-col gap-2.5 leading-relaxed opacity-90">
-                    <div><span className="text-gray-500">[00:00.012]</span> <span className="text-blue-400 font-bold">[INIT]</span> Initializing secure container sandboxed environment...</div>
-                    <div><span className="text-gray-500">[00:00.085]</span> <span className="text-green-400 font-bold">[PREPROCESS]</span> De-skew completed (-1.42 deg). DPI rescaled to 300.</div>
-                    <div><span className="text-gray-500">[00:00.097]</span> <span className="text-purple-400 font-bold">[SHA256]</span> Input document digest: 8a9f4c9ba10283fcc092</div>
-                    <div><span className="text-gray-500">[00:00.337]</span> <span className="text-yellow-400 font-bold">[LAYOUT]</span> YOLOv8 segmentation finished: 5 regions detected.</div>
-                    <div><span className="text-gray-500">[00:00.350]</span> <span className="text-cyan-400 font-bold">[BBOX]</span> Bounding box [HEADER_SEAL]: confidence 0.999</div>
-                    <div><span className="text-gray-500">[00:00.354]</span> <span className="text-cyan-400 font-bold">[BBOX]</span> Bounding box [ENGINE_NO]: confidence 0.996</div>
-                    <div><span className="text-gray-500">[00:00.748]</span> <span className="text-green-400 font-bold">[INFERENCE]</span> Allocated 4.2GB VRAM on RTX 5060 Ti [cuda:0]</div>
-                    <div><span className="text-gray-500">[00:00.761]</span> <span className="text-blue-400 font-bold">[OCR]</span> Qwen 2.5-VL vision Tokenizer started...</div>
-                    {pipelineSteps.length > 0 && pipelineSteps.map((step, i) => (
-                       <div key={i}><span className="text-gray-500">[00:0{(1 + i * 0.4).toFixed(3)}]</span> <span className="text-green-400 font-bold">[STEP]</span> {step.name.replace(/_/g, ' ')}... done</div>
-                    ))}
-                    <div className="text-right mt-3 pt-3 border-t border-[#3b4252] border-opacity-50"><button className="text-gray-400 hover:text-white underline underline-offset-2 transition-colors">Copy All Logs</button></div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Target Extraction Queue */}
-              <Card className="border shadow-sm rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-white mt-auto">
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="p-2.5 bg-blue-50 border border-blue-100 text-blue-600 rounded shadow-sm">
-                      <Layers size={18} strokeWidth={2.5} />
-                    </div>
-                    <div>
-                      <div className="font-bold text-[0.8rem] text-primary mb-0.5">Target Extraction Queue</div>
-                      <div className="text-xs text-secondary">Directing to /ocr/results/{activeJob.id ? activeJob.id.substring(0,8) : 'pending'} upon completion</div>
-                    </div>
-                  </div>
-                  <ChevronRight size={18} className="text-gray-400" />
-                </CardContent>
-              </Card>
-            </div>
           </div>
         )}
       </div>

@@ -10,6 +10,8 @@ build/
 .venv/
 venv/
 env/
+.venv2/
+venv2/
 
 # ── Env files — NEVER commit real credentials ─────────────────────────────────
 backend/.env

@@ -29,6 +29,8 @@ def get_processing_job(job_id: str, db: Session = Depends(get_db)):
     response_data = {
         "job_id": job.id,
         "document_id": job.document_id,
+        "original_filename": job.document.original_filename if job.document else "Unknown Document",
+        "template_code": job.template.code if job.template else "Unknown Template",
         "status": job.status,
         "started_at": job.started_at,
         "completed_at": job.completed_at,
@@ -76,6 +78,8 @@ def list_processing_jobs(
         data.append({
             "job_id": job.id,
             "document_id": job.document_id,
+            "original_filename": job.document.original_filename if job.document else "Unknown Document",
+            "template_code": job.template.code if job.template else "Unknown Template",
             "status": job.status,
             "created_at": job.created_at,
             "overall_confidence": job.overall_confidence
