@@ -9,6 +9,13 @@ def register_pipeline(name: str):
     return decorator
 
 def get_pipeline(name: str) -> OCRPipeline:
+    if name not in _REGISTRY:
+        try:
+            import importlib
+            import app.pipelines
+            importlib.reload(app.pipelines)
+        except Exception:
+            pass
     cls = _REGISTRY.get(name)
     if not cls:
         raise ValueError(f"Pipeline '{name}' not registered.")

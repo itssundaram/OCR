@@ -13,7 +13,7 @@ img2table is skipped for native-text pages when settings.IMG2TABLE_SKIP_NATIVE=T
 
 Phase 4 note (implementation plan): the two branches below (DIRECT_LLM_CALL
 True/False) now also exist as registered, working pipelines in app/pipelines/
-(QwenPipeline, LegacyOCRPipeline) behind settings.USE_PIPELINE_REGISTRY — but
+(surya, paddle, tesseract, learned_anchor) behind settings.USE_PIPELINE_REGISTRY — but
 this function does not yet dispatch through them. That cutover is deliberately
 staged separately so the live job flow here is untouched until the adapters
 have been validated against real documents.
@@ -584,7 +584,7 @@ def process_document_job(job_id: str) -> None:
             job.status = job_status
             job.completed_at = datetime.datetime.now(datetime.timezone.utc)
             if doc:
-                doc.status = job_status
+                doc.status = "COMPLETED" if job_status in ("COMPLETED", "WARNING") else job_status
             _record_event(db, job.id, "DOCUMENT_COMPLETED", pipeline_run_id=pipeline_run.id, status=job_status)
             db.commit()
 

@@ -265,7 +265,7 @@ const LogsPage = () => {
                                                  <div className="font-mono text-[0.7rem] text-gray-600 flex flex-col gap-2">
                                                     <div>consensus_score: <span className="text-green-600 font-bold">1.000</span> <span className="text-gray-400">(3 of 3)</span></div>
                                                     <div>surya_latency: 840ms</div>
-                                                    <div>qwen_vl_latency: 1,180ms</div>
+                                                    <div>learned_anchor_latency: 280ms</div>
                                                     <div>paddle_latency: 920ms</div>
                                                  </div>
                                               </div>

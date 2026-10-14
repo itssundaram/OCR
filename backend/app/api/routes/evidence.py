@@ -6,12 +6,13 @@ store (page images, persisted per-page by app/services/orchestrator.py and
 app/services/extractor.py) through a "click a field, see its source" style
 endpoint, per the plan's Phase 16 objective.
 
-Honest scope note: none of the three registered pipelines (Qwen, Surya,
-legacy OCR — see app/pipelines/*.py) currently attribute an extracted field
-to a precise bounding box; each FieldResult.bbox is always None today (this
-is called out directly in those files' own comments, e.g.
+Honest scope note: the general-purpose OCR pipelines (Surya, PaddleOCR,
+Tesseract — see app/pipelines/*.py) do not currently attribute an extracted
+field to a precise bounding box; each FieldResult.bbox is always None for
+them today (this is called out directly in those files' own comments, e.g.
 "Phase 6/16 territory: this pipeline doesn't yet attribute a field to a
-specific page"). Wiring real per-field bboxes is pipeline-level inference
+specific page"). learned_anchor is the exception — it stores real field
+geometry by design. Wiring real per-field bboxes into the others is pipeline-level inference
 work that needs a running model to validate and is explicitly deferred to
 the GPU configuration pass. So this endpoint degrades gracefully: if a field
 row has a bbox, it serves the exact crop; otherwise it serves the full page
@@ -125,8 +126,12 @@ def get_field_evidence_image(job_id: str, field_name: str, db: Session = Depends
         crop_asset = db.get(Asset, bbox["crop_asset_id"])
         if crop_asset and os.path.exists(crop_asset.file_path):
             try:
-                with open(crop_asset.file_path, "rb") as f:
-                    return Response(content=f.read(), media_type="image/png")
+                crop_img = Image.open(crop_asset.file_path)
+                if crop_img.height > crop_img.width * 1.5:
+                    crop_img = crop_img.rotate(270, expand=True)
+                buf = io.BytesIO()
+                crop_img.save(buf, format="PNG")
+                return Response(content=buf.getvalue(), media_type="image/png")
             except Exception:
                 logger.error("evidence_crop_asset_read_failed", job_id=job_id, field_name=field_name, exc_info=True)
 
@@ -137,6 +142,8 @@ def get_field_evidence_image(job_id: str, field_name: str, db: Session = Depends
             x2, y2 = min(img.width, x2), min(img.height, y2)
             if x2 > x1 and y2 > y1:
                 img = img.crop((x1, y1, x2, y2))
+                if img.height > img.width * 1.5:
+                    img = img.rotate(270, expand=True)
         except Exception:
             logger.warning("evidence_bbox_crop_failed", job_id=job_id, field_name=field_name, bbox=bbox)
 

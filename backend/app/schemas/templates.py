@@ -23,6 +23,44 @@ class TemplateJsonSchema(BaseModel):
     fields: list[TemplateFieldSchema] = Field(..., description="List of fields to extract")
 
 
+def _normalize_template_json(v: Any) -> Any:
+    if isinstance(v, dict):
+        if "fields" not in v and "properties" in v:
+            props = v.get("properties", {})
+            req_list = v.get("required", [])
+            fields = []
+            for prop_name, prop_data in props.items():
+                if not isinstance(prop_data, dict):
+                    continue
+                p_type = prop_data.get("type", "string")
+                field_type = "text"
+                if p_type in ("number", "integer"):
+                    field_type = "number"
+                elif p_type == "boolean":
+                    field_type = "boolean"
+                elif p_type == "array":
+                    field_type = "table"
+                elif "date" in prop_name.lower():
+                    field_type = "date"
+                fields.append({
+                    "name": prop_name,
+                    "type": field_type,
+                    "description": prop_data.get("description", "") or "",
+                    "required": prop_name in req_list,
+                    "example": prop_data.get("example"),
+                    "aliases": prop_data.get("aliases", []),
+                    "extraction_hint": prop_data.get("pattern") or prop_data.get("extraction_hint"),
+                    "known_values": prop_data.get("enum") or prop_data.get("known_values", []),
+                })
+            v = {**v, "fields": fields}
+        try:
+            TemplateJsonSchema.model_validate(v)
+        except Exception:
+            if "fields" not in v:
+                v["fields"] = []
+    return v
+
+
 class TemplateBase(BaseModel):
     code: str = Field(..., max_length=100)
     template_json: dict[str, Any] = Field(..., description="The schema for extraction")
@@ -30,10 +68,7 @@ class TemplateBase(BaseModel):
 
     @field_validator("template_json")
     def validate_template_json(cls, v):
-        # Validate against TemplateJsonSchema to ensure it matches our expected structure
-        # (raises ValidationError if invalid)
-        TemplateJsonSchema.model_validate(v)
-        return v
+        return _normalize_template_json(v)
 
 
 class TemplateCreate(TemplateBase):
@@ -47,7 +82,7 @@ class TemplateUpdate(BaseModel):
     @field_validator("template_json")
     def validate_template_json(cls, v):
         if v is not None:
-            TemplateJsonSchema.model_validate(v)
+            return _normalize_template_json(v)
         return v
 
 

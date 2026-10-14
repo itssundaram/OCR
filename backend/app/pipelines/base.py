@@ -79,7 +79,9 @@ class OCRPipeline(ABC):
         doc_type: str = "UNKNOWN",
         template_version: int = 1,
         extraction_instructions: str | None = None,
+        template_id: int | None = None,
         event_callback=None,
+        **kwargs,
     ) -> PipelineResult:
         """native_texts: per-page text PyMuPDF already extracted (empty string for a
         scanned page with none) — pipelines that can skip OCR on a native-text page
@@ -129,6 +131,8 @@ class OCRPipeline(ABC):
                 doc_type=template.get("doc_type", "UNKNOWN") if isinstance(template, dict) else "UNKNOWN",
                 template_version=template.get("template_version", 1) if isinstance(template, dict) else 1,
                 extraction_instructions=template.get("extraction_instructions") if isinstance(template, dict) else None,
+                template_id=template.get("template_id") if isinstance(template, dict) else None,
+                force_relearn=template.get("force_relearn", False) if isinstance(template, dict) else False,
                 event_callback=_internal_event_callback,
             )
             result.step_events = step_events

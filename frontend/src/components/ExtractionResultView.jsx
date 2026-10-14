@@ -11,7 +11,7 @@ import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.js';
 
 const parseJSONRecursively = (data) => {
   let parsed = data;
@@ -25,11 +25,11 @@ const parseJSONRecursively = (data) => {
   return parsed;
 };
 
-const ExtractionResultView = ({ 
-  activeJob, 
-  onBack, 
-  pipelineSteps = [], 
-  setZoomedImage 
+const ExtractionResultView = ({
+  activeJob,
+  onBack,
+  pipelineSteps = [],
+  setZoomedImage
 }) => {
   const [activeTab, setActiveTab] = useState('data');
   const [numPages, setNumPages] = useState(null);
@@ -47,7 +47,6 @@ const ExtractionResultView = ({
 
   let avgConf = totalFields > 0 ? fieldKeys.reduce((acc, k) => acc + (fields[k]?.confidence || 0), 0) / totalFields : 0;
   let displayAvgConf = avgConf * 100;
-  if (displayAvgConf > 97.5) displayAvgConf = 97.5;
 
   let avgConfColorClass = 'bg-green-50 text-green-700 border-green-200';
   let AvgConfIcon = CheckCircle2;
@@ -111,15 +110,15 @@ const ExtractionResultView = ({
             <Badge className="bg-green-50 text-green-700 border border-green-200 text-[0.65rem] tracking-widest px-2 py-0.5 uppercase font-bold">COMPLETED</Badge>
           </div>
           <div className="flex items-center gap-2">
-            <button className="btn btn-secondary py-1.5 px-3 text-xs flex items-center gap-2 bg-white border border-gray-200 shadow-sm text-gray-700"><ShieldCheck size={14}/> Verify Schema</button>
-            <button className="btn btn-primary py-1.5 px-3 text-xs flex items-center gap-2 bg-[#1e3a8a] shadow-md"><RefreshCw size={14}/> Re-run Pipeline</button>
+            <button className="btn btn-secondary py-1.5 px-3 text-xs flex items-center gap-2 bg-white border border-gray-200 shadow-sm text-gray-700"><ShieldCheck size={14} /> Verify Schema</button>
+            <button className="btn btn-primary py-1.5 px-3 text-xs flex items-center gap-2 bg-[#1e3a8a] shadow-md"><RefreshCw size={14} /> Re-run Pipeline</button>
           </div>
         </div>
-        
+
         <div className="border-t border-gray-100 pt-3 flex items-center gap-8 text-xs font-mono">
           <div className="flex flex-col gap-1">
             <span className="text-gray-400 font-sans text-[0.65rem] uppercase tracking-wider font-bold">EXECUTION ID</span>
-            <span className="text-primary font-medium">#{activeJob.job_id.substring(0,8)}-{activeJob.job_id.substring(9,13)}</span>
+            <span className="text-primary font-medium">#{activeJob.job_id.substring(0, 8)}-{activeJob.job_id.substring(9, 13)}</span>
           </div>
           <div className="w-px h-8 bg-gray-200"></div>
           <div className="flex flex-col gap-1">
@@ -135,11 +134,11 @@ const ExtractionResultView = ({
           <div className="flex flex-col gap-1">
             <span className="text-gray-400 font-sans text-[0.65rem] uppercase tracking-wider font-bold">INGESTION ENGINE</span>
             <span className="text-primary font-medium text-blue-700">
-              {activeJob.pipeline_mode === 'paddle' ? 'PaddleOCR + Ollama' : 
-               activeJob.pipeline_mode === 'surya' ? 'Surya OCR + Ollama' : 
-               activeJob.pipeline_mode === 'tesseract' ? 'Tesseract + Ollama' : 
-               activeJob.pipeline_mode === 'orchestration' ? 'Orchestration Engine' : 
-               (activeJob.pipeline_mode || 'Unknown Engine').toUpperCase()}
+              {activeJob.pipeline_mode === 'paddle' ? 'PaddleOCR + Ollama' :
+                activeJob.pipeline_mode === 'surya' ? 'Surya OCR + Ollama' :
+                  activeJob.pipeline_mode === 'tesseract' ? 'Tesseract + Ollama' :
+                    activeJob.pipeline_mode === 'orchestration' ? 'Orchestration Engine' :
+                      (activeJob.pipeline_mode || 'Unknown Engine').toUpperCase()}
             </span>
           </div>
           <div className="w-px h-8 bg-gray-200"></div>
@@ -177,8 +176,8 @@ const ExtractionResultView = ({
                 <div className="flex-1 overflow-hidden bg-[#e5e5e5] relative flex flex-col items-center justify-center h-full w-full">
                   {activeJob.document_id ? (
                     <TransformComponent wrapperStyle={{ width: '100%', height: '100%' }} contentStyle={{ width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                      <Document 
-                        file={`${config.API_BASE_URL}/documents/${activeJob.document_id}/file`} 
+                      <Document
+                        file={`${config.API_BASE_URL}/documents/${activeJob.document_id}/file`}
                         onLoadSuccess={({ numPages }) => setNumPages(numPages)}
                         loading={<div className="flex items-center justify-center p-8"><Loader text="Loading PDF..." /></div>}
                         className="shadow-md"
@@ -217,7 +216,7 @@ const ExtractionResultView = ({
                   <div className="text-lg font-bold text-primary font-heading">Key Value Pairs</div>
                   <div className="flex items-center gap-4">
                     <span className="text-xs font-bold text-gray-500 font-mono tracking-widest">{extractedCount} / {totalFields}</span>
-                    {totalFields > 0 && <Badge className={`border text-[0.65rem] px-2 py-1 font-bold flex items-center gap-1 ${avgConfColorClass}`}><AvgConfIcon size={12}/> {displayAvgConf.toFixed(1)}% Avg Confidence</Badge>}
+                    {totalFields > 0 && <Badge className={`border text-[0.65rem] px-2 py-1 font-bold flex items-center gap-1 ${avgConfColorClass}`}><AvgConfIcon size={12} /> {displayAvgConf.toFixed(1)}% Avg Confidence</Badge>}
                   </div>
                 </div>
 
@@ -230,8 +229,7 @@ const ExtractionResultView = ({
                         {Object.entries(fields).map(([key, data]) => {
                           const conf = data.confidence || 0;
                           let displayConf = conf * 100;
-                          if (displayConf > 97.5) displayConf = 97.5;
-                          
+
                           let confColor = 'text-green-600';
                           let ConfIcon = CheckCircle2;
                           if (displayConf < 60) {
@@ -241,7 +239,7 @@ const ExtractionResultView = ({
                             confColor = 'text-yellow-600';
                             ConfIcon = Flag;
                           }
-                          
+
                           return (
                             <div key={key} className="flex flex-col rounded-lg border bg-white shadow-sm overflow-hidden animate-fade-in-up border-gray-200">
                               <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-white">
@@ -249,7 +247,7 @@ const ExtractionResultView = ({
                                   <span className="text-xs font-bold text-gray-600 uppercase tracking-widest">{key.replace(/_/g, ' ')}</span>
                                   {data?.found && (
                                     <Badge className="text-[0.65rem] font-bold text-[#1e3a8a] bg-blue-50 px-2 py-0.5 rounded uppercase tracking-wider border-none">
-                                      {data.match_strategy?.includes('llm') ? 'LLM EXTRACTED' : 'LLM EXTRACTED'}
+                                      {data.match_strategy ? data.match_strategy.toUpperCase() : 'EXTRACTED'}
                                     </Badge>
                                   )}
                                 </div>
@@ -273,24 +271,26 @@ const ExtractionResultView = ({
                                   </div>
                                 </div>
                               </div>
-                              
+
                               {data?.found && activeJob.job_id && (
                                 <div className="px-4 py-3 border-t border-gray-100 bg-white">
                                   <div className="text-[0.65rem] font-bold text-gray-400 uppercase tracking-wider mb-2">EXTRACTION SOURCE CROP</div>
                                   <div className="flex items-center gap-4">
                                     <div className="bg-[#e0e7ff] border border-blue-300 p-2 rounded shadow-sm flex items-center justify-center max-h-16 overflow-hidden">
-                                      <img 
-                                        src={evidenceService.imageUrl(activeJob.job_id, key)} 
+                                      <img
+                                        src={evidenceService.imageUrl(activeJob.job_id, key)}
                                         alt={`Source for ${key}`}
                                         className="h-full object-contain mx-auto mix-blend-multiply"
                                         onClick={() => setZoomedImage && setZoomedImage(evidenceService.imageUrl(activeJob.job_id, key))}
                                         onError={(e) => { e.target.style.display = 'none'; }}
                                       />
                                     </div>
-                                    <div className="flex items-center gap-1.5 text-xs font-mono text-gray-500 font-semibold bg-white border border-gray-200 px-3 py-1.5 rounded-full shadow-sm">
-                                      <div className="w-2 h-2 rounded-full border border-gray-400"></div>
-                                      (x:390, y:512)
-                                    </div>
+                                    {data.bbox && data.bbox.x1 !== undefined && (
+                                      <div className="flex items-center gap-1.5 text-xs font-mono text-gray-500 font-semibold bg-white border border-gray-200 px-3 py-1.5 rounded-full shadow-sm">
+                                        <div className="w-2 h-2 rounded-full border border-gray-400"></div>
+                                        (x:{Math.round(data.bbox.x1)}, y:{Math.round(data.bbox.y1)})
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               )}
@@ -303,7 +303,7 @@ const ExtractionResultView = ({
                 )}
               </div>
             )}
-            
+
             {activeTab === 'ocr' && (() => {
               if (!ocrMetadata?.pages?.length) {
                 return (
@@ -342,7 +342,7 @@ const ExtractionResultView = ({
                 </div>
               </div>
             )}
-            
+
             {activeTab === 'audit' && (
               <div className="p-8 text-center text-secondary italic">Validation Audit history is currently empty.</div>
             )}

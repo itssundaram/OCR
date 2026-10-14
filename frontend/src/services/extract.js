@@ -51,9 +51,13 @@ export const extractService = {
 
   // Phase 13 — OCR page: upload with ONE explicitly chosen pipeline.
   // Only that pipeline processes the document.
-  uploadWithPipeline: (department, templateCode, pipelineName, file) => {
+  // forceRelearn: the "this is a new format" checkbox on the upload page —
+  // tells geometry-learning pipelines (learned_anchor) to ignore any stored
+  // pattern for this template and learn fresh from this document instead.
+  uploadWithPipeline: (department, templateCode, pipelineName, file, forceRelearn = false) => {
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('force_relearn', forceRelearn ? 'true' : 'false');
     return api.post(
       `/${department.toLowerCase()}/${templateCode.toLowerCase()}/pipeline/${pipelineName}`,
       formData,

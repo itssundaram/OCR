@@ -79,7 +79,7 @@ class Settings(BaseSettings):
     # across every environment, since the two must always agree (Phase 1 audit, 2026-10-06).
     OCR_STRATEGY: Literal["tesseract_only", "surya", "surya_with_fallback"] = "surya"
     # Phase 4 of the implementation plan: app/pipelines/ now has real, working
-    # QwenPipeline/LegacyOCRPipeline adapters registered behind this flag, but
+    # pipeline adapters (surya/paddle/tesseract/learned_anchor) registered behind this flag, but
     # services/extractor.py's live job flow does NOT consume them yet — that
     # cutover is a deliberately separate step (shadow-mode comparison against
     # current behavior first). Flipping this to True today does nothing yet.
@@ -92,7 +92,7 @@ class Settings(BaseSettings):
     # documents (master prompt section 5: "do not blindly apply every operation").
     PREPROCESS_ORIENTATION_ENABLED: bool = True
     PREPROCESS_DESKEW_ENABLED: bool = True
-    PREPROCESS_CROP_BORDERS_ENABLED: bool = True
+    PREPROCESS_CROP_BORDERS_ENABLED: bool = False
 
     # ── Confidence & field-level fallback (Phase 9) ────────────────────────────
     # Field-level pass/fail threshold (master prompt section 10: "not hardcoded
@@ -318,3 +318,5 @@ settings = get_settings()
 # exported explicitly.
 os.environ.setdefault("HF_HOME", str(settings.hf_home_path))
 os.environ.setdefault("TRANSFORMERS_CACHE", str(settings.hf_home_path))
+os.environ.setdefault("HF_HUB_OFFLINE", "1")
+os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")

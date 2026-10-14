@@ -16,7 +16,7 @@ from __future__ import annotations
 import shutil
 import uuid
 
-from fastapi import APIRouter, Depends, File, UploadFile, BackgroundTasks, Query
+from fastapi import APIRouter, Depends, File, UploadFile, BackgroundTasks, Query, Form
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
@@ -192,12 +192,19 @@ def extract_document_with_pipeline(
     pipeline_name: str,
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
+    force_relearn: bool = Form(False),
     db: Session = Depends(get_db),
 ):
     """
     OCR page (Phase 13): upload with ONE explicitly chosen pipeline. Only
     that pipeline processes the document — see
     app/services/orchestrator.py::run_single_pipeline_job.
+
+    force_relearn: set from the upload page's "this is a new format" checkbox.
+    Pipelines that keep a learned geometric pattern per template (currently
+    only learned_anchor) use it to skip their stored pattern and relearn from
+    this document instead of trusting possibly-stale/mismatched geometry.
+    Pipelines that don't have such a concept simply ignore it.
     """
     if pipeline_name not in list_pipelines():
         raise DocIntError(
@@ -206,10 +213,10 @@ def extract_document_with_pipeline(
         )
 
     template = _resolve_department_and_template(db, department_slug, template_code)
-    doc_id, job_id = _save_uploaded_file_and_create_job(db, file, template)
+    doc_id, job_id = _save_uploaded_file_and_create_job(db, file, template, pipeline_mode=pipeline_name)
 
     dispatched_via = _dispatch_job(
-        "app.workers.tasks.run_single_pipeline_job", job_id, (pipeline_name,),
+        "app.workers.tasks.run_single_pipeline_job", job_id, (pipeline_name, force_relearn),
         background_tasks, run_single_pipeline_job,
     )
 
@@ -229,7 +236,7 @@ def extract_document_with_comparison(
     department_slug: str,
     template_code: str,
     background_tasks: BackgroundTasks,
-    pipelines: list[str] = Query(..., description="Pipeline names to run and compare, e.g. ?pipelines=surya&pipelines=qwen"),
+    pipelines: list[str] = Query(..., description="Pipeline names to run and compare, e.g. ?pipelines=surya&pipelines=paddle"),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
 ):

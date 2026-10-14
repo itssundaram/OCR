@@ -57,6 +57,7 @@ class PaddlePipeline(OCRPipeline):
         template_version: int = 1,
         extraction_instructions: str | None = None,
         event_callback=None,
+        **kwargs,
     ) -> PipelineResult:
         if event_callback:
             event_callback("PREPROCESS_STARTED")
@@ -186,11 +187,13 @@ class PaddlePipeline(OCRPipeline):
                         c_x2 = min(preprocessed_pages[best_p_idx].width, int(bbox["x2"]) + pad)
                         c_y2 = min(preprocessed_pages[best_p_idx].height, int(bbox["y2"]) + pad)
                         crop_image = preprocessed_pages[best_p_idx].crop((c_x1, c_y1, c_x2, c_y2))
+                        if crop_image and crop_image.height > crop_image.width * 1.5:
+                            crop_image = crop_image.rotate(270, expand=True)
             fields_out.append(FieldResult(
                 field_name=field_name,
                 value="" if field_val is None else str(field_val),
                 confidence=conf,
-                page_number=p_idx + 1 if bbox else 1,
+                page_number=best_p_idx + 1 if bbox else 1,
                 bbox=bbox,
                 crop_image=crop_image,
                 extraction_method="paddle+llm",

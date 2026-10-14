@@ -40,6 +40,7 @@ from app.db.models import (
     Asset,
 )
 from app.pipelines.registry import get_pipeline
+import app.pipelines  # noqa: F401 - ensure all pipelines are registered
 from app.ai.field_fallback import classify_all_fields
 from app.ai.consensus import compare_pipeline_results, _normalize, overall_consensus_rate
 from app.ocr.image_extractor import extract_pages_as_images_with_metadata
@@ -169,7 +170,7 @@ def _load_job_context(db, job_id: str):
     return job, doc, template, images, native_texts, page_ids
 
 
-def _template_dict(template, native_texts: list[str]) -> dict:
+def _template_dict(template, native_texts: list[str], force_relearn: bool = False) -> dict:
     schema = template.template_json or {}
     return {
         "fields": schema.get("fields", []),
@@ -179,10 +180,15 @@ def _template_dict(template, native_texts: list[str]) -> dict:
         "doc_type": template.code,
         "template_version": template.version,
         "extraction_instructions": template.extraction_instructions,
+        "template_id": template.id,
+        # Consumed only by pipelines that declare it (currently learned_anchor):
+        # user explicitly flagged this upload as a new/changed format, so the
+        # pipeline should skip its stored geometry and relearn from scratch.
+        "force_relearn": force_relearn,
     }
 
 
-def run_single_pipeline_job(job_id: str, pipeline_name: str) -> None:
+def run_single_pipeline_job(job_id: str, pipeline_name: str, force_relearn: bool = False) -> None:
     """OCR page: run exactly one chosen pipeline and persist its result as
     the job's final (is_final=1) field values — same persistence shape as
     today's production flow, just dispatched through the registry instead
@@ -206,12 +212,18 @@ def run_single_pipeline_job(job_id: str, pipeline_name: str) -> None:
             _record_event(db, job.id, "PIPELINE_STARTED", pipeline_run_id=pipeline_run.id, status="RUNNING")
             db.commit()
 
+            t_last_event = time.perf_counter()
+
             def _single_event_callback(step_name: str, data: dict = None):
+                nonlocal t_last_event
+                now = time.perf_counter()
+                dur_ms = int((now - t_last_event) * 1000)
+                t_last_event = now
                 with SessionLocal() as _db:
-                    _record_event(_db, job.id, step_name, pipeline_run_id=pipeline_run.id, status="RUNNING", metadata=data)
+                    _record_event(_db, job.id, step_name, pipeline_run_id=pipeline_run.id, status="RUNNING", duration_ms=dur_ms, metadata=data)
                     _db.commit()
 
-            result = pipeline.run(images, _template_dict(template, native_texts), job.id, event_callback=_single_event_callback)
+            result = pipeline.run(images, _template_dict(template, native_texts, force_relearn=force_relearn), job.id, event_callback=_single_event_callback)
 
             pipeline_run.status = "COMPLETED" if result.status == "completed" else result.status.upper()
             pipeline_run.completed_at = datetime.datetime.now(datetime.timezone.utc)
@@ -225,6 +237,9 @@ def run_single_pipeline_job(job_id: str, pipeline_name: str) -> None:
 
             if result.status == "failed":
                 raise RuntimeError(result.error_message or f"Pipeline '{pipeline_name}' failed with no error message.")
+
+            # Clean previous final field extractions for this job on re-run
+            db.query(FieldExtraction).filter_by(job_id=job.id, is_final=1).delete()
 
             rows = build_field_extraction_rows_from_pipeline_result(
                 db, job.id, pipeline_run.id, result, is_final=1, page_ids=page_ids,
@@ -249,6 +264,7 @@ def run_single_pipeline_job(job_id: str, pipeline_name: str) -> None:
                     "found": bool(r["field_value"]),
                     "match_strategy": r.get("extraction_method"),
                     "source_page": r.get("page_id"),
+                    "bbox": r.get("bbox_json"),
                 }
 
             tables_out = []
@@ -271,22 +287,35 @@ def run_single_pipeline_job(job_id: str, pipeline_name: str) -> None:
                 "tables": tables_out,
             }
 
-            ocr_metadata = result.metadata.get("ocr_metadata", {})
-            ocr_metadata.update({"mode": "single_pipeline", "pipeline": pipeline_name})
+            ocr_metadata = dict(result.metadata.get("ocr_metadata", {}))
+            ocr_metadata.update({
+                "mode": result.metadata.get("mode", "single_pipeline"),
+                "pipeline": pipeline_name,
+                "speed": result.metadata.get("speed"),
+                "anchor_matched": result.metadata.get("anchor_matched"),
+                "anchor_learned": result.metadata.get("anchor_learned"),
+                "learned_anchors": result.metadata.get("learned_anchors"),
+            })
 
-            db.add(ProcessingResult(
-                job_id=job.id,
-                extracted_json=envelope,
-                confidence_json=[{"field": r["field_name"], "confidence": r["confidence"]} for r in rows],
-                ocr_metadata_json=ocr_metadata,
-            ))
+            existing_res = db.query(ProcessingResult).filter_by(job_id=job.id).first()
+            if existing_res:
+                existing_res.extracted_json = envelope
+                existing_res.confidence_json = [{"field": r["field_name"], "confidence": r["confidence"]} for r in rows]
+                existing_res.ocr_metadata_json = ocr_metadata
+            else:
+                db.add(ProcessingResult(
+                    job_id=job.id,
+                    extracted_json=envelope,
+                    confidence_json=[{"field": r["field_name"], "confidence": r["confidence"]} for r in rows],
+                    ocr_metadata_json=ocr_metadata,
+                ))
 
             job_status = "WARNING" if flagged else "COMPLETED"
             job.status = job_status
             job.completed_at = datetime.datetime.now(datetime.timezone.utc)
             job.overall_confidence = result.overall_confidence
             if doc:
-                doc.status = job_status
+                doc.status = "COMPLETED" if job_status in ("COMPLETED", "WARNING") else job_status
             _record_event(db, job.id, "DOCUMENT_COMPLETED", pipeline_run_id=pipeline_run.id, status=job_status)
             db.commit()
 
@@ -339,9 +368,14 @@ def run_pipeline_comparison_job(job_id: str, pipeline_names: list[str]) -> None:
             db.commit()
 
             def _run_one(name: str, pipeline, pr_id: str):
+                t_comp_last = time.perf_counter()
                 def _comp_event_callback(step_name: str, data: dict = None):
+                    nonlocal t_comp_last
+                    now = time.perf_counter()
+                    dur_ms = int((now - t_comp_last) * 1000)
+                    t_comp_last = now
                     with SessionLocal() as _db:
-                        _record_event(_db, job.id, step_name, pipeline_run_id=pr_id, status="RUNNING", metadata=data)
+                        _record_event(_db, job.id, step_name, pipeline_run_id=pr_id, status="RUNNING", duration_ms=dur_ms, metadata=data)
                         _db.commit()
                         
                 # IMPORTANT: Only the actual pipeline inference happens in the thread.
@@ -492,7 +526,7 @@ def run_pipeline_comparison_job(job_id: str, pipeline_names: list[str]) -> None:
             job.completed_at = datetime.datetime.now(datetime.timezone.utc)
             job.overall_confidence = consensus_run.overall_confidence
             if doc:
-                doc.status = job_status
+                doc.status = "COMPLETED" if job_status in ("COMPLETED", "WARNING") else job_status
             _record_event(db, job.id, "DOCUMENT_COMPLETED", pipeline_run_id=consensus_run.id, status=job_status)
             db.commit()
 

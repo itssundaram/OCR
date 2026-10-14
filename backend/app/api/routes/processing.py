@@ -112,6 +112,7 @@ def get_pipeline_steps(job_id: str, db: Session = Depends(get_db)):
             "steps": []
         }
     
+    last_event_time_by_run = {}
     for event in events:
         run_id = event.pipeline_run_id
         if not run_id:
@@ -123,10 +124,18 @@ def get_pipeline_steps(job_id: str, db: Session = Depends(get_db)):
         p_name = run.pipeline_name
         meta = event.metadata_json or {}
         step_name = event.event_type
+
+        dur_ms = event.duration_ms
+        if dur_ms is None and event.created_at and run_id in last_event_time_by_run:
+            dur_ms = int((event.created_at - last_event_time_by_run[run_id]).total_seconds() * 1000)
+        if event.created_at:
+            last_event_time_by_run[run_id] = event.created_at
+
         if step_name and step_name not in ("PIPELINE_STARTED", "PIPELINE_COMPLETED"):
             pipelines[p_name]["steps"].append({
                 "name": step_name,
                 "status": event.status or "DONE",
+                "duration_ms": dur_ms,
                 "data": meta
             })
             

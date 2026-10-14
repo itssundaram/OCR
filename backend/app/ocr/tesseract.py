@@ -12,7 +12,7 @@ import csv
 from PIL import Image
 
 from app.core.config import settings
-from app.ocr.base import OCREngine, OCRResult, OCRPage, OCRLine, BoundingBox
+from app.ocr.base import OCREngine, OCRResult, OCRPage, OCRLine, OCRWord, BoundingBox
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -267,9 +267,24 @@ class TesseractOCREngine(OCREngine):
 
             avg_conf = sum(w["conf"] for w in words) / len(words)
 
+            # Word-level boxes are kept on the line (not just the merged line
+            # bbox) so downstream consumers that need per-word geometry — the
+            # learned_anchor pipeline's label/value matching — can reuse this
+            # single Tesseract pass instead of re-running image_to_data on the
+            # same page a second time.
+            ocr_words = [
+                OCRWord(
+                    text=w["text"],
+                    bbox=BoundingBox(x1=w["x"], y1=w["y"], x2=w["x"] + w["w"], y2=w["y"] + w["h"]),
+                    confidence=w["conf"],
+                )
+                for w in words
+            ]
+
             ocr_lines.append(
                 OCRLine(
                     text=line_text,
+                    words=ocr_words,
                     bbox=BoundingBox(x1=x1, y1=y1, x2=x2, y2=y2),
                     confidence=avg_conf,
                 )

@@ -80,8 +80,8 @@ const GenerateUrlPage = () => {
       `URL: POST ${fullBaseUrl}/pipeline/{pipeline_name}\n` +
       `cURL: curl -X POST "${fullBaseUrl}/pipeline/surya" \\\n  -F "file=@vehicle_reg.png"\n\n` +
       `[3] Comparative Engine Output\n` +
-      `URL: POST ${fullBaseUrl}/compare?pipelines=surya&pipelines=qwen\n` +
-      `cURL: curl -X POST "${fullBaseUrl}/compare?pipelines=surya&pipelines=qwen" \\\n  -F "file=@audit_doc.pdf"`;
+      `URL: POST ${fullBaseUrl}/compare?pipelines=surya&pipelines=learned_anchor\n` +
+      `cURL: curl -X POST "${fullBaseUrl}/compare?pipelines=surya&pipelines=learned_anchor" \\\n  -F "file=@audit_doc.pdf"`;
     
     copyUrl('all_endpoints', textToCopy);
   };
@@ -105,7 +105,7 @@ const GenerateUrlPage = () => {
       }
     },
     "consensus_score": 1.0,
-    "engines_queried": ["surya", "qwen-vl"],
+    "engines_queried": ["surya", "learned_anchor"],
     "latency_ms": 812
   };
 
@@ -229,7 +229,7 @@ const GenerateUrlPage = () => {
                     <span className="text-gray-400">&rarr;</span>
                     <span className="text-gray-500 text-[0.65rem] uppercase tracking-widest">Allowed values:</span>
                     <div className="flex gap-1.5">
-                       <Badge className="bg-white text-gray-600 border border-gray-200 font-mono text-[0.65rem] px-1.5 py-0">qwen</Badge>
+                       <Badge className="bg-white text-gray-600 border border-gray-200 font-mono text-[0.65rem] px-1.5 py-0">learned_anchor</Badge>
                        <Badge className="bg-white text-gray-600 border border-gray-200 font-mono text-[0.65rem] px-1.5 py-0">surya</Badge>
                        <Badge className="bg-white text-gray-600 border border-gray-200 font-mono text-[0.65rem] px-1.5 py-0">paddle</Badge>
                        <Badge className="bg-white text-gray-600 border border-gray-200 font-mono text-[0.65rem] px-1.5 py-0">tesseract</Badge>
@@ -246,7 +246,7 @@ const GenerateUrlPage = () => {
               <div className="flex items-center justify-between p-3 border-b border-gray-100 bg-white">
                  <div className="flex items-center gap-3">
                    <span className="px-2 py-1 rounded text-xs font-bold text-white bg-blue-600 shadow-sm">POST</span>
-                   <span className="font-mono text-[0.85rem] text-gray-800 font-bold">{fullBaseUrl}/compare?<br/><span className="text-gray-400 font-normal">pipelines=surya&amp;pipelines=qwen</span></span>
+                   <span className="font-mono text-[0.85rem] text-gray-800 font-bold">{fullBaseUrl}/compare?<br/><span className="text-gray-400 font-normal">pipelines=surya&amp;pipelines=learned_anchor</span></span>
                  </div>
                  <div className="flex gap-2 self-start">
                     <button className="flex items-center gap-1.5 px-2 py-1 text-xs font-bold text-gray-600 hover:text-primary bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded transition-colors"><Copy size={12}/> Copy URL</button>
@@ -257,7 +257,7 @@ const GenerateUrlPage = () => {
                  <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-3 text-xs bg-gray-50 border border-gray-200 px-3 py-2 rounded">
                        <span className="font-bold text-gray-500 uppercase tracking-widest text-[0.65rem]">QUERY PARAMS:</span>
-                       <Badge className="bg-white text-gray-600 border border-gray-200 font-mono text-[0.65rem] px-1.5 py-0 shadow-sm">pipelines: [surya, qwen, paddle]</Badge>
+                       <Badge className="bg-white text-gray-600 border border-gray-200 font-mono text-[0.65rem] px-1.5 py-0 shadow-sm">pipelines: [surya, learned_anchor, paddle]</Badge>
                        <Badge className="bg-white text-gray-600 border border-gray-200 font-mono text-[0.65rem] px-1.5 py-0 shadow-sm">min_confidence: 0.95</Badge>
                     </div>
                     <div className="flex">
@@ -265,7 +265,7 @@ const GenerateUrlPage = () => {
                     </div>
                  </div>
                  <div className="bg-[#0f172a] text-slate-300 p-4 rounded-lg border border-[#1e293b] shadow-inner font-mono text-xs overflow-auto relative mt-1">
-                   <pre className="whitespace-pre-wrap leading-relaxed"><span className="text-gray-500"># Multi-Pipeline Parallel Comparison</span><br/><span className="text-blue-400">curl</span> -X POST <span className="text-green-300">"{fullBaseUrl}/compare?<br/>pipelines=surya&amp;pipelines=qwen&amp;min_confidence=0.95"</span> \<br/>  -F <span className="text-green-300">"file=@chasis_plate.jpg"</span></pre>
+                   <pre className="whitespace-pre-wrap leading-relaxed"><span className="text-gray-500"># Multi-Pipeline Parallel Comparison</span><br/><span className="text-blue-400">curl</span> -X POST <span className="text-green-300">"{fullBaseUrl}/compare?<br/>pipelines=surya&amp;pipelines=learned_anchor&amp;min_confidence=0.95"</span> \<br/>  -F <span className="text-green-300">"file=@chasis_plate.jpg"</span></pre>
                  </div>
               </div>
             </div>

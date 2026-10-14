@@ -1,3 +1,3 @@
-from app.pipelines import qwen_pipeline, legacy_ocr_pipeline, surya_pipeline, tesseract_pipeline, paddle_pipeline  # noqa: F401
+from app.pipelines import surya_pipeline, tesseract_pipeline, paddle_pipeline, learned_anchor_pipeline  # noqa: F401
 
-__all__ = ["qwen_pipeline", "legacy_ocr_pipeline", "surya_pipeline", "tesseract_pipeline", "paddle_pipeline"]
+__all__ = ["surya_pipeline", "tesseract_pipeline", "paddle_pipeline", "learned_anchor_pipeline"]

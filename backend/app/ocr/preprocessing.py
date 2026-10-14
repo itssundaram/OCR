@@ -16,16 +16,33 @@ logger = get_logger(__name__)
 
 def correct_orientation(img: Image.Image) -> Image.Image:
     """
-    Detect and fix page rotation using Surya's orientation model if available,
-    or fallback to PIL ImageOps.EXIF.
-    For simplicity, here we do standard EXIF orientation handling.
+    Detect and fix page rotation using EXIF, and fallback to Tesseract OSD if available.
     """
-    return ImageOps.exif_transpose(img)
+    transposed = ImageOps.exif_transpose(img)
+    if transposed is not img:
+        return transposed
+
+    # Check Tesseract OSD for scanned pages without EXIF metadata
+    try:
+        import pytesseract
+        if getattr(settings, "TESSERACT_CMD", None):
+            pytesseract.pytesseract.tesseract_cmd = settings.TESSERACT_CMD
+        osd = pytesseract.image_to_osd(img)
+        for line in osd.splitlines():
+            if line.startswith("Rotate:"):
+                rot = int(line.split(":")[1].strip())
+                if rot in (90, 180, 270):
+                    return img.rotate(360 - rot, expand=True)
+    except Exception:
+        pass
+
+    return img
 
 
 def deskew_image(img: Image.Image) -> Image.Image:
     """
     Fix minor skew angles using OpenCV.
+    Safely handles axis-aligned boxes and clamps to minor scan tilt angles only.
     """
     # Convert PIL Image to OpenCV format (numpy array)
     cv_img = np.array(img.convert('L'))  # grayscale
@@ -41,22 +58,33 @@ def deskew_image(img: Image.Image) -> Image.Image:
         return img
 
     # Calculate minimum area bounding box
-    angle = cv2.minAreaRect(coords)[-1]
+    rect = cv2.minAreaRect(coords)
+    (cx, cy), (box_w, box_h), angle = rect
 
-    # Adjust angle to be between -45 and 45 degrees
-    if angle < -45:
-        angle = -(90 + angle)
+    # Extract true skew angle:
+    # In OpenCV, minAreaRect returns angle in [0, 90] (or [-90, 0]).
+    # When box_w < box_h, the box was measured relative to the vertical edge.
+    if box_w < box_h:
+        skew = angle - 90.0
     else:
-        angle = -angle
+        skew = angle
 
-    # If angle is very small, no need to deskew
-    if abs(angle) < 0.5:
+    while skew < -45.0:
+        skew += 90.0
+    while skew > 45.0:
+        skew -= 90.0
+
+    # Safety clamp: Deskewing is ONLY for minor scan tilts (0.5 to 10 degrees).
+    # If the skew is < 0.5 deg, no deskew is needed.
+    # If skew is > 10 deg, it is either an axis-aligned box artifact or intentional rotation,
+    # so we must never rotate it here (rotation is handled by orientation detection).
+    if abs(skew) < 0.5 or abs(skew) > 10.0:
         return img
 
-    # Rotate the image
+    # Rotate the image by skew
     (h, w) = cv_img.shape[:2]
     center = (w // 2, h // 2)
-    M = cv2.getRotationMatrix2D(center, angle, 1.0)
+    M = cv2.getRotationMatrix2D(center, skew, 1.0)
     
     # Use white background for rotation (255, 255, 255)
     cv_img_color = np.array(img.convert("RGB"))

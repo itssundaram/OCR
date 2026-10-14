@@ -59,6 +59,8 @@ class TATRTableEngine:
             results = self._processor.post_process_object_detection(outputs, threshold=0.5, target_sizes=target_sizes)[0]
             
             import pytesseract
+            if settings.TESSERACT_CMD:
+                pytesseract.pytesseract.tesseract_cmd = settings.TESSERACT_CMD
             
             rows = []
             cols = []

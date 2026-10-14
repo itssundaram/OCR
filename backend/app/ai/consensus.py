@@ -110,7 +110,7 @@ def compare_pipeline_results(
     results_by_pipeline: dict[str, dict[str, tuple]],
 ) -> list[FieldComparison]:
     """
-    results_by_pipeline: {"surya": {"invoice_number": ("INV-1", 0.95), ...}, "qwen": {...}}
+    results_by_pipeline: {"surya": {"invoice_number": ("INV-1", 0.95), ...}, "paddle": {...}}
 
     Returns one FieldComparison per field name reported by ANY pipeline, in
     first-seen order. A pipeline that didn't report a field is simply absent
