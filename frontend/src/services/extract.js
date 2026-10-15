@@ -78,4 +78,22 @@ export const extractService = {
       { headers: { 'Content-Type': 'multipart/form-data' } }
     );
   },
+
+  // Fast Micro-OCR on a user-adjusted bounding box
+  reOcrField: (jobId, fieldKey, bbox, pageNumber = 1) =>
+    api.post('/extract/re-ocr-field', {
+      job_id: jobId,
+      field_key: fieldKey,
+      bbox,
+      page_number: pageNumber,
+    }),
+
+  // Manual field value update
+  updateField: (jobId, fieldKey, value, bbox = null) =>
+    api.post('/extract/update-field', {
+      job_id: jobId,
+      field_key: fieldKey,
+      value,
+      bbox,
+    }),
 };

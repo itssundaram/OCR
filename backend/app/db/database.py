@@ -52,12 +52,11 @@ class Base(DeclarativeBase):
     pass
 
 
+import re
+
 def _build_engine():
-    safe_url = (
-        f"oracle+oracledb://{settings.ORACLE_USER}:***"
-        f"@{settings.ORACLE_HOST}:{settings.ORACLE_PORT}"
-        f"/?service_name={settings.ORACLE_SERVICE_NAME}"
-    )
+    raw_url = str(settings.database_url)
+    safe_url = re.sub(r"://([^:]+):([^@]+)@", r"://\1:***@", raw_url)
     logger.info("database_engine_creating", url=safe_url)
 
     engine = create_engine(

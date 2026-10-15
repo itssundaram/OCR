@@ -13,32 +13,254 @@ Three upload flows live here, matching the product's three entry points:
 """
 from __future__ import annotations
 
+import base64
+import io
+import os
 import shutil
 import uuid
+from typing import Any
 
-from fastapi import APIRouter, Depends, File, UploadFile, BackgroundTasks, Query, Form
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, Query, UploadFile
+from PIL import Image, ImageOps
+import pytesseract
+from pydantic import BaseModel
+from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy.orm.attributes import flag_modified
 
-from app.db.database import get_db
-from app.db.models import Department, Document, Template, ProcessingJob, ProcessingResult
-from app.schemas.common import APIResponse
 from app.core.config import settings
 from app.core.exceptions import DocIntError
 from app.core.logging import get_logger
 from app.core.security import (
-    validate_file,
     generate_stored_filename,
     safe_file_path,
     sanitize_original_filename,
+    validate_file,
 )
+from app.db.database import get_db
+from app.db.models import (
+    Asset,
+    Department,
+    Document,
+    DocumentPage,
+    FieldExtraction,
+    ProcessingJob,
+    ProcessingResult,
+    Template,
+)
+from app.ocr.image_extractor import extract_pages_as_images
+from app.pipelines.registry import get_pipeline, list_pipelines
+from app.schemas.common import APIResponse
 from app.services.extractor import process_document_job
-from app.services.orchestrator import run_single_pipeline_job, run_pipeline_comparison_job
-from app.pipelines.registry import list_pipelines, get_pipeline
+from app.services.orchestrator import run_pipeline_comparison_job, run_single_pipeline_job
 
 logger = get_logger(__name__)
 
 router = APIRouter(tags=["Extraction"])
+
+
+class ReOcrFieldRequest(BaseModel):
+    job_id: str
+    field_key: str
+    bbox: dict[str, Any]
+    page_number: int = 1
+
+
+class UpdateFieldValueRequest(BaseModel):
+    job_id: str
+    field_key: str
+    value: str
+    bbox: dict[str, Any] | None = None
+
+
+def _load_job_page_image(db: Session, job: ProcessingJob, page_number: int = 1) -> Image.Image:
+    """Helper to locate or extract full PIL Image for a given job's page."""
+    page_stmt = select(DocumentPage).where(
+        DocumentPage.document_id == job.document_id,
+        DocumentPage.page_number == page_number,
+    )
+    dp = db.execute(page_stmt).scalars().first()
+    if dp and dp.image_asset_id:
+        asset = db.get(Asset, dp.image_asset_id)
+        if asset and os.path.exists(asset.file_path):
+            img = Image.open(asset.file_path)
+            img.load()
+            return img.convert("RGB")
+
+    doc = db.get(Document, job.document_id)
+    if not doc or not os.path.exists(doc.file_path):
+        raise DocIntError("Underlying document file could not be found.", "DOCUMENT_FILE_MISSING")
+
+    images = extract_pages_as_images(doc.file_path, doc.mime_type)
+    p_idx = max(0, page_number - 1)
+    if p_idx < len(images):
+        return images[p_idx].convert("RGB")
+
+    raise DocIntError(f"Page {page_number} not available in document.", "PAGE_NOT_FOUND")
+
+
+@router.post("/extract/re-ocr-field", response_model=APIResponse[dict])
+def re_ocr_field(req: ReOcrFieldRequest, db: Session = Depends(get_db)):
+    """
+    Sub-50ms Micro-OCR on a user-corrected bounding box.
+    Crops the page image, executes fast enhanced OCR, updates job results in DB,
+    and returns the new value, confidence, and preview crop image.
+    """
+    job = db.get(ProcessingJob, req.job_id)
+    if not job:
+        raise DocIntError(f"Processing job {req.job_id} not found.", "JOB_NOT_FOUND")
+
+    full_img = _load_job_page_image(db, job, req.page_number)
+
+    x1 = max(0, int(round(float(req.bbox.get("x1", 0)))))
+    y1 = max(0, int(round(float(req.bbox.get("y1", 0)))))
+    x2 = min(full_img.width, int(round(float(req.bbox.get("x2", full_img.width)))))
+    y2 = min(full_img.height, int(round(float(req.bbox.get("y2", full_img.height)))))
+
+    if x2 <= x1 or y2 <= y1:
+        raise DocIntError("Bounding box coordinates invalid or too small.", "INVALID_BBOX")
+
+    crop = full_img.crop((x1, y1, x2, y2))
+
+    gray = crop.convert("L")
+    enhanced = ImageOps.autocontrast(gray)
+    if enhanced.height < 40 or enhanced.width < 60:
+        enhanced = enhanced.resize((enhanced.width * 2, enhanced.height * 2), Image.Resampling.LANCZOS)
+
+    try:
+        data = pytesseract.image_to_data(enhanced, output_type=pytesseract.Output.DICT, config="--psm 6")
+        words = []
+        confs = []
+        for idx in range(len(data.get("text", []))):
+            w = data["text"][idx].strip()
+            c = float(data["conf"][idx]) if float(data["conf"][idx]) > 0 else 0.0
+            if w:
+                words.append(w)
+                if c > 0:
+                    confs.append(c)
+        extracted_text = " ".join(words).strip()
+        avg_conf = (sum(confs) / len(confs) / 100.0) if confs else (0.85 if extracted_text else 0.0)
+    except Exception as e:
+        logger.warning("re_ocr_pytesseract_failed", error=str(e))
+        extracted_text = ""
+        avg_conf = 0.0
+
+    tight_bbox = {"x1": x1, "y1": y1, "x2": x2, "y2": y2}
+
+    # 1. Update ProcessingResult
+    res_stmt = select(ProcessingResult).where(ProcessingResult.job_id == req.job_id)
+    result = db.execute(res_stmt).scalars().first()
+    if result:
+        ej = dict(result.extracted_json or {})
+        fields = dict(ej.get("fields", {}))
+        field_entry = dict(fields.get(req.field_key, {}))
+        field_entry["value"] = extracted_text
+        field_entry["confidence"] = round(avg_conf, 3)
+        field_entry["found"] = bool(extracted_text)
+        field_entry["bbox"] = tight_bbox
+        field_entry["match_strategy"] = "MANUAL_RE_OCR"
+        field_entry["is_verified"] = True
+        fields[req.field_key] = field_entry
+        ej["fields"] = fields
+        result.extracted_json = ej
+        flag_modified(result, "extracted_json")
+
+    # 2. Update FieldExtraction row
+    fe_stmt = select(FieldExtraction).where(
+        FieldExtraction.job_id == req.job_id,
+        FieldExtraction.field_name == req.field_key,
+    )
+    fe = db.execute(fe_stmt).scalars().first()
+    if fe:
+        fe.field_value = extracted_text
+        fe.confidence = avg_conf
+        fe.bbox_json = tight_bbox
+        fe.extraction_method = "manual_re_ocr"
+    else:
+        new_fe = FieldExtraction(
+            job_id=req.job_id,
+            field_name=req.field_key,
+            field_value=extracted_text,
+            confidence=avg_conf,
+            bbox_json=tight_bbox,
+            extraction_method="manual_re_ocr",
+            is_final=1,
+        )
+        db.add(new_fe)
+
+    db.commit()
+
+    buf = io.BytesIO()
+    crop.save(buf, format="PNG")
+    b64_crop = f"data:image/png;base64,{base64.b64encode(buf.getvalue()).decode('utf-8')}"
+
+    return APIResponse(data={
+        "field_key": req.field_key,
+        "value": extracted_text,
+        "confidence": round(avg_conf, 3),
+        "bbox": tight_bbox,
+        "image_data": b64_crop,
+    })
+
+
+@router.post("/extract/update-field", response_model=APIResponse[dict])
+def update_field_value(req: UpdateFieldValueRequest, db: Session = Depends(get_db)):
+    """
+    Save manually edited text and/or bounding box for a field.
+    Sets confidence to 100% (human verified ground truth).
+    """
+    job = db.get(ProcessingJob, req.job_id)
+    if not job:
+        raise DocIntError(f"Processing job {req.job_id} not found.", "JOB_NOT_FOUND")
+
+    res_stmt = select(ProcessingResult).where(ProcessingResult.job_id == req.job_id)
+    result = db.execute(res_stmt).scalars().first()
+    if result:
+        ej = dict(result.extracted_json or {})
+        fields = dict(ej.get("fields", {}))
+        field_entry = dict(fields.get(req.field_key, {}))
+        field_entry["value"] = req.value
+        field_entry["confidence"] = 1.0
+        field_entry["found"] = True
+        field_entry["manually_edited"] = True
+        field_entry["is_verified"] = True
+        if req.bbox:
+            field_entry["bbox"] = req.bbox
+        fields[req.field_key] = field_entry
+        ej["fields"] = fields
+        result.extracted_json = ej
+        flag_modified(result, "extracted_json")
+
+    fe_stmt = select(FieldExtraction).where(
+        FieldExtraction.job_id == req.job_id,
+        FieldExtraction.field_name == req.field_key,
+    )
+    fe = db.execute(fe_stmt).scalars().first()
+    if fe:
+        fe.field_value = req.value
+        fe.confidence = 1.0
+        if req.bbox:
+            fe.bbox_json = req.bbox
+    else:
+        new_fe = FieldExtraction(
+            job_id=req.job_id,
+            field_name=req.field_key,
+            field_value=req.value,
+            confidence=1.0,
+            bbox_json=req.bbox or {},
+            extraction_method="manual_edit",
+            is_final=1,
+        )
+        db.add(new_fe)
+
+    db.commit()
+    return APIResponse(data={
+        "field_key": req.field_key,
+        "value": req.value,
+        "confidence": 1.0,
+        "is_verified": True,
+        "bbox": req.bbox,
+    })
 
 
 def _resolve_department_and_template(db: Session, department_slug: str, template_code: str) -> Template:
@@ -294,6 +516,7 @@ def get_extraction_status(
     response_data: dict = {
         "job_id": job.id,
         "document_id": job.document_id,
+        "template_id": job.template_id,
         "status": job.status,
         "department": department_slug,
         "template": template_code,
@@ -309,6 +532,13 @@ def get_extraction_status(
     # that finished but has fields needing review) — it must still surface
     # its result, not be treated like a still-processing job.
     if job.status in ("COMPLETED", "WARNING"):
+        if job.document_id:
+            stmt_pages = select(DocumentPage).where(DocumentPage.document_id == job.document_id).order_by(DocumentPage.page_number)
+            pages = db.execute(stmt_pages).scalars().all()
+            if pages:
+                response_data["doc_page_width"] = pages[0].width
+                response_data["doc_page_height"] = pages[0].height
+
         result_stmt = select(ProcessingResult).where(ProcessingResult.job_id == job_id)
         result = db.execute(result_stmt).scalars().first()
         if result:

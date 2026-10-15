@@ -61,12 +61,13 @@ async def lifespan(app: FastAPI):
     settings.ensure_storage_directories()
     logger.info("storage_directories_ready")
 
-    from app.db.database import check_oracle_connectivity
+    from app.db.database import check_oracle_connectivity, engine
     result = check_oracle_connectivity()
     if result["status"] == "ok":
-        logger.info("oracle_connected")
+        db_type = "oracle" if engine.dialect.name == "oracle" else "postgresql"
+        logger.info(f"{db_type}_connected")
     else:
-        logger.warning("oracle_unavailable", detail=result.get("message"))
+        logger.warning("database_unavailable", detail=result.get("message"))
 
     from app.core.startup import preload_models
     preload_models()

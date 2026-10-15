@@ -565,6 +565,12 @@ def process_document_job(job_id: str) -> None:
                     metadata={"fields": flagged, "threshold": settings.CONFIDENCE_THRESHOLD},
                 )
 
+            ocr_meta = ocr_result.model_dump()
+            template_la = (template.template_json or {}).get("learned_anchors") if template else None
+            if template_la and not ocr_meta.get("learned_anchors"):
+                ocr_meta["learned_anchors"] = template_la
+                ocr_meta["anchor_matched"] = True
+
             db.add(ProcessingResult(
                 job_id=job.id,
                 extracted_json=ai_result.parsed_data,
@@ -572,7 +578,7 @@ def process_document_job(job_id: str) -> None:
                     [c.model_dump() for c in ai_result.confidence_scores]
                     if ai_result.confidence_scores else []
                 ),
-                ocr_metadata_json=ocr_result.model_dump(),
+                ocr_metadata_json=ocr_meta,
             ))
 
             # Phase 10: a document with every field clean still finishes

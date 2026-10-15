@@ -204,6 +204,29 @@ class SuryaPipeline(OCRPipeline):
                         crop_image = preprocessed_pages[best_p_idx].crop((c_x1, c_y1, c_x2, c_y2))
                         if crop_image and crop_image.height > crop_image.width * 1.5:
                             crop_image = crop_image.rotate(270, expand=True)
+
+            # Ground truth anchor integration
+            learned_anchors = (schema or {}).get("learned_anchors", {})
+            anchor_fields = learned_anchors.get("fields", {}) if isinstance(learned_anchors, dict) else {}
+            if not bbox and field_name in anchor_fields:
+                la_data = anchor_fields[field_name]
+                if la_data.get("bbox"):
+                    bbox = la_data["bbox"]
+                    best_p_idx = 0
+                    p_img = preprocessed_pages[0] if preprocessed_pages else None
+                    if p_img:
+                        pad = 8
+                        c_x1 = max(0, int(bbox["x1"]) - pad)
+                        c_y1 = max(0, int(bbox["y1"]) - pad)
+                        c_x2 = min(p_img.width, int(bbox["x2"]) + pad)
+                        c_y2 = min(p_img.height, int(bbox["y2"]) + pad)
+                        if c_x2 > c_x1 and c_y2 > c_y1:
+                            crop_image = p_img.crop((c_x1, c_y1, c_x2, c_y2))
+                            if crop_image.height > crop_image.width * 1.5:
+                                crop_image = crop_image.rotate(270, expand=True)
+                    if learned_anchors.get("is_verified"):
+                        conf = max(conf, 0.95)
+
             fields_out.append(FieldResult(
                 field_name=field_name,
                 value="" if field_val is None else str(field_val),
@@ -226,6 +249,8 @@ class SuryaPipeline(OCRPipeline):
                 "ai_engine": ai_result.engine_name,
                 "ai_model": ai_result.model_name,
                 "ocr_metadata": ocr_result.model_dump(),
+                "learned_anchors": learned_anchors if learned_anchors else None,
+                "anchor_matched": bool(learned_anchors),
             },
         )
 

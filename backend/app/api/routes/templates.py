@@ -1,7 +1,10 @@
 """
 DOCINT — Document Templates API
 """
+from datetime import datetime, timezone
+from typing import Any
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import select, update
 
@@ -17,6 +20,90 @@ from app.repositories.department_repo import DepartmentRepository
 logger = get_logger(__name__)
 
 router = APIRouter(tags=["Templates"], prefix="/templates")
+
+
+class LockAnchorsRequest(BaseModel):
+    fields: dict[str, Any]
+    page_width: int | None = 1654
+    page_height: int | None = 2338
+
+
+@router.post("/{template_id}/lock-anchors", response_model=APIResponse[dict])
+def lock_template_anchors(template_id: int, req: LockAnchorsRequest, db: Session = Depends(get_db)):
+    """
+    Commit human-verified ground-truth bounding boxes to template learned_anchors.
+    Sets is_verified: true to lock the template and permanently prevent automated
+    cold-path drifts from overwriting ground-truth geometry.
+    Can be called again anytime to update existing ground truth.
+    """
+    repo = TemplateRepository(db)
+    template = repo.get_by_id(template_id)
+    if not template:
+        raise DocIntError(f"Template {template_id} not found.", "TEMPLATE_NOT_FOUND")
+
+    tj = dict(template.template_json or {})
+    learned_anchors = {
+        "fields": req.fields,
+        "page_width": req.page_width or 1654,
+        "page_height": req.page_height or 2338,
+        "is_verified": True,
+        "verified_at": datetime.now(timezone.utc).isoformat(),
+    }
+    tj["learned_anchors"] = learned_anchors
+    template = repo.update(template_id, {"template_json": tj})
+
+    logger.info("template_anchors_locked", template_id=template_id, field_count=len(req.fields))
+    return APIResponse(data={
+        "message": "Template ground-truth anchors locked successfully.",
+        "template_id": template_id,
+        "learned_anchors": learned_anchors,
+    })
+
+
+@router.post("/{template_id}/unlock-anchors", response_model=APIResponse[dict])
+def unlock_template_anchors(template_id: int, db: Session = Depends(get_db)):
+    """
+    Unlock ground-truth anchors to allow modifying or re-calibrating them.
+    """
+    repo = TemplateRepository(db)
+    template = repo.get_by_id(template_id)
+    if not template:
+        raise DocIntError(f"Template {template_id} not found.", "TEMPLATE_NOT_FOUND")
+
+    tj = dict(template.template_json or {})
+    la = dict(tj.get("learned_anchors") or {})
+    la["is_verified"] = False
+    tj["learned_anchors"] = la
+    template = repo.update(template_id, {"template_json": tj})
+
+    logger.info("template_anchors_unlocked", template_id=template_id)
+    return APIResponse(data={
+        "message": "Template ground-truth anchors unlocked for modification.",
+        "template_id": template_id,
+        "is_verified": False,
+    })
+
+
+@router.delete("/{template_id}/learned-anchors", response_model=APIResponse[dict])
+def reset_template_anchors(template_id: int, db: Session = Depends(get_db)):
+    """
+    Reset and purge all stored learned geometric memory from the template.
+    """
+    repo = TemplateRepository(db)
+    template = repo.get_by_id(template_id)
+    if not template:
+        raise DocIntError(f"Template {template_id} not found.", "TEMPLATE_NOT_FOUND")
+
+    tj = dict(template.template_json or {})
+    if "learned_anchors" in tj:
+        del tj["learned_anchors"]
+    template = repo.update(template_id, {"template_json": tj})
+
+    logger.info("template_anchors_reset", template_id=template_id)
+    return APIResponse(data={
+        "message": "Template geometric anchor memory has been reset.",
+        "template_id": template_id,
+    })
 
 
 @router.get("", response_model=APIResponse[list[TemplateResponse]])

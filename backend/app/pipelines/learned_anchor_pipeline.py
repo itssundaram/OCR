@@ -230,6 +230,16 @@ class LearnedAnchorPipeline(OCRPipeline):
             logger.warning("safe_crop_failed", error=str(e))
             return None
 
+    def _normalize_key(self, k: str) -> str:
+        k_clean = re.sub(r"[^a-z0-9]", "", str(k).lower())
+        if "engine" in k_clean:
+            return "engine_no"
+        if "chasi" in k_clean or "chass" in k_clean:
+            return "chasis_no"
+        if "ba" in k_clean:
+            return "ba_no"
+        return k_clean
+
     FIELD_SPECS = {
         "engine_no": {
             "patterns": ["engine no:", "engine no.", "engine no", "engine number:", "engine#"],
@@ -244,17 +254,25 @@ class LearnedAnchorPipeline(OCRPipeline):
         "ba_no": {
             "patterns": ["ba no :", "ba no:", "ba number", "ba no.", "b.a. number", "ba:"],
             "regex": r"\d{2}[A-Z]\s*\d{5,7}[A-Z]?",
-            "blacklist": ["run:", "km", "hours", "distance"],
+            "blacklist": ["run:", "km", "hours", "distance", "maintained", "wksp", "workshop", "nature", "service"],
         },
     }
 
     def _persist_learned_anchors(self, template_id: int, learned_anchors: dict) -> None:
-        """Helper to safely persist updated learned geometric anchors to Oracle DB."""
+        """Helper to safely persist updated learned geometric anchors to DB."""
+        if not template_id:
+            return
         try:
             with SessionLocal() as db:
                 tmpl = db.get(Template, template_id)
                 if tmpl:
                     tj = dict(tmpl.template_json or {})
+                    existing_la = tj.get("learned_anchors", {})
+                    # If human ground truth has verified and locked this template's anchors,
+                    # do NOT automatically overwrite with cold path guesses!
+                    if existing_la and existing_la.get("is_verified"):
+                        logger.info("learned_anchors_persist_skipped_already_verified", template_id=template_id)
+                        return
                     tj["learned_anchors"] = learned_anchors
                     tmpl.template_json = tj
                     db.commit()
@@ -431,11 +449,12 @@ class LearnedAnchorPipeline(OCRPipeline):
             if fdef.get("type") == "table":
                 continue
 
-            spec = self.FIELD_SPECS.get(key, {
+            norm_key = self._normalize_key(key)
+            spec = self.FIELD_SPECS.get(norm_key, self.FIELD_SPECS.get(key, {
                 "patterns": [key.replace("_", " ") + ":", key.replace("_", " ")],
                 "regex": None,
                 "blacklist": [],
-            })
+            }))
             aliases = list(fdef.get("aliases", [])) + spec.get("patterns", [])
 
             # 1. Try Dynamic Label Anchor on THIS page first
@@ -542,14 +561,14 @@ class LearnedAnchorPipeline(OCRPipeline):
                 final_val = raw_text
                 tight_bbox = orig_bbox
                 tight_crop = crop_img
-                final_conf = max(0.5, avg_c)
+                final_conf = avg_c
 
                 # Strict regex pattern isolation & bounding box snapping
                 if spec and spec.get("regex"):
                     m = re.search(spec["regex"], raw_text, re.IGNORECASE)
                     if m:
                         final_val = m.group(0).strip()
-                        final_conf = max(final_conf, 0.95)
+                        final_conf = max(avg_c, 0.95)
                         # Snap bounding box to the matched word(s) only
                         matched_ws = [cw for cw in c_words if any(part in cw["text"] for part in final_val.split())]
                         if matched_ws:
@@ -561,6 +580,8 @@ class LearnedAnchorPipeline(OCRPipeline):
                             tight_bbox = {"x1": snap_x1, "y1": snap_y1, "x2": snap_x2, "y2": snap_y2}
                             tight_crop = target_page.crop((snap_x1, snap_y1, snap_x2, snap_y2))
                     else:
+                        # Regex validation failed! The crop text doesn't match expected field format
+                        final_conf = min(0.25, avg_c * 0.3)
                         final_val = re.sub(r"^[\s:\-\|\~\+\.\*]+", "", final_val).strip()
                         final_val = re.sub(r"[\_\~\|\s]+$", "", final_val).strip()
                 else:
@@ -654,6 +675,8 @@ class LearnedAnchorPipeline(OCRPipeline):
                 "anchor_matched": anchor_matched,
                 "learned_anchors": learned_anchors,
                 "fields_extracted": len(fields_out),
+                "doc_page_width": cur_w,
+                "doc_page_height": cur_h,
             },
         )
 
@@ -1004,6 +1027,8 @@ class LearnedAnchorPipeline(OCRPipeline):
                 "anchor_learned": bool(fields_learned),
                 "anchors_persisted": anchors_persisted,
                 "learned_anchors": new_learned_anchors,
+                "doc_page_width": p0.width,
+                "doc_page_height": p0.height,
                 "ai_engine": ai_result.engine_name,
                 "ai_model": ai_result.model_name,
                 "ocr_metadata": ocr_res.model_dump(),

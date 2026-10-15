@@ -52,11 +52,6 @@ const OcrPage = () => {
   const [selectedTemplateCode, setSelectedTemplateCode] = useState('');
   const [selectedPipeline, setSelectedPipeline] = useState('');
   const [file, setFile] = useState(null);
-  // "This is a new format" checkbox — tells a pattern-learning pipeline
-  // (learned_anchor) to ignore any stored geometry for this template and
-  // learn fresh from this document instead of trusting a possibly
-  // mismatched pattern.
-  const [forceNewFormat, setForceNewFormat] = useState(false);
 
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -74,13 +69,6 @@ const OcrPage = () => {
   const selectedTemplateObj = templates.find((t) => t.code === selectedTemplateCode);
   const learnedAnchors = selectedTemplateObj?.template_json?.learned_anchors;
   const hasLearnedPattern = Boolean(learnedAnchors?.fields && Object.keys(learnedAnchors.fields).length > 0);
-
-  // Default the checkbox to match reality: nothing learned yet for this
-  // template -> checked (there's nothing to "use instead" anyway); a pattern
-  // already exists -> unchecked, so the warm, learned path is used by default.
-  useEffect(() => {
-    setForceNewFormat(!hasLearnedPattern);
-  }, [selectedTemplateCode, hasLearnedPattern]);
 
   useEffect(() => {
     (async () => {
@@ -196,7 +184,7 @@ const OcrPage = () => {
     setError(null);
     setPipelineSteps([]);
     try {
-      const res = await extractService.uploadWithPipeline(selectedDept, selectedTemplateCode, selectedPipeline, file, forceNewFormat);
+      const res = await extractService.uploadWithPipeline(selectedDept, selectedTemplateCode, selectedPipeline, file, false);
       const job = await processingService.getJob(res.data.job_id);
       setActiveJob(job.data);
     } catch (err) {
@@ -217,11 +205,16 @@ const OcrPage = () => {
     const isFinished = status === 'COMPLETED' || status === 'WARNING';
 
     if (isFinished) {
+      const metaStr = typeof activeJob.ocr_metadata_json === 'string'
+        ? activeJob.ocr_metadata_json
+        : JSON.stringify(activeJob.ocr_metadata_json || {});
+
       const isLearnedAnchor =
         activeJob.pipeline_mode === 'learned_anchor' ||
-        activeJob.ocr_metadata_json?.includes?.('learned_anchor') ||
-        activeJob.ocr_metadata_json?.includes?.('WARM_ANCHOR_HIT') ||
-        activeJob.ocr_metadata_json?.includes?.('COLD_LEARNED_CACHE');
+        metaStr.includes('learned_anchor') ||
+        metaStr.includes('WARM_ANCHOR_HIT') ||
+        metaStr.includes('COLD_LEARNED_CACHE') ||
+        metaStr.includes('ANCHOR');
 
       return (
         <div className="flex flex-col h-full w-full p-4 overflow-hidden animate-fade-in-up max-w-[1600px] mx-auto">
@@ -620,37 +613,6 @@ const OcrPage = () => {
               </>
             )}
           </div>
-
-          {/* Card 2b: FORMAT / PATTERN STATUS — only meaningful for a pattern-learning pipeline */}
-          {selectedPipeline === 'learned_anchor' && (
-            <div className={`transition-opacity duration-300 ${file && selectedTemplateCode ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-              <div className={`border rounded-lg p-3.5 flex items-start gap-3 shadow-sm ${forceNewFormat ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200'}`}>
-                <input
-                  id="force-new-format"
-                  type="checkbox"
-                  className="mt-0.5 h-4 w-4 flex-shrink-0 accent-[#1e3a8a] cursor-pointer"
-                  checked={forceNewFormat}
-                  onChange={(e) => setForceNewFormat(e.target.checked)}
-                  disabled={uploading}
-                />
-                <label htmlFor="force-new-format" className="flex-1 cursor-pointer select-none">
-                  <div className="text-sm font-bold text-primary mb-0.5">This is a new format</div>
-                  {hasLearnedPattern ? (
-                    <div className="text-[0.8rem] text-secondary leading-snug">
-                      A layout pattern is already learned for <span className="font-semibold">{selectedTemplateCode}</span> — by default this
-                      upload will reuse it (with tolerance for minor positioning drift). Check this box if the document's
-                      layout has actually changed, so the pipeline relearns field positions from scratch and overwrites the stored pattern.
-                    </div>
-                  ) : (
-                    <div className="text-[0.8rem] text-secondary leading-snug">
-                      No layout pattern exists yet for <span className="font-semibold">{selectedTemplateCode}</span>. This run will extract
-                      fields with full OCR + VLM analysis and store the detected positions as the template's pattern for future uploads.
-                    </div>
-                  )}
-                </label>
-              </div>
-            </div>
-          )}
 
           {/* Card 3: PRE-FLIGHT AUDIT SUMMARY */}
           <div className={`mt-2 transition-opacity duration-300 ${file && selectedPipeline && selectedTemplateCode ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>

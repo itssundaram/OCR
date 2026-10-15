@@ -8,6 +8,7 @@ import { Badge } from '../components/ui/Badge';
 import { Loader } from '../components/ui/Loader';
 import api from '../services/api';
 import ExtractionResultView from '../components/ExtractionResultView';
+import FastExtractionResultView from '../components/FastExtractionResultView';
 
 const ResultsPage = () => {
   const navigate = useNavigate();
@@ -163,6 +164,31 @@ const ResultsPage = () => {
               }
 
               if (jobDetails?.status === 'COMPLETED' || jobDetails?.status === 'WARNING' || jobDetails?.status === 'FAILED') {
+                const metadataStr = typeof jobDetails?.ocr_metadata_json === 'string'
+                  ? jobDetails.ocr_metadata_json
+                  : JSON.stringify(jobDetails?.ocr_metadata_json || {});
+
+                const isLearnedAnchor =
+                  jobDetails?.pipeline_mode === 'learned_anchor' ||
+                  jobDetails?.ocr_engine === 'learned_anchor' ||
+                  metadataStr.includes('learned_anchor') ||
+                  metadataStr.includes('WARM_ANCHOR_HIT') ||
+                  metadataStr.includes('COLD_LEARNED_CACHE') ||
+                  metadataStr.includes('ANCHOR');
+
+                if (isLearnedAnchor) {
+                  return (
+                    <div className="h-full w-full flex flex-col overflow-hidden">
+                      <FastExtractionResultView
+                        activeJob={jobDetails}
+                        onBack={() => { setSelectedJob(null); setJobDetails(null); }}
+                        pipelineSteps={[]}
+                        onRerun={() => viewJob(selectedJob)}
+                      />
+                    </div>
+                  );
+                }
+
                 return (
                   <Card className="h-full flex flex-col overflow-hidden border-transparent shadow-none bg-transparent p-0 rounded-none">
                     <ExtractionResultView 

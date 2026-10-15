@@ -21,14 +21,18 @@ const Sidebar = ({ isOpen }) => {
 
   return (
     <aside className={`sidebar glass-panel ${!isOpen ? 'collapsed' : ''}`}>
-      <div className="flex flex-col gap-4 p-4 border-b border-border-color">
+      <div className="p-4 border-b border-border-color/80">
         <div className="flex items-center gap-3">
-          <div className="bg-primary text-white p-2 rounded-lg flex items-center justify-center shadow-md">
-            <Landmark size={22} />
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-900 to-indigo-950 text-white flex items-center justify-center shadow-md border border-blue-800/40 flex-shrink-0">
+            <Landmark size={21} className="text-blue-100" />
           </div>
-          <div className="flex flex-col logo-text transition-opacity duration-200">
-            <h1 className="font-bold text-lg text-primary font-heading leading-tight whitespace-nowrap">MISO-OCR</h1>
-            <span className="text-[0.6rem] font-bold text-secondary tracking-widest leading-none mt-1 uppercase whitespace-nowrap">Ministry of Defence</span>
+          <div className="flex flex-col justify-center logo-text transition-opacity duration-200 min-w-0">
+            <h1 className="font-bold text-[1.12rem] text-slate-900 font-heading leading-none whitespace-nowrap tracking-tight">
+              MISO-OCR
+            </h1>
+            <span className="text-[0.62rem] font-bold text-slate-500 tracking-wider leading-none mt-1.5 uppercase whitespace-nowrap">
+              Ministry of Defence
+            </span>
           </div>
         </div>
       </div>

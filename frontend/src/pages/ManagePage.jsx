@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Layers, Building2, Plus, CheckCircle2, XCircle, Trash2, RefreshCw, X, Search, Filter, Download, Code, Edit, FileText
+  Layers, Building2, Plus, CheckCircle2, XCircle, Trash2, RefreshCw, X, Search, Filter, Code, Edit, FileText,
+  ShieldCheck, Lock, Unlock, RotateCcw, Database
 } from 'lucide-react';
 import { departmentsService } from '../services/departments';
 import { templatesService } from '../services/templates';
@@ -83,6 +84,77 @@ const ManagePage = () => {
       await loadAll(selectedDeptFilter);
     } catch (err) {
       setError(err.message || 'Failed to create department');
+    }
+  };
+
+  const handleActivateTemplate = async (templateId) => {
+    setBusyId(templateId);
+    try {
+      const res = await templatesService.activateTemplate(templateId);
+      if (selectedTemplate && selectedTemplate.id === templateId && res?.data) {
+        setSelectedTemplate(res.data);
+      }
+      await loadAll(selectedDeptFilter);
+    } catch (err) {
+      setError(err.message || 'Failed to activate template');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleDeactivateTemplate = async (templateId) => {
+    setBusyId(templateId);
+    try {
+      const res = await templatesService.deactivateTemplate(templateId);
+      if (selectedTemplate && selectedTemplate.id === templateId && res?.data) {
+        setSelectedTemplate(res.data);
+      }
+      await loadAll(selectedDeptFilter);
+    } catch (err) {
+      setError(err.message || 'Failed to deactivate template');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleUnlockAnchors = async (templateId) => {
+    setBusyId(templateId);
+    try {
+      await templatesService.unlockAnchors(templateId);
+      await loadAll(selectedDeptFilter);
+      setSelectedTemplate((prev) => {
+        if (!prev) return prev;
+        const tj = { ...prev.template_json };
+        if (tj.learned_anchors) {
+          tj.learned_anchors = { ...tj.learned_anchors, is_verified: false };
+        }
+        return { ...prev, template_json: tj };
+      });
+    } catch (err) {
+      setError(err.message || 'Failed to unlock ground truth');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleResetAnchors = async (templateId) => {
+    if (!window.confirm('Are you sure you want to reset learned geometric memory for this template? The next extraction will learn bounding boxes from scratch.')) {
+      return;
+    }
+    setBusyId(templateId);
+    try {
+      await templatesService.resetAnchors(templateId);
+      await loadAll(selectedDeptFilter);
+      setSelectedTemplate((prev) => {
+        if (!prev) return prev;
+        const tj = { ...prev.template_json };
+        delete tj.learned_anchors;
+        return { ...prev, template_json: tj };
+      });
+    } catch (err) {
+      setError(err.message || 'Failed to reset ground truth memory');
+    } finally {
+      setBusyId(null);
     }
   };
 
@@ -212,11 +284,6 @@ const ManagePage = () => {
              <h2 className="text-lg font-bold text-primary flex items-center gap-2 font-heading tracking-tight"><FileText size={18} className="text-[#1e3a8a]"/> Active Extraction Templates</h2>
              <Badge className="bg-gray-100 text-gray-600 border border-gray-200 text-[0.65rem] px-2 py-0.5 font-bold tracking-wider uppercase">{templates.length} Schemas Configured</Badge>
           </div>
-          <div className="flex items-center gap-3 text-xs font-semibold">
-             <span className="text-gray-500">Export Configuration:</span>
-             <button className="flex items-center gap-1.5 px-2 py-1 bg-white border border-gray-200 rounded text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"><Download size={12}/> CSV</button>
-             <button className="flex items-center gap-1.5 px-2 py-1 bg-white border border-gray-200 rounded text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"><Code size={12}/> JSON</button>
-          </div>
         </div>
         
         <div className="bg-white border border-border-color rounded-xl shadow-sm overflow-hidden">
@@ -269,9 +336,28 @@ const ManagePage = () => {
                         )}
                      </td>
                      <td className="px-6 py-5 text-right align-middle">
-                        <div className="flex items-center justify-end gap-3 text-xs font-bold opacity-80 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center justify-end gap-2.5 text-xs font-bold opacity-90 group-hover:opacity-100 transition-opacity">
                            <button onClick={() => navigate(`/manage/template/${tpl.id}`)} className="flex flex-col items-center gap-1 text-gray-600 hover:text-[#1e3a8a] bg-gray-50 hover:bg-blue-50 border border-gray-200 px-3 py-1.5 rounded transition-all shadow-sm"><Edit size={12}/> Edit Fields</button>
                            <button onClick={() => setSelectedTemplate(tpl)} className="flex flex-col items-center gap-1 text-blue-600 hover:text-[#1e3a8a] bg-blue-50/50 hover:bg-blue-100 border border-blue-100 px-3 py-1.5 rounded transition-all shadow-sm"><Code size={12}/> View Schema</button>
+                           {isActive ? (
+                             <button
+                               onClick={() => handleDeactivateTemplate(tpl.id)}
+                               disabled={busyId === tpl.id}
+                               className="flex flex-col items-center gap-1 text-amber-700 hover:text-red-700 bg-amber-50 hover:bg-red-50 border border-amber-200 hover:border-red-200 px-3 py-1.5 rounded transition-all shadow-sm disabled:opacity-50"
+                               title="Deactivate this template"
+                             >
+                               <XCircle size={12} className={busyId === tpl.id ? "animate-spin text-amber-600" : "text-amber-600"}/> Deactivate
+                             </button>
+                           ) : (
+                             <button
+                               onClick={() => handleActivateTemplate(tpl.id)}
+                               disabled={busyId === tpl.id}
+                               className="flex flex-col items-center gap-1 text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 hover:border-emerald-300 px-3 py-1.5 rounded transition-all shadow-sm disabled:opacity-50"
+                               title="Activate this template"
+                             >
+                               <CheckCircle2 size={12} className={busyId === tpl.id ? "animate-spin text-emerald-600" : "text-emerald-600"}/> Activate
+                             </button>
+                           )}
                         </div>
                      </td>
                    </tr>
@@ -308,8 +394,81 @@ const ManagePage = () => {
              <div className="flex items-center gap-3 mt-1">
                   <button onClick={() => navigate(`/manage/template/${selectedTemplate.id}`)} className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded text-gray-700 font-bold shadow-sm text-xs hover:bg-gray-50 transition-colors"><Plus size={14}/> + Add Extraction Field</button>
                   <button className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-200 rounded text-gray-700 font-bold shadow-sm text-xs hover:bg-gray-50 transition-colors"><Code size={14}/> Export JSON Schema</button>
+                  {(selectedTemplate.is_active === 1 || selectedTemplate.is_active === true || selectedTemplate.is_active === '1' || String(selectedTemplate.is_active).toLowerCase() === 'true') ? (
+                    <button
+                      onClick={() => handleDeactivateTemplate(selectedTemplate.id)}
+                      disabled={busyId === selectedTemplate.id}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded text-amber-700 font-bold shadow-sm text-xs hover:bg-red-50 hover:text-red-700 transition-colors disabled:opacity-50"
+                    >
+                      <XCircle size={14} className={busyId === selectedTemplate.id ? "animate-spin" : ""}/> Deactivate Template
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleActivateTemplate(selectedTemplate.id)}
+                      disabled={busyId === selectedTemplate.id}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded text-emerald-700 font-bold shadow-sm text-xs hover:bg-emerald-100 transition-colors disabled:opacity-50"
+                    >
+                      <CheckCircle2 size={14} className={busyId === selectedTemplate.id ? "animate-spin" : ""}/> Activate Template
+                    </button>
+                  )}
              </div>
           </div>
+
+          {/* Ground Truth Geometric Memory Banner */}
+          {selectedTemplate.template_json?.learned_anchors ? (
+            <div className="bg-slate-50 border-b border-gray-200 px-5 py-3 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="p-1.5 bg-blue-100 text-blue-700 rounded">
+                  <Database size={16} />
+                </div>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-gray-800">Learned Geometric Ground Truth:</span>
+                    {selectedTemplate.template_json.learned_anchors.is_verified ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded">
+                        <ShieldCheck size={12} className="text-emerald-600" /> Human-Verified & Locked
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-800 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded">
+                        <RefreshCw size={12} className="text-amber-600" /> Dynamic Geometric Cache
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[11px] text-gray-500">
+                    {Object.keys(selectedTemplate.template_json.learned_anchors.fields || {}).length} field coordinates calibrated (Canvas: {selectedTemplate.template_json.learned_anchors.page_width || 1654}x{selectedTemplate.template_json.learned_anchors.page_height || 2338}px)
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {selectedTemplate.template_json.learned_anchors.is_verified && (
+                  <button
+                    onClick={() => handleUnlockAnchors(selectedTemplate.id)}
+                    disabled={busyId === selectedTemplate.id}
+                    className="flex items-center gap-1.5 px-2.5 py-1 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded shadow-sm transition-colors cursor-pointer"
+                    title="Unlock ground truth to allow re-calibration"
+                  >
+                    <Unlock size={13} /> Unlock Ground Truth
+                  </button>
+                )}
+                <button
+                  onClick={() => handleResetAnchors(selectedTemplate.id)}
+                  disabled={busyId === selectedTemplate.id}
+                  className="flex items-center gap-1.5 px-2.5 py-1 bg-white border border-red-200 hover:bg-red-50 text-red-600 text-xs font-semibold rounded shadow-sm transition-colors cursor-pointer"
+                  title="Purge stored anchor coordinates from this template"
+                >
+                  <RotateCcw size={13} /> Reset Geometry Memory
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-slate-50 border-b border-gray-200 px-5 py-2.5 flex items-center justify-between text-xs text-gray-500">
+              <span className="flex items-center gap-2">
+                <Database size={14} className="text-gray-400" />
+                No ground truth geometry learned yet for this template. (Coordinates will be captured automatically on the first Learned Geometric extraction).
+              </span>
+            </div>
+          )}
           
           <table className="w-full text-left border-collapse bg-white">
             <thead className="border-b border-gray-200 text-[0.65rem] font-bold text-gray-500 uppercase tracking-widest">

@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 
 from app.db.database import get_db
-from app.db.models import ProcessingJob, ProcessingResult
+from app.db.models import ProcessingJob, ProcessingResult, DocumentPage
 from app.schemas.common import APIResponse
 from app.core.exceptions import DocIntError
 from app.repositories.job_repo import JobRepository
@@ -29,6 +29,7 @@ def get_processing_job(job_id: str, db: Session = Depends(get_db)):
     response_data = {
         "job_id": job.id,
         "document_id": job.document_id,
+        "template_id": job.template_id,
         "original_filename": job.document.original_filename if job.document else "Unknown Document",
         "template_code": job.template.code if job.template else "Unknown Template",
         "status": job.status,
@@ -40,6 +41,15 @@ def get_processing_job(job_id: str, db: Session = Depends(get_db)):
         "overall_confidence": job.overall_confidence,
         "pipeline_mode": job.pipeline_mode
     }
+
+    # Query document page dimensions so frontend can scale bounding boxes accurately
+    if job.document_id:
+        stmt_pages = select(DocumentPage).where(DocumentPage.document_id == job.document_id).order_by(DocumentPage.page_number)
+        pages = db.execute(stmt_pages).scalars().all()
+        if pages:
+            response_data["page_dimensions"] = [{"page_number": p.page_number, "width": p.width, "height": p.height} for p in pages]
+            response_data["doc_page_width"] = pages[0].width
+            response_data["doc_page_height"] = pages[0].height
     
     # Phase 10 introduced "WARNING" as a real completion state (finished, but
     # with fields needing review) — must still surface its result, same fix

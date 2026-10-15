@@ -288,13 +288,16 @@ def run_single_pipeline_job(job_id: str, pipeline_name: str, force_relearn: bool
             }
 
             ocr_metadata = dict(result.metadata.get("ocr_metadata", {}))
+            template_la = (template.template_json or {}).get("learned_anchors")
+            final_la = result.metadata.get("learned_anchors") or template_la
+
             ocr_metadata.update({
                 "mode": result.metadata.get("mode", "single_pipeline"),
                 "pipeline": pipeline_name,
                 "speed": result.metadata.get("speed"),
-                "anchor_matched": result.metadata.get("anchor_matched"),
+                "anchor_matched": bool(result.metadata.get("anchor_matched") or template_la),
                 "anchor_learned": result.metadata.get("anchor_learned"),
-                "learned_anchors": result.metadata.get("learned_anchors"),
+                "learned_anchors": final_la,
             })
 
             existing_res = db.query(ProcessingResult).filter_by(job_id=job.id).first()
