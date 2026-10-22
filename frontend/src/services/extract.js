@@ -97,6 +97,16 @@ export const extractService = {
       bbox,
     }),
 
+  // Save one corrected table cell back into the job result
+  updateTableCell: (jobId, tableIndex, row, col, value) =>
+    api.post('/extract/update-table-cell', {
+      job_id: jobId,
+      table_index: tableIndex,
+      row,
+      col,
+      value,
+    }),
+
   // Add, remove, or update template fields
   manageTemplateField: (jobId, action, fieldKey, value = null, bbox = null, pageNumber = 1, saveToTemplate = true) =>
     api.post('/extract/manage-template-field', {

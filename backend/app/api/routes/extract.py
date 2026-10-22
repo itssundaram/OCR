@@ -53,6 +53,7 @@ from app.pipelines.registry import get_pipeline, list_pipelines
 from app.schemas.common import APIResponse
 from app.services.extractor import process_document_job
 from app.services.orchestrator import run_pipeline_comparison_job, run_single_pipeline_job
+from app.services.table_edit import apply_cell_edit
 
 logger = get_logger(__name__)
 
@@ -261,6 +262,54 @@ def update_field_value(req: UpdateFieldValueRequest, db: Session = Depends(get_d
         "is_verified": True,
         "bbox": req.bbox,
     })
+
+
+class UpdateTableCellRequest(BaseModel):
+    job_id: str
+    table_index: int
+    row: int
+    col: int
+    value: str
+
+
+@router.post("/extract/update-table-cell", response_model=APIResponse[dict])
+def update_table_cell(req: UpdateTableCellRequest, db: Session = Depends(get_db)):
+    """
+    Save one manually corrected table cell back into the job's result.
+    The cell becomes confidence 1.0 (human verified); headers, rows and the
+    markdown view of the table are rebuilt from the cells.
+    """
+    job = db.get(ProcessingJob, req.job_id)
+    if not job:
+        raise DocIntError(f"Processing job {req.job_id} not found.", "JOB_NOT_FOUND")
+    if len(req.value) > 2000:
+        raise DocIntError("Cell text is too long (limit 2000 characters).", "INVALID_CELL")
+
+    res_stmt = select(ProcessingResult).where(ProcessingResult.job_id == req.job_id)
+    result = db.execute(res_stmt).scalars().first()
+    if not result:
+        raise DocIntError("This job has no extraction result yet.", "TABLE_NOT_FOUND")
+
+    ej = dict(result.extracted_json or {})
+    tables = list(ej.get("tables") or [])
+    pos = next(
+        (i for i, t in enumerate(tables) if isinstance(t, dict) and t.get("table_index") == req.table_index),
+        None,
+    )
+    if pos is None:
+        raise DocIntError(f"Table {req.table_index} not found in this result.", "TABLE_NOT_FOUND")
+
+    try:
+        updated = apply_cell_edit(tables[pos], req.row, req.col, req.value)
+    except ValueError as exc:
+        raise DocIntError(str(exc), "INVALID_CELL")
+
+    tables[pos] = updated
+    ej["tables"] = tables
+    result.extracted_json = ej
+    flag_modified(result, "extracted_json")
+    db.commit()
+    return APIResponse(data={"table_index": req.table_index, "table": updated})
 
 
 class ManageTemplateFieldsRequest(BaseModel):

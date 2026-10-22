@@ -24,6 +24,8 @@ class FieldResult:
     extraction_method: str = ""
     fallback_method: str = ""
     raw_text: str = ""
+    label: str = ""                   # human label as printed on the page (discovered pairs)
+    source: str = ""                  # "" = template field, "discovered" = key:value scan
 
 @dataclass
 class TableResult:

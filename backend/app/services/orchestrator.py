@@ -111,6 +111,8 @@ def build_field_extraction_rows_from_pipeline_result(
             "bbox_json": bbox_json,
             "page_id": (page_ids or {}).get(f.page_number),
             "_page_number": f.page_number or 1,
+            "_label": f.label or "",
+            "_source": f.source or "",
             "is_final": is_final,
         })
     return rows
@@ -272,6 +274,8 @@ def run_single_pipeline_job(job_id: str, pipeline_name: str, force_relearn: bool
                     "page_number": p_num,
                     "page_id": r.get("page_id"),
                     "bbox": r.get("bbox_json"),
+                    "label": r.get("_label") or "",
+                    "source": r.get("_source") or "",
                 }
 
             tables_out = []

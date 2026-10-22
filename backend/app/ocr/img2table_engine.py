@@ -59,25 +59,65 @@ def _preprocess_for_table_detection(img_bytes: bytes) -> bytes:
     return buf.getvalue()
 
 
+def _cell_text(value) -> str:
+    """One clean line of text for a cell: no None/NaN, no newlines."""
+    text = "" if value is None else str(value)
+    if text.strip().lower() in ("nan", "none"):
+        return ""
+    return " ".join(text.split())
+
+
 def _build_table(table) -> OCRTable | None:
-    """Convert a single img2table ExtractedTable to an OCRTable."""
+    """Convert a single img2table ExtractedTable to an OCRTable.
+
+    The result carries `cells` (row/col/text) so the UI can show an editable
+    grid even though this reader has no per-cell geometry or confidence.
+    """
     df = table.df
     if df is None or df.empty:
         return None
 
-    df = df.fillna("").astype(str)
+    grid = [[_cell_text(v) for v in row] for row in df.fillna("").values.tolist()]
+    grid = [r for r in grid if any(r)]  # drop fully blank rows
+    if not grid:
+        return None
+    keep = [i for i in range(len(grid[0])) if any(r[i] for r in grid)]  # drop blank columns
+    if not keep:
+        return None
+    grid = [[r[i] for i in keep] for r in grid]
 
-    headers = df.iloc[0].tolist()
-    rows = df.iloc[1:].values.tolist() if len(df) > 1 else []
+    headers = grid[0]
+    rows = grid[1:]
 
     # Generate markdown
     sep = " | ".join(["---"] * len(headers))
     markdown = f"| {' | '.join(headers)} |\n| {sep} |\n"
     for row in rows:
-        safe = [str(c).replace("|", "\\|").replace("\n", " ") for c in row]
+        safe = [c.replace("|", "\\|") for c in row]
         markdown += f"| {' | '.join(safe)} |\n"
 
-    return OCRTable(headers=headers, rows=rows, markdown=markdown)
+    cells = [
+        {
+            "row": r_idx,
+            "col": c_idx,
+            "text": text,
+            "bbox": None,
+            "is_header": r_idx == 0,
+            "confidence": None,
+        }
+        for r_idx, row in enumerate(grid)
+        for c_idx, text in enumerate(row)
+    ]
+
+    bbox = None
+    tb = getattr(table, "bbox", None)
+    if tb is not None:
+        try:
+            bbox = {"x1": float(tb.x1), "y1": float(tb.y1), "x2": float(tb.x2), "y2": float(tb.y2)}
+        except Exception:
+            bbox = None
+
+    return OCRTable(headers=headers, rows=rows, markdown=markdown, bbox=bbox, cells=cells)
 
 
 def extract_tables_from_image(image_bytes: bytes) -> list[OCRTable]:

@@ -32,6 +32,8 @@ _STATUS_MAP: dict[str, int] = {
     "JOB_NOT_FOUND":            404,
     "TEMPLATE_NOT_FOUND":       404,
     "PAGE_NOT_FOUND":           404,
+    "TABLE_NOT_FOUND":          404,
+    "INVALID_CELL":             422,
     "DEPT_NOT_FOUND":           404,
     "DOC_TYPE_INACTIVE":        400,
     "TEMPLATE_NOT_ACTIVE":      400,

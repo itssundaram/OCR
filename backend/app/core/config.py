@@ -139,6 +139,10 @@ class Settings(BaseSettings):
     OCR_DPI_DIRECT_LLM: float = 1.0
     # Max parallel threads for per-page OCR (Tesseract is subprocess-based, GIL not an issue)
     OCR_MAX_WORKERS: int = 4
+    # learned_anchor pipeline: after the template fields are extracted, also scan the
+    # whole document for "Label: value" pairs and return them as key : value fields
+    # (see app/ocr/kv_discovery.py). Set to false to get template fields only.
+    KV_DISCOVERY_ENABLED: bool = True
     # Skip img2table on native-text pages (PyMuPDF already has the text structure)
     IMG2TABLE_SKIP_NATIVE: bool = True
     # Max img2table passes per page: 1=bordered only, 2=+implicit, 3=+borderless

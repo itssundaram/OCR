@@ -40,6 +40,7 @@ from app.pipelines.base import (
 from app.pipelines.registry import register_pipeline
 from app.ocr.base import OCRPage, OCRResult, OCRLine, BoundingBox
 from app.ocr.tesseract import TesseractOCREngine
+from app.ocr.kv_discovery import assign_unique_keys, discover_key_values, slugify_label
 from app.ai.orchestrator import ai_orchestrator
 
 logger = get_logger(__name__)
@@ -75,31 +76,132 @@ class LearnedAnchorPipeline(OCRPipeline):
         from app.core.model_registry import get_tesseract_engine
         return get_tesseract_engine()
 
+    @staticmethod
+    def _table_regions(page: Image.Image) -> list[tuple[Image.Image, int, int]]:
+        """Return (crop, offset_x, offset_y) for every table Surya sees on the page.
+
+        The table-structure model is trained on tight table crops; handing it a
+        whole page makes it miss rows or merge text above/below the table.
+        When layout detection finds no table (or fails) the whole page is used,
+        which is what this pipeline did before.
+        """
+        regions: list[tuple[Image.Image, int, int]] = []
+        try:
+            from app.core.model_registry import get_surya_layout_engine
+            pad = 5  # same padding SuryaLayoutEngine applies to its crops
+            for region in get_surya_layout_engine().detect_layout(page):
+                if str(region.region_type).strip().lower() != "table":
+                    continue
+                ox = max(0, int(region.bbox.x1) - pad)
+                oy = max(0, int(region.bbox.y1) - pad)
+                if region.cropped_image is not None:
+                    regions.append((region.cropped_image, ox, oy))
+        except Exception as exc:
+            logger.warning("learned_anchor_table_layout_failed", error=str(exc))
+        if not regions:
+            regions.append((page, 0, 0))
+        return regions
+
+    @staticmethod
+    def _shift_box(box: dict | None, dx: int, dy: int) -> dict | None:
+        """Move a {x1,y1,x2,y2} box from crop coordinates to page coordinates."""
+        if not box or (dx == 0 and dy == 0):
+            return box
+        try:
+            return {
+                "x1": box["x1"] + dx, "y1": box["y1"] + dy,
+                "x2": box["x2"] + dx, "y2": box["y2"] + dy,
+            }
+        except (KeyError, TypeError):
+            return box
+
     def extract_tables(self, pages: list[Image.Image], job_id: str) -> list[TableResult]:
-        """Extract structured tables with per-cell bounding boxes using singleton TATR engine."""
-        results = []
+        """Extract structured tables (cells with geometry) from every table region.
+
+        Table regions come from Surya layout; each crop goes to the singleton
+        TATR engine (which itself falls back to img2table), and boxes are
+        mapped back to full-page coordinates so evidence crops line up.
+        """
+        results: list[TableResult] = []
         try:
             from app.core.model_registry import get_tatr_engine
             tatr = get_tatr_engine()
             table_idx = 1
             for p_idx, page in enumerate(pages):
-                tables = tatr.extract_tables(page)
-                for t in tables:
-                    results.append(TableResult(
-                        table_index=table_idx,
-                        page_number=p_idx + 1,
-                        headers=t.headers,
-                        rows=t.rows,
-                        confidence=0.90,
-                        bbox=t.bbox,
-                        cells=getattr(t, "cells", []),
-                        markdown=t.markdown,
-                        extraction_method="tatr",
-                    ))
-                    table_idx += 1
+                for crop, ox, oy in self._table_regions(page):
+                    for t in tatr.extract_tables(crop):
+                        cells = []
+                        for c in getattr(t, "cells", None) or []:
+                            c = dict(c)
+                            c["bbox"] = self._shift_box(c.get("bbox"), ox, oy)
+                            cells.append(c)
+                        has_geometry = any(c.get("bbox") for c in cells)
+                        results.append(TableResult(
+                            table_index=table_idx,
+                            page_number=p_idx + 1,
+                            headers=t.headers,
+                            rows=t.rows,
+                            confidence=0.90 if has_geometry else 0.70,
+                            bbox=self._shift_box(t.bbox, ox, oy),
+                            cells=cells,
+                            markdown=t.markdown,
+                            extraction_method="tatr" if has_geometry else "img2table",
+                        ))
+                        table_idx += 1
         except Exception as exc:
             logger.warning("learned_anchor_extract_tables_failed", error=str(exc))
         return results
+
+    def _attach_discovered_pairs(
+        self,
+        result: PipelineResult,
+        pages: list[Image.Image],
+        ocr_lines_by_page: list | None = None,
+    ) -> None:
+        """Append every "Label: value" pair found on the page to result.fields.
+
+        Template fields stay exactly as extracted; discovered pairs are added
+        after them (source="discovered") and are never written into the
+        learned anchors, so this cannot change what the template learns.
+        """
+        if not settings.KV_DISCOVERY_ENABLED or result is None:
+            return
+        try:
+            if ocr_lines_by_page is None:
+                ocr_res = self._get_ocr_engine().process_images(pages)
+                ocr_lines_by_page = [p.lines for p in ocr_res.pages]
+
+            def _norm(text: str) -> str:
+                return " ".join((text or "").lower().split())
+
+            existing_values = {f.field_name: _norm(f.value) for f in result.fields}
+            taken = set(existing_values)
+
+            pairs = []
+            for pair in discover_key_values(ocr_lines_by_page):
+                key = slugify_label(pair.label)
+                # Already extracted as a template field with the same value: skip the duplicate.
+                if key in existing_values and existing_values[key] == _norm(pair.value):
+                    continue
+                pairs.append(pair)
+
+            added = 0
+            for key, pair in assign_unique_keys(pairs, taken):
+                result.fields.append(FieldResult(
+                    field_name=key,
+                    value=pair.value,
+                    confidence=pair.confidence,
+                    page_number=pair.page_number,
+                    bbox=pair.bbox,
+                    extraction_method="kv_discovery",
+                    label=pair.label,
+                    source="discovered",
+                ))
+                added += 1
+            result.metadata["discovered_pairs"] = added
+            logger.info("learned_anchor_kv_discovery_done", job_pairs=added)
+        except Exception as exc:
+            logger.warning("learned_anchor_kv_discovery_failed", error=str(exc), exc_info=True)
 
     def extract_fields(
         self,
@@ -157,6 +259,7 @@ class LearnedAnchorPipeline(OCRPipeline):
                     event_callback=event_callback,
                 )
                 if warm_result is not None:
+                    self._attach_discovered_pairs(warm_result, pages)
                     warm_result.processing_time_ms = int((time.perf_counter() - t_start) * 1000)
                     return warm_result
             except Exception as exc:
@@ -1119,7 +1222,7 @@ class LearnedAnchorPipeline(OCRPipeline):
                     "page_number": p_idx + 1,
                 })
 
-        return PipelineResult(
+        cold_pipeline_result = PipelineResult(
             pipeline_name=self.name,
             status="completed",
             fields=fields_out,
@@ -1138,4 +1241,6 @@ class LearnedAnchorPipeline(OCRPipeline):
                 "ocr_metadata": ocr_res.model_dump(),
             },
         )
+        self._attach_discovered_pairs(cold_pipeline_result, pages, ocr_lines_by_page)
+        return cold_pipeline_result
 

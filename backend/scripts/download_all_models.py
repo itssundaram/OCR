@@ -11,8 +11,9 @@ REPO_BACKEND = Path("/home/ubuntu/Desktop/docint-ocr/repo-git/backend")
 BACKEND_HF_HUB = REPO_BACKEND / "data" / "models" / "huggingface" / "hub"
 USER_HF_HUB = Path.home() / ".cache" / "huggingface" / "hub"
 
-# 1. HuggingFace Surya models
+# 1. HuggingFace models (Surya + the TATR table-structure model)
 SURYA_MODELS = [
+    "microsoft/table-transformer-structure-recognition",
     "vikp/surya_det3",
     "vikp/surya_rec2",
     "vikp/surya_layout3",

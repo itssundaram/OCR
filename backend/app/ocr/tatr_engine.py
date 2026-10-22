@@ -31,13 +31,18 @@ class TATRTableEngine:
             
             device = "cuda" if settings.GPU_ENABLED and torch.cuda.is_available() else "cpu"
             
+            # NOTE: do not pass `timeout=` here. transformers forwards unknown
+            # kwargs to the model constructor, which fails with
+            # "TableTransformerForObjectDetection.__init__() got an unexpected
+            # keyword argument 'timeout'" and silently drops every table onto
+            # the weaker img2table fallback. Weights load from the local cache
+            # (HF_HUB_OFFLINE=1 is set in app/core/config.py), so no network
+            # timeout applies anyway.
             self._processor = DetrImageProcessor.from_pretrained(
                 "microsoft/table-transformer-structure-recognition",
-                timeout=10,
             )
             self._structure_model = TableTransformerForObjectDetection.from_pretrained(
                 "microsoft/table-transformer-structure-recognition",
-                timeout=10,
             )
             self._structure_model.to(device)
             self._device = device

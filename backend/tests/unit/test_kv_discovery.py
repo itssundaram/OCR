@@ -1,0 +1,103 @@
+"""Unit tests for app/ocr/kv_discovery.py — hand-built OCR geometry, no OCR engine."""
+from app.ocr.base import BoundingBox, OCRLine, OCRWord
+from app.ocr.kv_discovery import assign_unique_keys, discover_key_values, slugify_label
+
+
+def _line(y, *words, h=20, conf=0.95):
+    """words: (text, x) pairs; each word is len(text)*11 px wide."""
+    ocr_words = [
+        OCRWord(text=t, bbox=BoundingBox(x1=x, y1=y, x2=x + len(t) * 11, y2=y + h), confidence=conf)
+        for t, x in words
+    ]
+    return OCRLine(
+        text=" ".join(t for t, _ in words),
+        words=ocr_words,
+        bbox=BoundingBox(
+            x1=min(w.bbox.x1 for w in ocr_words), y1=y,
+            x2=max(w.bbox.x2 for w in ocr_words), y2=y + h,
+        ),
+        confidence=conf,
+    )
+
+
+def _pairs(*lines):
+    return {p.label: p for p in discover_key_values([list(lines)])}
+
+
+def test_simple_label_value():
+    got = _pairs(_line(100, ("Tele:", 100), ("2309", 170), ("4765", 225)))
+    assert got["Tele"].value == "2309 4765"
+    assert got["Tele"].page_number == 1
+    assert got["Tele"].bbox["x1"] == 170  # box covers the value only, not the label
+
+
+def test_two_pairs_on_one_line():
+    got = _pairs(_line(100, ("Phone:", 100), ("011-2301", 180), ("Fax:", 330), ("011-9000", 380)))
+    assert got["Phone"].value == "011-2301"
+    assert got["Fax"].value == "011-9000"
+
+
+def test_multi_word_label():
+    got = _pairs(_line(100, ("Date", 100), ("of", 150), ("Birth:", 180), ("05-06-88", 250)))
+    assert got["Date of Birth"].value == "05-06-88"
+
+
+def test_two_columns_in_one_ocr_line_are_not_merged():
+    # Tesseract can join a left and a right column into a single line.
+    got = _pairs(_line(100, ("Tele:", 100), ("2309", 170), ("Dte", 900), ("Gen", 950), ("Services", 1000)))
+    assert got["Tele"].value == "2309"  # must not swallow the right column
+
+
+def test_time_and_urls_are_not_pairs():
+    assert _pairs(_line(100, ("Time", 100), ("10:30", 160), ("hrs", 220))) == {}
+    assert _pairs(_line(100, ("See", 100), ("http://example.com", 150))) == {}
+
+
+def test_value_on_next_line_when_label_is_alone():
+    got = _pairs(_line(100, ("Name:", 100)), _line(130, ("Capt", 100), ("Pandey", 160)))
+    assert got["Name"].value == "Capt Pandey"
+
+
+def test_value_to_the_right_when_ocr_split_the_row():
+    got = _pairs(_line(100, ("Subject:", 100)), _line(101, ("Allotment", 400), ("of", 500), ("numbers", 540)))
+    assert got["Subject"].value == "Allotment of numbers"
+
+
+def test_label_with_no_value_is_dropped():
+    assert _pairs(_line(100, ("Remarks:", 100))) == {}
+
+
+def test_inline_colon_without_space():
+    got = _pairs(_line(100, ("Ref:00961/DGDS-1", 100)))
+    assert got["Ref"].value == "00961/DGDS-1"
+
+
+def test_split_colon_token():
+    got = _pairs(_line(100, ("Tele", 100), (":", 150), ("2309", 175)))
+    assert got["Tele"].value == "2309"
+
+
+def test_confidence_is_mean_of_value_words():
+    line = _line(100, ("Ref:", 100), ("A1", 160), ("B2", 200))
+    line.words[1].confidence = 0.9
+    line.words[2].confidence = 0.5
+    assert abs(_pairs(line)["Ref"].confidence - 0.7) < 1e-6
+
+
+def test_page_numbers_follow_input_order():
+    pairs = discover_key_values([[_line(100, ("Ref:", 100), ("x1", 150))], [_line(100, ("Doc:", 100), ("y2", 150))]])
+    assert [(p.label, p.page_number) for p in pairs] == [("Ref", 1), ("Doc", 2)]
+
+
+def test_unique_keys_never_collide_with_template_fields():
+    pairs = discover_key_values([[
+        _line(100, ("Ref:", 100), ("a1", 150)),
+        _line(200, ("Ref:", 100), ("b2", 150)),
+    ]])
+    keys = [k for k, _ in assign_unique_keys(pairs, taken={"ref"})]
+    assert keys == ["ref_2", "ref_3"]
+
+
+def test_slugify():
+    assert slugify_label("Date of Birth") == "date_of_birth"
+    assert slugify_label("S.No.") == "s_no"

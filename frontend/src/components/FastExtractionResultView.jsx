@@ -8,6 +8,8 @@ import {
 import { JsonView, allExpanded, darkStyles } from 'react-json-view-lite';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { Badge } from './ui/Badge';
+import KeyValuePanel from './KeyValuePanel';
+import TableGrid from './TableGrid';
 import { evidenceService } from '../services/evidence';
 import { extractService } from '../services/extract';
 import { templatesService } from '../services/templates';
@@ -62,6 +64,7 @@ const FastExtractionResultView = ({
 
   // Human-In-The-Loop Interactive States
   const [localFields, setLocalFields] = useState({});
+  const [localTables, setLocalTables] = useState([]);
   const [reOcrLoading, setReOcrLoading] = useState({});
   const [editingField, setEditingField] = useState(null);
   const [editValue, setEditValue] = useState('');
@@ -141,6 +144,7 @@ const FastExtractionResultView = ({
       const parsed = currentJob.extracted_json ? parseJSONRecursively(currentJob.extracted_json) : null;
       const f = parsed?.fields || {};
       setLocalFields(f);
+      setLocalTables(Array.isArray(parsed?.tables) ? parsed.tables : []);
       const ocrMeta = currentJob.ocr_metadata_json ? parseJSONRecursively(currentJob.ocr_metadata_json) : {};
       const la = ocrMeta?.learned_anchors || parsed?.learned_anchors;
       setLearnedAnchorsState(la || null);
@@ -159,11 +163,15 @@ const FastExtractionResultView = ({
   const ocrMetadata = currentJob.ocr_metadata_json ? parseJSONRecursively(currentJob.ocr_metadata_json) : {};
   const allDetections = ocrMetadata?.all_detections || [];
   const parsedEnvelope = currentJob.extracted_json ? parseJSONRecursively(currentJob.extracted_json) : {};
-  const extractedTables = parsedEnvelope?.tables || [];
+  const extractedTables = localTables;
 
-  const fieldKeys = Object.keys(localFields);
+  // Document-level stats follow the template's own fields; pairs discovered on the
+  // page are listed in the panel but only drive the stats when there is no template field.
+  const allFieldKeys = Object.keys(localFields);
+  const templateFieldKeys = allFieldKeys.filter((k) => localFields[k]?.source !== 'discovered');
+  const fieldKeys = templateFieldKeys.length > 0 ? templateFieldKeys : allFieldKeys;
   const totalFields = fieldKeys.length;
-  const extractedCount = fieldKeys.filter((k) => localFields[k]?.found).length;
+  const extractedCount = allFieldKeys.filter((k) => localFields[k]?.found).length;
   const validFieldsCount = fieldKeys.filter((k) => {
     const d = localFields[k];
     return Boolean(d?.found && d?.value && String(d.value).trim().length > 0);
@@ -250,8 +258,12 @@ const FastExtractionResultView = ({
     }
   };
 
-  const handleRemoveField = async (key) => {
-    if (!window.confirm(`Are you sure you want to remove field "${key.replace(/_/g, ' ')}" from this template?`)) return;
+  const handleRemoveField = async (key, isDiscovered = false) => {
+    const label = localFields[key]?.label || key.replace(/_/g, ' ');
+    const question = isDiscovered
+      ? `Dismiss "${label}" from this result? (The template is not changed.)`
+      : `Are you sure you want to remove field "${label}" from this template?`;
+    if (!window.confirm(question)) return;
     try {
       await extractService.manageTemplateField(
         currentJob.job_id,
@@ -260,14 +272,14 @@ const FastExtractionResultView = ({
         null,
         null,
         1,
-        true
+        !isDiscovered
       );
       setLocalFields((prev) => {
         const next = { ...prev };
         delete next[key];
         return next;
       });
-      showToast(`Field "${key}" removed from template.`, 'info');
+      showToast(isDiscovered ? `"${label}" dismissed.` : `Field "${key}" removed from template.`, 'info');
     } catch (err) {
       showToast(`Failed to remove field: ${err.message}`, 'error');
     }
@@ -516,6 +528,10 @@ const FastExtractionResultView = ({
     setEditValue('');
   };
 
+  const handleTableUpdated = (tableIndex, updatedTable) => {
+    setLocalTables((prev) => prev.map((t) => (t.table_index === tableIndex ? updatedTable : t)));
+  };
+
   // ── Save / Lock Template Ground Truth ──────────────────────────────────
   const handleLockTemplateAnchors = async () => {
     const targetTemplateId = currentJob.template_id;
@@ -528,6 +544,7 @@ const FastExtractionResultView = ({
     try {
       const fieldsToLock = {};
       Object.entries(localFields).forEach(([k, d]) => {
+        if (d?.source === 'discovered') return; // job-only pairs are not template anchors
         if (d?.bbox && d.bbox.x1 !== undefined) {
           fieldsToLock[k] = {
             bbox: d.bbox,
@@ -1053,7 +1070,7 @@ const FastExtractionResultView = ({
                             isSelected ? 'bg-blue-600 text-white' : 'bg-emerald-700 text-white'
                           }`}
                         >
-                          <span>{key.replace(/_/g, ' ')}</span>
+                          <span>{data.label || key.replace(/_/g, ' ')}</span>
                           {hasValidValue && <span className="text-[8px] opacity-80">✓</span>}
                         </span>
 
@@ -1186,7 +1203,7 @@ const FastExtractionResultView = ({
                 }`}
                 onClick={() => setActiveTab('results')}
               >
-                Fields ({fieldKeys.length})
+                Fields ({allFieldKeys.length})
               </button>
               <button
                 className={`pb-2 text-xs font-bold relative transition-colors cursor-pointer ${
@@ -1226,181 +1243,27 @@ const FastExtractionResultView = ({
             </span>
           </div>
 
-          {/* Results Tab Content: Structured Fields Table (Inspiration Image 4) */}
+          {/* Fields tab: key : value pairs (template fields + pairs found on the page) */}
           {activeTab === 'results' && (
-            <div className="flex-1 overflow-y-auto bg-slate-50/50 p-3">
-              <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
-                {/* Table Header */}
-                <div className="grid grid-cols-[1.3fr_1.8fr_0.9fr_0.8fr_0.5fr] text-[10px] font-bold text-slate-500 uppercase tracking-wider bg-slate-100/90 px-3.5 py-2.5 border-b border-slate-200">
-                  <div>Field</div>
-                  <div>Value</div>
-                  <div>Status</div>
-                  <div className="text-right">Score</div>
-                  <div className="text-right">Action</div>
-                </div>
-
-                {/* Table Rows */}
-                <div className="divide-y divide-slate-100">
-                  {fieldKeys.map((key) => {
-                    const data = localFields[key] || {};
-                    const confPercent = Math.round((data.confidence || 0) * 100);
-                    const isSelected = selectedField === key;
-                    const isHovered = hoveredField === key;
-                    const hasBbox = data.bbox && data.bbox.x1 !== undefined;
-                    const isEditing = editingField === key;
-                    const cropSrc = cropOverrides[key] || evidenceService.imageUrl(currentJob.job_id, key);
-                    const refBbox = learnedAnchors?.fields?.[key]?.bbox;
-                    const isVerified = confPercent >= 80 && Boolean(data.found && data.value && String(data.value).trim().length > 0);
-
-                    return (
-                      <div
-                        key={key}
-                        ref={(el) => (fieldRefs.current[key] = el)}
-                        className={`grid grid-cols-[1.3fr_1.8fr_0.9fr_0.8fr_0.5fr] items-center px-3.5 py-2.5 text-xs transition-all cursor-pointer ${
-                          isSelected
-                            ? 'bg-blue-50/80 border-l-4 border-l-blue-600'
-                            : isHovered
-                            ? 'bg-slate-50 border-l-4 border-l-blue-400'
-                            : 'hover:bg-slate-50/60 border-l-4 border-l-transparent'
-                        }`}
-                        onClick={() => handleSelectField(key)}
-                        onMouseEnter={() => setHoveredField(key)}
-                        onMouseLeave={() => setHoveredField(null)}
-                      >
-                        {/* FIELD Column */}
-                        <div className="flex flex-col pr-2">
-                          <span className="font-bold text-slate-800 text-xs truncate" title={key.replace(/_/g, ' ')}>
-                            {key.replace(/_/g, ' ')}
-                          </span>
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className="text-[10px] text-slate-400 font-mono">
-                              {refBbox ? 'anchor' : 'discovered'}
-                            </span>
-                            {data.manually_edited && (
-                              <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-purple-100 text-purple-700 font-mono">
-                                manual
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* VALUE Column */}
-                        <div className="flex items-center gap-1.5 pr-2 min-w-0" onClick={(e) => e.stopPropagation()}>
-                          <span className="text-[9px] font-bold uppercase tracking-wider px-1 py-0.5 rounded bg-slate-100 text-slate-500 border border-slate-200 flex-shrink-0">
-                            {key.includes('date') ? 'DATE' : key.includes('no') || key.includes('num') ? 'NUMBER' : 'TEXT'}
-                          </span>
-                          {isEditing ? (
-                            <div className="flex items-center gap-1 flex-1 min-w-0">
-                              <input
-                                type="text"
-                                className="w-full bg-white border border-blue-500 rounded px-2 py-1 text-xs font-mono font-bold text-slate-900 outline-none"
-                                value={editValue}
-                                onChange={(e) => setEditValue(e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') saveEditing(key);
-                                  if (e.key === 'Escape') cancelEditing();
-                                }}
-                                autoFocus
-                              />
-                              <button
-                                onClick={() => saveEditing(key)}
-                                className="p-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded cursor-pointer"
-                                title="Save"
-                              >
-                                <Check size={11} />
-                              </button>
-                              <button
-                                onClick={cancelEditing}
-                                className="p-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded cursor-pointer"
-                                title="Cancel"
-                              >
-                                <X size={11} />
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-between gap-1 flex-1 min-w-0 bg-slate-50 hover:bg-slate-100/90 px-2 py-1 rounded border border-slate-200">
-                              <span className="font-mono text-xs font-bold text-slate-900 truncate" title={String(data.value || '')}>
-                                {data.found ? String(data.value) : <span className="text-red-500 italic">Not extracted</span>}
-                              </span>
-                              <div className="flex items-center gap-0.5 opacity-60 hover:opacity-100 flex-shrink-0">
-                                <button
-                                  onClick={() => startEditing(key, data.value)}
-                                  className="p-1 hover:text-blue-600 rounded cursor-pointer"
-                                  title="Edit value"
-                                >
-                                  <Edit2 size={11} />
-                                </button>
-                                <button
-                                  onClick={() => handleCopy(key, data.value)}
-                                  className="p-1 hover:text-slate-800 rounded cursor-pointer"
-                                  title="Copy"
-                                >
-                                  {copiedKey === key ? <Check size={11} className="text-emerald-600" /> : <Copy size={11} />}
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* STATUS Column */}
-                        <div>
-                          {isVerified ? (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                              <CheckCircle2 size={11} /> Verified
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-300">
-                              <AlertCircle size={11} /> Flagged
-                            </span>
-                          )}
-                        </div>
-
-                        {/* SCORE Column */}
-                        <div className="flex items-center justify-end gap-2 text-right">
-                          <div className="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden hidden sm:block">
-                            <div
-                              className={`h-full rounded-full ${
-                                confPercent >= 80 ? 'bg-emerald-500' : confPercent >= 50 ? 'bg-amber-500' : 'bg-red-400'
-                              }`}
-                              style={{ width: `${confPercent}%` }}
-                            />
-                          </div>
-                          <span
-                            className={`font-mono text-xs font-bold min-w-[24px] ${
-                              confPercent >= 80 ? 'text-emerald-600' : confPercent >= 50 ? 'text-amber-600' : 'text-red-500'
-                            }`}
-                          >
-                            {confPercent}
-                          </span>
-                        </div>
-
-                        {/* ACTIONS Column */}
-                        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                          {/* Re-OCR button */}
-                          <button
-                            onClick={() => handleReOcr(key)}
-                            disabled={reOcrLoading[key]}
-                            className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors cursor-pointer"
-                            title="Re-run micro OCR"
-                          >
-                            {reOcrLoading[key] ? <RefreshCw size={11} className="animate-spin" /> : <Zap size={11} />}
-                          </button>
-
-                          {/* Delete field button */}
-                          <button
-                            onClick={() => handleRemoveField(key)}
-                            className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors cursor-pointer"
-                            title="Remove field"
-                          >
-                            <Trash2 size={11} />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
+            <KeyValuePanel
+              fields={localFields}
+              selectedField={selectedField}
+              hoveredField={hoveredField}
+              onSelect={handleSelectField}
+              onHover={setHoveredField}
+              editingField={editingField}
+              editValue={editValue}
+              setEditValue={setEditValue}
+              onStartEdit={startEditing}
+              onSaveEdit={saveEditing}
+              onCancelEdit={cancelEditing}
+              onCopy={handleCopy}
+              copiedKey={copiedKey}
+              onReOcr={handleReOcr}
+              reOcrLoading={reOcrLoading}
+              onRemove={handleRemoveField}
+              rowRefs={fieldRefs}
+            />
           )}
 
           {/* All Detections Tab Content */}
@@ -1502,100 +1365,28 @@ const FastExtractionResultView = ({
             </div>
           )}
 
-          {/* Tables Tab Content */}
+          {/* Tables tab: editable grids */}
           {activeTab === 'tables' && (
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
               {extractedTables.length === 0 ? (
                 <div className="p-12 text-center bg-white border border-slate-200 rounded-xl shadow-xs">
                   <TableIcon size={32} className="mx-auto text-slate-300 mb-2" />
-                  <div className="text-sm font-bold text-slate-700">No Structured Tables Detected</div>
+                  <div className="text-sm font-bold text-slate-700">No tables found</div>
                   <div className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-                    The TATR table engine analyzes document structure. If this document has tables, they will appear here with full cell coordinates, headers, and markdown.
+                    Tables appear here as an editable grid when this template has a table field and one is detected on the page.
                   </div>
                 </div>
               ) : (
-                extractedTables.map((tbl, tIdx) => {
-                  const cells = tbl.cells || [];
-                  const rowsMap = {};
-                  let maxCol = 0;
-                  cells.forEach((c) => {
-                    const r = c.row ?? 0;
-                    const col = c.col ?? 0;
-                    if (!rowsMap[r]) rowsMap[r] = {};
-                    rowsMap[r][col] = c;
-                    if (col > maxCol) maxCol = col;
-                  });
-                  const sortedRowIndices = Object.keys(rowsMap).map(Number).sort((a, b) => a - b);
-
-                  return (
-                    <div key={tIdx} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                      {/* Table Header Card */}
-                      <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-200">
-                        <div className="flex items-center gap-2">
-                          <TableIcon size={15} className="text-blue-600" />
-                          <span className="text-xs font-bold text-slate-800">
-                            Table #{tIdx + 1}
-                          </span>
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 font-bold">
-                            Page {parsePageNumber(tbl.page_number) || 1}
-                          </span>
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
-                            {Math.round((tbl.confidence || 1) * 100)}% Conf
-                          </span>
-                        </div>
-                        {tbl.bbox && (
-                          <span className="text-[10px] font-mono text-slate-400">
-                            ({tbl.bbox.x1}, {tbl.bbox.y1}) - ({tbl.bbox.x2}, {tbl.bbox.y2})
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Rendered HTML Grid of Cells */}
-                      {sortedRowIndices.length > 0 ? (
-                        <div className="p-3 overflow-x-auto">
-                          <table className="w-full border-collapse text-xs font-mono">
-                            <tbody>
-                              {sortedRowIndices.map((rIdx) => {
-                                const rowCells = rowsMap[rIdx] || {};
-                                const isHeaderRow = Object.values(rowCells).some((c) => c.is_header);
-                                return (
-                                  <tr
-                                    key={rIdx}
-                                    className={isHeaderRow ? 'bg-slate-100 font-bold text-slate-900 border-b-2 border-slate-300' : 'hover:bg-slate-50 border-b border-slate-200'}
-                                  >
-                                    {Array.from({ length: maxCol + 1 }, (_, cIdx) => {
-                                      const cell = rowCells[cIdx];
-                                      const cellText = cell?.text || '';
-                                      return (
-                                        <td
-                                          key={cIdx}
-                                          className={`px-3 py-2 border-r border-slate-200 last:border-r-0 ${
-                                            cell?.is_header ? 'bg-slate-100 text-slate-800 font-bold' : 'text-slate-700'
-                                          }`}
-                                          title={cell?.bbox ? `Cell (${cell.bbox.x1}, ${cell.bbox.y1})` : undefined}
-                                        >
-                                          {cellText || <span className="text-slate-300 italic">-</span>}
-                                        </td>
-                                      );
-                                    })}
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-                      ) : tbl.markdown ? (
-                        <div className="p-3 bg-slate-900 text-slate-100 font-mono text-xs overflow-x-auto">
-                          <pre>{tbl.markdown}</pre>
-                        </div>
-                      ) : (
-                        <div className="p-4 text-center text-xs text-slate-400 italic">
-                          Table bounding box detected, cells not segmented.
-                        </div>
-                      )}
-                    </div>
-                  );
-                })
+                extractedTables.map((tbl, tIdx) => (
+                  <TableGrid
+                    key={tbl.table_index ?? tIdx}
+                    table={tbl}
+                    tableNumber={tIdx + 1}
+                    jobId={currentJob.job_id}
+                    onTableUpdated={handleTableUpdated}
+                    onToast={showToast}
+                  />
+                ))
               )}
             </div>
           )}
