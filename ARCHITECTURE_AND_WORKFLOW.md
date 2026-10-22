@@ -13,7 +13,7 @@
 ### Key Capabilities
 - **100% Air-Gapped / Offline Operation:** Zero internet connectivity required. All OCR, transformer, and Vision-Language Models (VLMs) run locally from pre-cached disk storage and local inference runtimes.
 - **Sub-Second Geometric Memory (`learned_anchor`):** Autonomous template learning that remembers document geometry. On warm hits, it executes parallel micro-region OCR in under **300ms–2s** without invoking expensive large vision models.
-- **Multi-Pipeline Orchestration & Consensus Voting:** Concurrently dispatches documents across multiple distinct OCR engines (Learned Anchor, PaddleOCR, Surya, Tesseract), aligning and reconciling field values through fuzzy consensus scoring and majority voting.
+- **Multi-Pipeline Orchestration & Consensus Voting:** Concurrently dispatches documents across multiple distinct OCR engines (Learned Anchor, Surya, Tesseract), aligning and reconciling field values through fuzzy consensus scoring and majority voting.
 - **Pixel-Accurate Visual Evidence:** Automatically generates cropped image snippets for every single extracted field and table, providing instant visual verification for auditors and data operators.
 
 ---
@@ -49,7 +49,6 @@ flowchart TD
 
     subgraph PipelineEngines ["Pipeline Execution Engines"]
         P_Learned["Learned Geometric Pipeline<br/>(learned_anchor_pipeline.py)"]
-        P_Paddle["PaddleOCR Pipeline<br/>(paddle_pipeline.py)"]
         P_Surya["Surya OCR Pipeline<br/>(surya_pipeline.py)"]
         P_Tesseract["Tesseract OCR Pipeline<br/>(tesseract_pipeline.py)"]
         P_Qwen["Direct VLM Pipeline<br/>(Qwen2.5-VL:3B)"]
@@ -58,7 +57,6 @@ flowchart TD
     subgraph OfflineModels ["Offline Model Vault (backend/data/models/)"]
         M_Qwen["Ollama Qwen2.5-VL:3B"]
         M_Tess["Tesseract 5.4.0 (eng.traineddata)"]
-        M_Paddle["PP-OCRv4 (det, rec, cls)"]
         M_Surya["Surya (det3, rec2, layout3)"]
         M_TATR["TATR (table detection + structure)"]
         M_TrOCR["TrOCR (handwritten large)"]
@@ -92,7 +90,6 @@ DocInt uses a specialized suite of localized machine learning and neural network
 | :--- | :--- | :--- | :--- | :--- |
 | **Qwen2.5-VL:3B** | Multimodal Vision-Language Transformer (Alibaba / Ollama) | Local Ollama Model Storage (`localhost:11434`) | High-level semantic reasoning, cold-path layout discovery, noisy document rectification | GPU (CUDA 12/13): ~1.2s–2.5s<br/>CPU: ~8s–15s |
 | **Tesseract 5.4.0** | LSTM Neural Network OCR (Google / UB Mannheim) | `C:\Program Files\Tesseract-OCR\` | High-speed printed text extraction, word-level confidence and bounding-box coordinates | CPU: ~150ms–400ms/page |
-| **PaddleOCR PP-OCRv4** | Differentiable Binarization (DBNet) + SVTR | `data/models/paddleocr/` | Resilient mobile text detection, orientation angle classification (`cls`), multi-font recognition | CPU: ~300ms–700ms/page<br/>GPU: ~80ms/page |
 | **Surya OCR** | SegFormer / Vision Transformer (`vikp/surya_*`) | `data/models/huggingface/hub/` | Line-level polygon detection, complex reading order analysis, multi-column document extraction | CPU: ~2.5s–5.0s/page<br/>GPU: ~400ms/page |
 | **Table Transformer (TATR)** | DETR (DEtection TRansformer - Microsoft) | `data/models/huggingface/hub/` (`models--microsoft--table-transformer-*`) | Deep tabular extraction: table boundary detection and table row/column structure recognition | CPU: ~1.5s–3.0s/page |
 | **TrOCR Large** | Vision-Encoder-Decoder (Microsoft) | `data/models/huggingface/hub/` (`models--microsoft--trocr-large-handwritten`) | Selective handwritten cursive text recognition on low-confidence fallback fields | CPU: ~1.0s–2.0s per crop |
@@ -159,22 +156,14 @@ flowchart TD
 
 ---
 
-### 4.3. PaddleOCR Pipeline (`paddle`)
-- **Stage 1 (Orientation Rectification):** Classifies text angle using the `cls` angle model (rectifying 90°, 180°, 270° inverted documents).
-- **Stage 2 (Text Line Detection):** Uses DBNet to locate tight bounding boxes.
-- **Stage 3 (Text Recognition):** SVTR neural network parses text lines.
-- **Stage 4 (Key-Value Pairing):** Evaluates horizontal line proximity to map field labels to their rightward values.
-
----
-
-### 4.4. Tesseract OCR Pipeline (`tesseract`)
+### 4.3. Tesseract OCR Pipeline (`tesseract`)
 - **Stage 1 (Page Rendering):** Converts PDF vector pages to 150/300 DPI high-resolution bitmaps.
 - **Stage 2 (Layout & Word Extraction):** Runs Tesseract 5.4 with `--psm 1` or `--psm 3` (automatic page segmentation) returning word-level bounding boxes and confidence scores.
 - **Stage 3 (Table Extraction):** Dispatches detected tabular regions to Microsoft Table Transformer (`TATR`) for structural row/column reconstruction.
 
 ---
 
-### 4.5. Multi-Pipeline Comparison & Consensus Engine
+### 4.4. Multi-Pipeline Comparison & Consensus Engine
 Dispatched when users execute documents through the **Multi-Pipeline Orchestrator** (`/orchestration`).
 
 ```mermaid
@@ -187,13 +176,13 @@ sequenceDiagram
     participant Consensus as Consensus & Voting Engine
     participant DB as Oracle Database
 
-    User->>API: POST /api/extract/compare (job_id, pipelines=['learned_anchor', 'tesseract', 'paddle'])
+    User->>API: POST /api/extract/compare (job_id, pipelines=['learned_anchor', 'tesseract', 'surya'])
     API->>Orch: run_pipeline_comparison_job(job_id, pipelines)
     Orch->>DB: Record PIPELINE_STARTED
     par Concurrent Execution
         Orch->>Pool: learned_anchor.run(pages)
         Orch->>Pool: tesseract.run(pages)
-        Orch->>Pool: paddle.run(pages)
+        Orch->>Pool: surya.run(pages)
     end
     Pool-->>Orch: Return PipelineResults [R1, R2, R3]
     Orch->>Consensus: compare_pipeline_results(runs, template_fields)
@@ -370,14 +359,12 @@ OCR_final/
 │   │   │   └── models/core.py         # SQLAlchemy ORM entity models
 │   │   ├── ocr/                       # Low-level OCR & Preprocessing Engines
 │   │   │   ├── tesseract.py           # Pytesseract wrapper & word extractor
-│   │   │   ├── paddle_ocr_engine.py   # PP-OCRv4 detection and recognition
 │   │   │   ├── tatr_engine.py         # Microsoft Table Transformer integration
 │   │   │   └── handwriting_ocr.py     # Microsoft TrOCR handwriting fallback
 │   │   ├── pipelines/                 # Pipeline Implementations
 │   │   │   ├── base.py                # Abstract OCRPipeline & FieldResult interfaces
 │   │   │   ├── registry.py            # Dynamic runtime pipeline discovery registry
 │   │   │   ├── learned_anchor_pipeline.py # Sub-second geometric anchor pipeline
-│   │   │   ├── paddle_pipeline.py     # PaddleOCR pipeline
 │   │   │   ├── surya_pipeline.py      # Surya OCR pipeline
 │   │   │   └── tesseract_pipeline.py  # Tesseract OCR pipeline
 │   │   └── services/
@@ -387,8 +374,7 @@ OCR_final/
 │   │   ├── crops/                     # Saved PNG crops of extracted field regions
 │   │   ├── documents/                 # Uploaded PDF and image files
 │   │   └── models/                    # Offline Pre-cached ML Models
-│   │       ├── huggingface/hub/       # TrOCR, Surya, TATR model weights & snapshots
-│   │       └── paddleocr/             # PP-OCRv4 inference weights (.pdiparams)
+│   │       └── huggingface/hub/       # TrOCR, Surya, TATR model weights & snapshots
 │   ├── run_worker.py                  # RQ Worker daemon for background jobs
 │   └── venv/                          # Active Python virtual environment
 ├── frontend/

@@ -6,7 +6,7 @@ store (page images, persisted per-page by app/services/orchestrator.py and
 app/services/extractor.py) through a "click a field, see its source" style
 endpoint, per the plan's Phase 16 objective.
 
-Honest scope note: the general-purpose OCR pipelines (Surya, PaddleOCR,
+Honest scope note: the general-purpose OCR pipelines (Surya,
 Tesseract — see app/pipelines/*.py) do not currently attribute an extracted
 field to a precise bounding box; each FieldResult.bbox is always None for
 them today (this is called out directly in those files' own comments, e.g.

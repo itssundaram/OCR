@@ -231,7 +231,7 @@ const Dashboard = () => {
             />
             <QuickOpButton 
               title="Single Pipeline OCR" 
-              description="Quick run on individual models (Paddle, Surya, etc)" 
+              description="Quick run on individual models (Surya, Tesseract, etc)" 
               icon={<ScanLine size={20} />} 
               onClick={() => navigate('/ocr')}
               delay={0.35}

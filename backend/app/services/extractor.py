@@ -13,7 +13,7 @@ img2table is skipped for native-text pages when settings.IMG2TABLE_SKIP_NATIVE=T
 
 Phase 4 note (implementation plan): the two branches below (DIRECT_LLM_CALL
 True/False) now also exist as registered, working pipelines in app/pipelines/
-(surya, paddle, tesseract, learned_anchor) behind settings.USE_PIPELINE_REGISTRY — but
+(surya, tesseract, learned_anchor) behind settings.USE_PIPELINE_REGISTRY — but
 this function does not yet dispatch through them. That cutover is deliberately
 staged separately so the live job flow here is untouched until the adapters
 have been validated against real documents.

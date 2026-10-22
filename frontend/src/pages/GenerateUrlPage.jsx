@@ -231,7 +231,6 @@ const GenerateUrlPage = () => {
                     <div className="flex gap-1.5">
                        <Badge className="bg-white text-gray-600 border border-gray-200 font-mono text-[0.65rem] px-1.5 py-0">learned_anchor</Badge>
                        <Badge className="bg-white text-gray-600 border border-gray-200 font-mono text-[0.65rem] px-1.5 py-0">surya</Badge>
-                       <Badge className="bg-white text-gray-600 border border-gray-200 font-mono text-[0.65rem] px-1.5 py-0">paddle</Badge>
                        <Badge className="bg-white text-gray-600 border border-gray-200 font-mono text-[0.65rem] px-1.5 py-0">tesseract</Badge>
                     </div>
                  </div>
@@ -257,7 +256,7 @@ const GenerateUrlPage = () => {
                  <div className="flex flex-col gap-2">
                     <div className="flex items-center gap-3 text-xs bg-gray-50 border border-gray-200 px-3 py-2 rounded">
                        <span className="font-bold text-gray-500 uppercase tracking-widest text-[0.65rem]">QUERY PARAMS:</span>
-                       <Badge className="bg-white text-gray-600 border border-gray-200 font-mono text-[0.65rem] px-1.5 py-0 shadow-sm">pipelines: [surya, learned_anchor, paddle]</Badge>
+                       <Badge className="bg-white text-gray-600 border border-gray-200 font-mono text-[0.65rem] px-1.5 py-0 shadow-sm">pipelines: [surya, learned_anchor, tesseract]</Badge>
                        <Badge className="bg-white text-gray-600 border border-gray-200 font-mono text-[0.65rem] px-1.5 py-0 shadow-sm">min_confidence: 0.95</Badge>
                     </div>
                     <div className="flex">

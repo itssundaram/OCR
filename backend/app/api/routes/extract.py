@@ -559,7 +559,7 @@ def extract_document_with_comparison(
     department_slug: str,
     template_code: str,
     background_tasks: BackgroundTasks,
-    pipelines: list[str] = Query(..., description="Pipeline names to run and compare, e.g. ?pipelines=surya&pipelines=paddle"),
+    pipelines: list[str] = Query(..., description="Pipeline names to run and compare, e.g. ?pipelines=surya&pipelines=tesseract"),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
 ):

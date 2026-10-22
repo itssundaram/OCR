@@ -35,9 +35,6 @@ def list_available_pipelines():
         elif name == "surya":
             desc = "GPU-accelerated pipeline utilizing Surya's models for document understanding."
             stack = ["Surya Layout", "Surya OCR", "TrOCR", "TATR", "LLM Fallback"]
-        elif name == "paddle":
-            desc = "GPU-accelerated pipeline utilizing PaddleOCR for robust text extraction."
-            stack = ["PPStructure", "PaddleOCR", "TrOCR", "TATR", "LLM Fallback"]
         elif name == "learned_anchor":
             desc = "Autonomous Geometric Anchor Pipeline. Instant <300ms warm extraction for known templates with adaptive VLM learning fallback."
             stack = ["Geometric Anchors", "Micro-Region OCR", "Qwen 2.5-VL Cold Learning", "Template Memory"]

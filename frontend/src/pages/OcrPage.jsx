@@ -690,27 +690,22 @@ const OcrPage = () => {
                     const isSelected = selectedPipeline === p.name;
                     const isLearned = p.name === 'learned_anchor';
                     const isSurya = p.name === 'surya';
-                    const isPaddle = p.name === 'paddle';
                     const isTesseract = p.name === 'tesseract';
 
                     const displayName = isLearned
                       ? 'Learned Geometric Anchor'
                       : isSurya
                       ? 'Surya Engine'
-                      : isPaddle
-                      ? 'PaddleOCR'
                       : isTesseract
                       ? 'Tesseract OCR'
                       : p.name;
 
-                    const latency = isLearned ? '<300ms (Warm)' : isSurya ? '~0.8s' : isPaddle ? '~1.0s' : '~1.2s';
-                    const f1 = isLearned ? '99.5%' : isSurya ? '98.9%' : isPaddle ? '95.0%' : '90.0%';
+                    const latency = isLearned ? '<300ms (Warm)' : isSurya ? '~0.8s' : '~1.2s';
+                    const f1 = isLearned ? '99.5%' : isSurya ? '98.9%' : '90.0%';
                     const tag = isLearned
                       ? 'Template memory & parallel micro-OCR'
                       : isSurya
                       ? 'Layout analysis & reading order'
-                      : isPaddle
-                      ? 'Deep multi-lingual recognition'
                       : 'Deterministic offline character OCR';
 
                     return (

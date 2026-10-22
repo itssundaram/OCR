@@ -134,8 +134,7 @@ const ExtractionResultView = ({
           <div className="flex flex-col gap-1">
             <span className="text-gray-400 font-sans text-[0.65rem] uppercase tracking-wider font-bold">INGESTION ENGINE</span>
             <span className="text-primary font-medium text-blue-700">
-              {activeJob.pipeline_mode === 'paddle' ? 'PaddleOCR + Ollama' :
-                activeJob.pipeline_mode === 'surya' ? 'Surya OCR + Ollama' :
+              {activeJob.pipeline_mode === 'surya' ? 'Surya OCR + Ollama' :
                   activeJob.pipeline_mode === 'tesseract' ? 'Tesseract + Ollama' :
                     activeJob.pipeline_mode === 'orchestration' ? 'Orchestration Engine' :
                       (activeJob.pipeline_mode || 'Unknown Engine').toUpperCase()}

@@ -56,8 +56,8 @@ class Settings(BaseSettings):
     CROPS_DIR: str = "./data/crops"
     LOG_DIR: str = "./data/logs"
 
-    # Base directory for ALL downloaded ML model weights (Surya/HuggingFace,
-    # and — reserved for later — PaddleOCR). The point of this setting: moving
+    # Base directory for ALL downloaded ML model weights (Surya/HuggingFace).
+    # The point of this setting: moving
     # from local CPU testing to the GPU server is a .env change only, never a
     # code change. Nothing in pipeline code ever hardcodes a cache path —
     # everything reads these settings (or the HF_HOME/TRANSFORMERS_CACHE env
@@ -67,11 +67,6 @@ class Settings(BaseSettings):
     # other than MODEL_CACHE_DIR/huggingface (e.g. a pre-existing shared cache
     # on the GPU server). Leave unset to use the MODEL_CACHE_DIR-derived default.
     HF_HOME_OVERRIDE: str | None = None
-    # Reserved for the Paddle pipeline (not yet built — see the implementation
-    # plan's Phase 7). Adding this now so that pipeline, whenever it's built,
-    # has a configurable cache location from day one instead of needing a
-    # follow-up config change.
-    PADDLE_MODEL_DIR: str | None = None
 
     # ── OCR ───────────────────────────────────────────────────────────────────
     # Default matches the actually-deployed strategy (see .env). "surya_with_fallback"
@@ -79,7 +74,7 @@ class Settings(BaseSettings):
     # across every environment, since the two must always agree (Phase 1 audit, 2026-10-06).
     OCR_STRATEGY: Literal["tesseract_only", "surya", "surya_with_fallback"] = "surya"
     # Phase 4 of the implementation plan: app/pipelines/ now has real, working
-    # pipeline adapters (surya/paddle/tesseract/learned_anchor) registered behind this flag, but
+    # pipeline adapters (surya/tesseract/learned_anchor) registered behind this flag, but
     # services/extractor.py's live job flow does NOT consume them yet — that
     # cutover is a deliberately separate step (shadow-mode comparison against
     # current behavior first). Flipping this to True today does nothing yet.
@@ -274,13 +269,6 @@ class Settings(BaseSettings):
             return Path(self.HF_HOME_OVERRIDE).resolve()
         return self.model_cache_path / "huggingface"
 
-    @computed_field
-    @property
-    def paddle_model_path(self) -> Path:
-        if self.PADDLE_MODEL_DIR:
-            return Path(self.PADDLE_MODEL_DIR).resolve()
-        return self.model_cache_path / "paddleocr"
-
     def ensure_storage_directories(self) -> None:
         """Create all required storage directories if they don't exist."""
         for path in [
@@ -292,7 +280,6 @@ class Settings(BaseSettings):
             self.temp_path,
             self.log_path,
             self.hf_home_path,
-            self.paddle_model_path,
         ]:
             path.mkdir(parents=True, exist_ok=True)
 

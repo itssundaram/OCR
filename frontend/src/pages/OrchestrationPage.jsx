@@ -12,7 +12,6 @@ import { Badge } from '../components/ui/Badge';
 const PIPELINE_META = {
   'learned_anchor': { name: 'Learned Geometric Anchor', badges: ['Template Memory', 'Sub-second Warm'], status: 'Autonomous Learning', statusColor: 'text-success', desc: 'Geometric anchor + micro-region OCR for known templates, with VLM cold-learning fallback for new layouts.' },
   'surya': { name: 'Surya Engine', badges: ['GPU Accel', 'High Precision'], status: 'Layout Sovereign', statusColor: 'text-success', desc: 'Surya Layout Detection + TrOCR Fine-Tuned + TATR Tables.' },
-  'paddle': { name: 'PaddleOCR', badges: ['PP-Structure', 'Tabular Master'], status: 'High Speed', statusColor: 'text-success', desc: 'PPStructure Layout → Paddle Recognition → Structured LLM Fallback.' },
   'tesseract': { name: 'Tesseract OCR', badges: ['CPU Cluster', 'Standard Fallback'], status: 'Deterministic Baseline', statusColor: 'text-secondary', desc: 'PPStructure OCR Pipeline → Tesseract v5 → Img2Table Extraction.' }
 };
 

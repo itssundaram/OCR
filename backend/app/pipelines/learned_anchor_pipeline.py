@@ -40,7 +40,6 @@ from app.pipelines.base import (
 from app.pipelines.registry import register_pipeline
 from app.ocr.base import OCRPage, OCRResult, OCRLine, BoundingBox
 from app.ocr.tesseract import TesseractOCREngine
-from app.ocr.paddle_ocr_engine import PaddleOCREngine
 from app.ai.orchestrator import ai_orchestrator
 
 logger = get_logger(__name__)

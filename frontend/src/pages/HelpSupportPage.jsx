@@ -14,7 +14,7 @@ const FAQS = [
     q: 'What is the difference between Single OCR and Multi-Pipeline Orchestration?',
     a: (
       <div className="flex flex-col gap-4 text-sm text-gray-600 leading-relaxed pr-6 mt-1 mb-2">
-        <p><strong className="text-gray-800">Single OCR</strong> is optimized for deterministic, rapid throughput. It directs documents through a single designated vision-language model (e.g., Tesseract OCR or PaddleOCR) with minimal latency (sub-400ms per standard page). It is ideal for standardized invoices, high-contrast digital forms, and low-complexity text.</p>
+        <p><strong className="text-gray-800">Single OCR</strong> is optimized for deterministic, rapid throughput. It directs documents through a single designated vision-language model (e.g., Tesseract OCR or Surya) with minimal latency (sub-400ms per standard page). It is ideal for standardized invoices, high-contrast digital forms, and low-complexity text.</p>
         <p><strong className="text-gray-800">Multi-Pipeline Orchestration</strong> engages three independent AI engines concurrently (Tesseract, DocTr, and Claude Vision / Llama-3-Vision). The results undergo mathematical consensus arbitration, optical alignment scoring, and character-level discrepancy flagging. If two engines disagree, the arbitrator selects the highest confidence token and generates an anomaly audit flag for human-in-the-loop verification.</p>
         <div className="flex items-center gap-3 mt-1 bg-gray-50/50 p-2 rounded-lg border border-gray-100 self-start">
            <Badge className="bg-blue-50 text-blue-700 border-none px-2 font-mono text-[0.7rem] shadow-sm">Consensus Threshold: ≥94.5%</Badge>

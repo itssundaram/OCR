@@ -15,7 +15,7 @@ def _v(pipeline, value, confidence):
 
 
 def test_unanimous_agreement():
-    values = [_v("surya", "INV-001", 0.9), _v("paddle", "INV-001", 0.93), _v("qwen", "INV-001", 0.95)]
+    values = [_v("surya", "INV-001", 0.9), _v("tesseract", "INV-001", 0.93), _v("qwen", "INV-001", 0.95)]
     result = compare_field_across_pipelines("invoice_number", values)
     assert result.resolution_rule == "unanimous"
     assert result.agreement is True
@@ -24,14 +24,14 @@ def test_unanimous_agreement():
 
 
 def test_agreement_is_case_and_whitespace_insensitive():
-    values = [_v("surya", "INV-001", 0.9), _v("paddle", " inv-001 ", 0.8), _v("qwen", "INV-001", 0.9)]
+    values = [_v("surya", "INV-001", 0.9), _v("tesseract", " inv-001 ", 0.8), _v("qwen", "INV-001", 0.9)]
     result = compare_field_across_pipelines("invoice_number", values)
     assert result.resolution_rule == "unanimous"
     assert result.needs_review is False
 
 
 def test_two_of_three_majority():
-    values = [_v("surya", "SD-881290-X", 0.82), _v("paddle", "SD-881290-K", 0.91), _v("qwen", "SD-881290-X", 0.94)]
+    values = [_v("surya", "SD-881290-X", 0.82), _v("tesseract", "SD-881290-K", 0.91), _v("qwen", "SD-881290-X", 0.94)]
     result = compare_field_across_pipelines("stamp_duty_number", values)
     assert result.resolution_rule == "majority"
     assert result.agreement is False
@@ -40,11 +40,11 @@ def test_two_of_three_majority():
 
 
 def test_no_majority_falls_back_to_highest_confidence_and_flags_for_review():
-    values = [_v("surya", "A", 0.80), _v("paddle", "B", 0.95), _v("qwen", "C", 0.70)]
+    values = [_v("surya", "A", 0.80), _v("tesseract", "B", 0.95), _v("qwen", "C", 0.70)]
     result = compare_field_across_pipelines("ambiguous_field", values)
     assert result.resolution_rule == "highest_confidence"
     assert result.needs_review is True
-    assert result.consensus_value == "B"  # paddle had the highest confidence
+    assert result.consensus_value == "B"  # tesseract had the highest confidence
 
 
 def test_single_pipeline_reporting_a_field_is_not_a_discrepancy():

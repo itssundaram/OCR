@@ -43,17 +43,10 @@ By default, HuggingFace downloads models to `~/.cache/huggingface/hub/`. Pack th
 **2. Ollama Models (Qwen)**
 If you are using the local LLM extraction, Ollama stores its models in `~/.ollama/models/` (Linux) or `%USERPROFILE%\.ollama\models\` (Windows). You must copy this folder so `qwen2.5vl:3b` is available offline.
 
-**3. PaddleOCR & PP-Structure Models**
-If you are using the PaddleOCR or PP-Structure pipelines, Paddle automatically downloads its inference models to `~/.paddleocr/` (Linux) or `%USERPROFILE%\.paddleocr\` (Windows). You must pack this entire folder. It typically contains:
-- `whl/det/en/en_PP-OCRv3_det_infer`
-- `whl/rec/en/en_PP-OCRv4_rec_infer`
-- `whl/layout/picodet_lcnet_x1_0_fgd_layout_infer`
-- `whl/table/en_ppstructure_mobile_v2.0_SLANet_infer`
-
-**4. Local Custom Binaries (`backend/bin/`)**
+**3. Local Custom Binaries (`backend/bin/`)**
 If you compiled or downloaded custom local binaries (e.g., `llama.cpp` builds or archive files located in `backend/bin/`), remember to copy this folder manually! This directory is intentionally ignored in `.gitignore` because of file size limits on GitHub, so it won't be in your git clone.
 
-**5. Existing App Data & Database (Optional)**
+**4. Existing App Data & Database (Optional)**
 If you wish to migrate your existing extraction templates, parsed documents, and execution logs to the offline PC, you need to manually copy the `backend/data/` directory. This contains your `docint.db` SQLite database (if not using Postgres) and the raw `pages/` and `thumbnails/` image directories. This is also ignored in git to prevent accidentally leaking sensitive uploaded documents.
 
 ---

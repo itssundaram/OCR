@@ -8,16 +8,6 @@
 #   - torch/torchvision below already install CUDA-enabled Linux wheels from
 #     plain PyPI (no extra index needed) — torch.cuda.is_available() will be
 #     True automatically if an NVIDIA driver is present.
-#   - paddlepaddle is pinned here to the CPU build on purpose: PyPI's default
-#     "paddlepaddle-gpu" package is stuck at 2.6.2 / CUDA 10.2 (abandoned),
-#     which is NOT compatible with paddleocr==3.7.0 (needs paddlepaddle
-#     3.1.0+). If this box has a GPU, after `pip install -r requirements.txt`
-#     uninstall the CPU build and install the matching GPU build from
-#     PaddlePaddle's own index, e.g. for CUDA 12.6:
-#       pip uninstall -y paddlepaddle
-#       pip install paddlepaddle-gpu==3.3.1 -i https://www.paddlepaddle.org.cn/packages/stable/cu126/
-#     (swap cu126 for whatever CUDA toolkit this server actually has; see
-#     https://www.paddleocr.ai/main/en/version3.x/paddlepaddle_installation.html)
 #   - surya (surya-ocr) runs on torch and picks up the GPU automatically once
 #     torch sees it — nothing extra to do there.
 #
@@ -67,12 +57,6 @@ torch==2.14.1
 torchvision==0.29.1
 timm==1.0.30
 opencv-python-headless==4.11.0.86
-# Pinned exactly: app/ocr/paddle_ocr_engine.py reads the result dict keys
-# (rec_polys/rec_texts/rec_scores) from PaddleOCR's 3.x pipeline output —
-# the 2.x API returned a different (nested-list) shape entirely.
-paddleocr==3.7.0
-# CPU build on purpose — see the GPU note at the top of this file.
-paddlepaddle==3.3.1
 
 # ── AI / Model Serving ────────────────────────────────────────────────────────
 ollama==0.4.4
