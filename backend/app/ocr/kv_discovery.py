@@ -29,6 +29,9 @@ from statistics import median
 from app.ocr.base import OCRLine
 
 _COLONS = (":", "：")
+# A lone token that stands in for the colon: Tesseract often reads a typewriter
+# colon as ">" or ";" (and "=" is how some forms print it).
+_LONE_COLONS = (":", "：", ":-", ":—", ">", ";", "=")
 _URL_SCHEMES = {"http", "https", "ftp", "mailto", "file", "tel", "www"}
 _CONNECTORS = {"of", "and", "to", "for", "no", "the", "in", "on", "by", "&", "/"}
 _WORD_RE = re.compile(r"^[A-Za-z][A-Za-z0-9.'&/()\-]*$")
@@ -120,7 +123,9 @@ def _segments(line: OCRLine) -> list[_Segment]:
 
     groups: list[list[_Tok]] = [[toks[0]]]
     for prev, cur in zip(toks, toks[1:]):
-        if cur.x1 - prev.x2 > gap_limit:
+        # typed forms often leave a wide gap between the label and its colon
+        # ("OBD Number          : 0082830253"); a colon always stays with its label
+        if cur.x1 - prev.x2 > gap_limit and not (cur.text.startswith(_COLONS) or cur.text in _LONE_COLONS):
             groups.append([cur])
         else:
             groups[-1].append(cur)
@@ -149,10 +154,15 @@ def _find_colons(toks: list[_Tok]) -> list[tuple[int, str, str, float | None, in
     out: list[tuple[int, str, str, float | None, int]] = []
     for i, t in enumerate(toks):
         txt = t.text
-        if txt in (":", "：", ":-", ":—"):
+        if txt in _LONE_COLONS:
             # Tesseract split "Tele :" into two tokens: label is the previous word
             if i > 0 and _WORD_RE.match(toks[i - 1].text):
                 out.append((i - 1, toks[i - 1].text, "", None, i + 1))
+            continue
+        if len(txt) > 1 and txt[0] in _COLONS and txt[1] not in _COLONS and i > 0 \
+                and _WORD_RE.match(toks[i - 1].text):
+            # Tesseract glued the colon to the value: "Number  :0082830253"
+            out.append((i - 1, toks[i - 1].text, txt.lstrip(":：-— "), t.conf, i + 1))
             continue
         if txt.endswith(_COLONS):
             word = txt.rstrip(":：")
@@ -219,6 +229,10 @@ def _valid_label(label: str) -> bool:
     if letters < 2 or len(label) > 40:
         return False
     if label.split()[0].lower() in _URL_SCHEMES:
+        return False
+    # a long all-lowercase "label" is the end of a sentence ("...initial commissioning:"),
+    # not a printed field name; short ones ("unit", "stn") are real OCR lowercase
+    if label == label.lower() and len(label) > 8:
         return False
     return True
 

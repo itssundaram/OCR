@@ -1,0 +1,144 @@
+"""
+DOCINT — match template fields to discovered key : value pairs
+==============================================================
+The page is scanned once for every "Label: value" pair (app/ocr/kv_discovery.py).
+This module then answers "which of those pairs is my template field?" by
+comparing the template field's name / label / aliases with each pair's printed
+label. No model, no extra OCR: pure string work, microseconds per document.
+
+Pure functions, no I/O.
+"""
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass
+
+from app.ocr.kv_discovery import DiscoveredPair
+
+MIN_SCORE = 0.85  # below this a label is not considered the same field
+
+# Spellings that mean the same thing on the forms we read.
+_CANON = {
+    "number": "no", "num": "no", "nos": "no", "nr": "no",
+    "dated": "date", "dt": "date",
+    "chassis": "chasis", "chasi": "chasis",
+    "authority": "auth",
+    "regn": "reg", "registration": "reg",
+    "quantity": "qty", "qyt": "qty",
+    "vehicle": "veh",
+}
+
+
+_SIDE_WORDS = {"left", "right", "side", "hand", "of", "the", "page"}
+
+
+@dataclass
+class KVMatch:
+    field_name: str
+    pair: DiscoveredPair
+    score: float
+
+
+def _tokens(text: str) -> list[str]:
+    text = re.sub(r"\(.*?\)", " ", text or "")           # "UNIT (right side)" -> "UNIT"
+    words = re.findall(r"[a-z0-9]+", text.lower().replace("_", " "))
+    return [_CANON.get(w, w) for w in words]
+
+
+def _edit_distance(a: str, b: str, limit: int) -> int:
+    """Levenshtein distance, giving up (returning limit + 1) once it must exceed `limit`."""
+    if abs(len(a) - len(b)) > limit:
+        return limit + 1
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        cur = [i]
+        for j, cb in enumerate(b, 1):
+            cur.append(min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (ca != cb)))
+        if min(cur) > limit:
+            return limit + 1
+        prev = cur
+    return prev[-1]
+
+
+def _score(cand: list[str], label: list[str]) -> float:
+    if not cand or not label:
+        return 0.0
+    a, b = "".join(cand), "".join(label)
+    if a == b:
+        return 1.0
+    # tolerate OCR typos only: one wrong character (two on long labels), never
+    # a different word ("consign to" must not match "consignor")
+    allowed = 1 if max(len(a), len(b)) <= 12 else 2
+    best = 0.9 if _edit_distance(a, b, allowed) <= allowed else 0.0
+    short, long_ = (cand, label) if len(cand) <= len(label) else (label, cand)
+    if len(short) >= 2 and set(short) <= set(long_):
+        best = max(best, 0.86)
+    return best
+
+
+def _candidates(fdef: dict) -> list[list[str]]:
+    raw = [fdef.get("name"), fdef.get("label"), fdef.get("display_name")]
+    raw += list(fdef.get("aliases") or [])
+    seen, out = set(), []
+    for r in raw:
+        toks = _tokens(str(r)) if r else []
+        if "left" in toks or "right" in toks:  # "unit_right_side_of_the_page" -> "unit"
+            toks = [t for t in toks if t not in _SIDE_WORDS]
+        key = tuple(toks)
+        if toks and key not in seen:
+            seen.add(key)
+            out.append(toks)
+    return out
+
+
+def _side_hint(fdef: dict) -> str:
+    text = " ".join(str(fdef.get(k) or "") for k in ("name", "label", "display_name")).lower()
+    if "left" in text:
+        return "left"
+    if "right" in text:
+        return "right"
+    return ""
+
+
+def _value_ok(fdef: dict, value: str) -> bool:
+    ftype = str(fdef.get("type") or "").lower()
+    if ftype in ("date", "datetime") or "date" in _tokens(str(fdef.get("name") or "")):
+        return any(c.isdigit() for c in value)
+    return True
+
+
+def match_fields(template_fields: list[dict], pairs: list[DiscoveredPair]) -> dict[str, KVMatch]:
+    """Return {field_name: KVMatch} for every non-table template field that has a
+    pair with a matching label. Each pair is used by at most one field."""
+    scored: list[tuple[float, int, int]] = []   # (score, field index, pair index)
+    fields = [f for f in (template_fields or []) if f.get("name") and str(f.get("type") or "").lower() != "table"]
+    pair_tokens = [_tokens(p.label) for p in pairs]
+
+    for fi, fdef in enumerate(fields):
+        cands = _candidates(fdef)
+        for pi, pair in enumerate(pairs):
+            if not _value_ok(fdef, pair.value):
+                continue
+            s = max((_score(c, pair_tokens[pi]) for c in cands), default=0.0)
+            if s >= MIN_SCORE:
+                scored.append((s, fi, pi))
+
+    out: dict[str, KVMatch] = {}
+    used: set[int] = set()
+    # best score first; among equal scores the pair higher on the page wins
+    # (or the left-/right-most one when the field name says so)
+    def order(item):
+        s, fi, pi = item
+        bb = pairs[pi].bbox or {}
+        hint = _side_hint(fields[fi])
+        x = bb.get("x1", 0)
+        pos = -x if hint == "right" else x if hint == "left" else 0
+        return (-s, pos, pairs[pi].page_number, bb.get("y1", 0), bb.get("x1", 0))
+
+    for s, fi, pi in sorted(scored, key=order):
+        name = fields[fi]["name"]
+        if name in out or pi in used:
+            continue
+        out[name] = KVMatch(field_name=name, pair=pairs[pi], score=s)
+        used.add(pi)
+    return out

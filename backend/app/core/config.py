@@ -143,6 +143,20 @@ class Settings(BaseSettings):
     # whole document for "Label: value" pairs and return them as key : value fields
     # (see app/ocr/kv_discovery.py). Set to false to get template fields only.
     KV_DISCOVERY_ENABLED: bool = True
+    # How the learned_anchor pipeline finds table regions before reading them:
+    #   "lines" - OpenCV ruled-line finder, a few ms per page (default)
+    #   "none"  - no cropping, the whole page goes to the table reader
+    #   "surya" - Surya layout model; accurate but very slow on CPU
+    TABLE_REGION_DETECTOR: str = "lines"
+    # learned_anchor pipeline, "pairs first": read the page once, find every
+    # "Label: value" pair and match the template's fields to those pairs by label.
+    # When every field is matched with at least KV_FIRST_MIN_CONFIDENCE the result
+    # is returned straight away (no anchors, no vision model). Otherwise the
+    # normal anchor / vision-model path runs and only fills what is still missing.
+    KV_FIRST_ENABLED: bool = True
+    KV_FIRST_MIN_CONFIDENCE: float = 0.6
+    # Share of the template's fields that must be matched for the shortcut (1.0 = all).
+    KV_FIRST_MIN_MATCH_RATIO: float = 1.0
     # Skip img2table on native-text pages (PyMuPDF already has the text structure)
     IMG2TABLE_SKIP_NATIVE: bool = True
     # Max img2table passes per page: 1=bordered only, 2=+implicit, 3=+borderless

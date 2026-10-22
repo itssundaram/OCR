@@ -101,3 +101,24 @@ def test_unique_keys_never_collide_with_template_fields():
 def test_slugify():
     assert slugify_label("Date of Birth") == "date_of_birth"
     assert slugify_label("S.No.") == "s_no"
+
+
+def test_wide_gap_before_colon_stays_with_label():
+    # typed forms: "OBD Number            : 0082830253"
+    got = _pairs(_line(10, ("OBD", 10), ("Number", 50), (":", 400), ("0082830253", 430)))
+    assert got["OBD Number"].value == "0082830253"
+
+
+def test_misread_colon_symbols():
+    got = _pairs(_line(10, ("From", 10), (">", 300), ("JOD", 330), ("PROV", 380)))
+    assert got["From"].value == "JOD PROV"
+
+
+def test_colon_glued_to_value():
+    got = _pairs(_line(10, ("Voucher", 10), ("No", 90), (":IV/CS/03", 300)))
+    assert got["Voucher No"].value == "IV/CS/03"
+
+
+def test_sentence_end_is_not_a_label():
+    got = _pairs(_line(10, ("initial", 10), ("commissioning:", 80), ("1.", 250), ("Name", 290)))
+    assert "commissioning" not in got

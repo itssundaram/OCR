@@ -80,7 +80,8 @@ const KeyValuePanel = ({
   const renderRow = ([key, data]) => {
     const d = data || {};
     const isDiscovered = d.source === 'discovered';
-    const label = d.label || prettyKey(key);
+    // template fields keep the template's own name; discovered pairs show the label printed on the page
+    const label = isDiscovered ? d.label || prettyKey(key) : prettyKey(key);
     const pct = Math.round((d.confidence || 0) * 100);
     const hasValue = Boolean(d.found && d.value !== undefined && String(d.value).trim() !== '');
     const hasBbox = d.bbox && d.bbox.x1 !== undefined;

@@ -41,6 +41,7 @@ from app.pipelines.registry import register_pipeline
 from app.ocr.base import OCRPage, OCRResult, OCRLine, BoundingBox
 from app.ocr.tesseract import TesseractOCREngine
 from app.ocr.kv_discovery import assign_unique_keys, discover_key_values, slugify_label
+from app.ocr.kv_match import match_fields
 from app.ai.orchestrator import ai_orchestrator
 
 logger = get_logger(__name__)
@@ -78,26 +79,43 @@ class LearnedAnchorPipeline(OCRPipeline):
 
     @staticmethod
     def _table_regions(page: Image.Image) -> list[tuple[Image.Image, int, int]]:
-        """Return (crop, offset_x, offset_y) for every table Surya sees on the page.
+        """Return (crop, offset_x, offset_y) for every table found on the page.
 
         The table-structure model is trained on tight table crops; handing it a
         whole page makes it miss rows or merge text above/below the table.
-        When layout detection finds no table (or fails) the whole page is used,
-        which is what this pipeline did before.
+        settings.TABLE_REGION_DETECTOR picks how regions are found:
+          "lines" (default) - OpenCV ruled-line finder, a few ms per page
+          "surya"           - Surya layout model, accurate but slow on CPU
+          "none"            - skip cropping
+        When nothing is found (or the detector fails) the whole page is used,
+        which is what this pipeline did originally.
         """
+        mode = str(getattr(settings, "TABLE_REGION_DETECTOR", "lines") or "lines").strip().lower()
         regions: list[tuple[Image.Image, int, int]] = []
+        t0 = time.perf_counter()
         try:
-            from app.core.model_registry import get_surya_layout_engine
-            pad = 5  # same padding SuryaLayoutEngine applies to its crops
-            for region in get_surya_layout_engine().detect_layout(page):
-                if str(region.region_type).strip().lower() != "table":
-                    continue
-                ox = max(0, int(region.bbox.x1) - pad)
-                oy = max(0, int(region.bbox.y1) - pad)
-                if region.cropped_image is not None:
-                    regions.append((region.cropped_image, ox, oy))
+            if mode == "surya":
+                from app.core.model_registry import get_surya_layout_engine
+                pad = 5  # same padding SuryaLayoutEngine applies to its crops
+                for region in get_surya_layout_engine().detect_layout(page):
+                    if str(region.region_type).strip().lower() != "table":
+                        continue
+                    ox = max(0, int(region.bbox.x1) - pad)
+                    oy = max(0, int(region.bbox.y1) - pad)
+                    if region.cropped_image is not None:
+                        regions.append((region.cropped_image, ox, oy))
+            elif mode != "none":
+                from app.ocr.table_regions import find_table_regions
+                for x1, y1, x2, y2 in find_table_regions(page):
+                    regions.append((page.crop((x1, y1, x2, y2)), x1, y1))
         except Exception as exc:
-            logger.warning("learned_anchor_table_layout_failed", error=str(exc))
+            logger.warning("learned_anchor_table_layout_failed", detector=mode, error=str(exc))
+        logger.info(
+            "learned_anchor_table_regions",
+            detector=mode,
+            regions=len(regions),
+            ms=int((time.perf_counter() - t0) * 1000),
+        )
         if not regions:
             regions.append((page, 0, 0))
         return regions
@@ -129,7 +147,16 @@ class LearnedAnchorPipeline(OCRPipeline):
             table_idx = 1
             for p_idx, page in enumerate(pages):
                 for crop, ox, oy in self._table_regions(page):
-                    for t in tatr.extract_tables(crop):
+                    t_read = time.perf_counter()
+                    read = tatr.extract_tables(crop)
+                    logger.info(
+                        "learned_anchor_table_read",
+                        page=p_idx + 1,
+                        crop=f"{crop.width}x{crop.height}",
+                        tables=len(read),
+                        ms=int((time.perf_counter() - t_read) * 1000),
+                    )
+                    for t in read:
                         cells = []
                         for c in getattr(t, "cells", None) or []:
                             c = dict(c)
@@ -152,24 +179,153 @@ class LearnedAnchorPipeline(OCRPipeline):
             logger.warning("learned_anchor_extract_tables_failed", error=str(exc))
         return results
 
+    # ── key : value discovery ("pairs first") ──────────────────────────────────
+    def _kv_scan(self, pages: list[Image.Image]) -> dict | None:
+        """One full-page OCR pass + pair discovery. Returns
+        {"ocr_res", "lines", "pairs"} or None when disabled / failed."""
+        if not settings.KV_DISCOVERY_ENABLED:
+            return None
+        try:
+            t0 = time.perf_counter()
+            ocr_res = self._get_ocr_engine().process_images(pages)
+            t1 = time.perf_counter()
+            lines = [p.lines for p in ocr_res.pages]
+            pairs = discover_key_values(lines)
+            logger.info(
+                "learned_anchor_kv_scan",
+                pages=len(pages),
+                pairs=len(pairs),
+                ocr_ms=int((t1 - t0) * 1000),
+                discovery_ms=int((time.perf_counter() - t1) * 1000),
+            )
+            return {"ocr_res": ocr_res, "lines": lines, "pairs": pairs}
+        except Exception as exc:
+            logger.warning("learned_anchor_kv_scan_failed", error=str(exc), exc_info=True)
+            return None
+
+    @staticmethod
+    def _wanted_fields(template_fields: list[dict]) -> list[dict]:
+        return [
+            f for f in (template_fields or [])
+            if f.get("name") and str(f.get("type") or "").lower() != "table"
+        ]
+
+    def _kv_first_result(
+        self,
+        kv: dict,
+        template_fields: list[dict],
+        pages: list[Image.Image],
+    ) -> PipelineResult | None:
+        """Answer from the discovered pairs alone, or None when they do not cover
+        enough of the template (the caller then runs the normal path)."""
+        wanted = self._wanted_fields(template_fields)
+        if not wanted:
+            return None
+        matches = match_fields(wanted, kv["pairs"])
+        good = {n: m for n, m in matches.items() if m.pair.confidence >= settings.KV_FIRST_MIN_CONFIDENCE}
+        ratio = len(good) / len(wanted)
+        if ratio < settings.KV_FIRST_MIN_MATCH_RATIO or ratio == 0:
+            logger.info(
+                "learned_anchor_kv_first_miss",
+                matched=len(matches), confident=len(good), wanted=len(wanted),
+                missing=[f["name"] for f in wanted if f["name"] not in good],
+            )
+            return None
+
+        fields: list[FieldResult] = []
+        for fdef in wanted:
+            m = good.get(fdef["name"])
+            if m is None:
+                continue
+            fields.append(FieldResult(
+                field_name=fdef["name"],
+                value=m.pair.value,
+                confidence=m.pair.confidence,
+                page_number=m.pair.page_number,
+                bbox=m.pair.bbox,
+                extraction_method="kv_match",
+                label=m.pair.label,
+            ))
+        overall = sum(f.confidence for f in fields) / len(fields) if fields else 0.0
+
+        detections = []
+        for p_idx, lines in enumerate(kv["lines"]):
+            for ln in lines:
+                for w_idx, w in enumerate(ln.words or []):
+                    if w.bbox is None or not (w.text or "").strip():
+                        continue
+                    detections.append({
+                        "id": f"det_p{p_idx + 1}_{len(detections)}",
+                        "text": w.text,
+                        "bbox": {"x1": w.bbox.x1, "y1": w.bbox.y1, "x2": w.bbox.x2, "y2": w.bbox.y2},
+                        "confidence": round(w.confidence or 0.0, 3),
+                        "page_number": p_idx + 1,
+                    })
+
+        result = PipelineResult(
+            pipeline_name=self.name,
+            status="completed",
+            fields=fields,
+            overall_confidence=round(overall, 4),
+            all_detections=detections,
+            metadata={
+                "mode": "KV_FIRST",
+                "anchor_learned": False,
+                "all_detections": detections,
+                "doc_page_width": pages[0].width if pages else 0,
+                "doc_page_height": pages[0].height if pages else 0,
+                "ocr_metadata": kv["ocr_res"].model_dump(),
+            },
+        )
+        self._attach_discovered_pairs(result, kv, template_fields)
+        return result
+
+    @staticmethod
+    def _fill_from_kv(result: PipelineResult, matches: dict) -> None:
+        """Use a matched pair for any template field the main path left empty."""
+        by_name = {f.field_name: i for i, f in enumerate(result.fields)}
+        filled = 0
+        for name, m in matches.items():
+            idx = by_name.get(name)
+            if idx is not None and (result.fields[idx].value or "").strip():
+                continue  # the main path already has a value: keep it
+            fr = FieldResult(
+                field_name=name,
+                value=m.pair.value,
+                confidence=m.pair.confidence,
+                page_number=m.pair.page_number,
+                bbox=m.pair.bbox,
+                extraction_method="kv_match",
+                label=m.pair.label,
+            )
+            if idx is None:
+                result.fields.append(fr)
+            else:
+                result.fields[idx] = fr
+            filled += 1
+        if filled:
+            result.metadata["kv_filled_fields"] = filled
+
     def _attach_discovered_pairs(
         self,
         result: PipelineResult,
-        pages: list[Image.Image],
-        ocr_lines_by_page: list | None = None,
+        kv: dict | None,
+        template_fields: list[dict] | None = None,
     ) -> None:
-        """Append every "Label: value" pair found on the page to result.fields.
+        """Add every remaining "Label: value" pair to result.fields.
 
-        Template fields stay exactly as extracted; discovered pairs are added
-        after them (source="discovered") and are never written into the
-        learned anchors, so this cannot change what the template learns.
+        1. template fields the main path left empty are filled from matching pairs;
+        2. all other pairs are appended (source="discovered").
+        Discovered pairs are never written into the learned anchors, so this
+        cannot change what a template learns.
         """
-        if not settings.KV_DISCOVERY_ENABLED or result is None:
+        if kv is None or result is None:
             return
+        t0 = time.perf_counter()
         try:
-            if ocr_lines_by_page is None:
-                ocr_res = self._get_ocr_engine().process_images(pages)
-                ocr_lines_by_page = [p.lines for p in ocr_res.pages]
+            matches = match_fields(self._wanted_fields(template_fields or []), kv["pairs"])
+            self._fill_from_kv(result, matches)
+            matched_ids = {id(m.pair) for m in matches.values()}
 
             def _norm(text: str) -> str:
                 return " ".join((text or "").lower().split())
@@ -178,9 +334,10 @@ class LearnedAnchorPipeline(OCRPipeline):
             taken = set(existing_values)
 
             pairs = []
-            for pair in discover_key_values(ocr_lines_by_page):
+            for pair in kv["pairs"]:
+                if id(pair) in matched_ids:
+                    continue  # already shown as a template field
                 key = slugify_label(pair.label)
-                # Already extracted as a template field with the same value: skip the duplicate.
                 if key in existing_values and existing_values[key] == _norm(pair.value):
                     continue
                 pairs.append(pair)
@@ -199,7 +356,12 @@ class LearnedAnchorPipeline(OCRPipeline):
                 ))
                 added += 1
             result.metadata["discovered_pairs"] = added
-            logger.info("learned_anchor_kv_discovery_done", job_pairs=added)
+            logger.info(
+                "learned_anchor_kv_attach_done",
+                discovered=added,
+                template_matched=len(matches),
+                ms=int((time.perf_counter() - t0) * 1000),
+            )
         except Exception as exc:
             logger.warning("learned_anchor_kv_discovery_failed", error=str(exc), exc_info=True)
 
@@ -221,6 +383,16 @@ class LearnedAnchorPipeline(OCRPipeline):
         **kwargs,
     ) -> PipelineResult:
         t_start = time.perf_counter()
+
+        # Step 0: "pairs first" - read the page once, find every "Label: value" pair
+        # and, if they cover the template, answer from them without anchors or a VLM.
+        kv = self._kv_scan(pages)
+        if kv is not None and settings.KV_FIRST_ENABLED and not force_relearn:
+            kv_result = self._kv_first_result(kv, template_fields, pages)
+            if kv_result is not None:
+                kv_result.processing_time_ms = int((time.perf_counter() - t_start) * 1000)
+                logger.info("learned_anchor_kv_first_hit", job_id=job_id, ms=kv_result.processing_time_ms)
+                return kv_result
 
         # Step 1: Check if learned anchors exist in schema or template
         learned_anchors = None
@@ -259,7 +431,7 @@ class LearnedAnchorPipeline(OCRPipeline):
                     event_callback=event_callback,
                 )
                 if warm_result is not None:
-                    self._attach_discovered_pairs(warm_result, pages)
+                    self._attach_discovered_pairs(warm_result, kv, template_fields)
                     warm_result.processing_time_ms = int((time.perf_counter() - t_start) * 1000)
                     return warm_result
             except Exception as exc:
@@ -295,6 +467,7 @@ class LearnedAnchorPipeline(OCRPipeline):
             template_id=template_id,
             event_callback=event_callback,
             allow_persist=allow_persist,
+            kv=kv,
         )
         cold_result.processing_time_ms = int((time.perf_counter() - t_start) * 1000)
         return cold_result
@@ -849,6 +1022,7 @@ class LearnedAnchorPipeline(OCRPipeline):
         template_id: int | None = None,
         event_callback=None,
         allow_persist: bool = True,
+        kv: dict | None = None,
     ) -> PipelineResult:
         """Cold path: detects full page OCR geometry + runs VLM extraction, then (if allowed) persists learned anchors."""
         if event_callback:
@@ -856,7 +1030,8 @@ class LearnedAnchorPipeline(OCRPipeline):
 
         # Step A: Run OCR for page line geometry
         ocr_engine = self._get_ocr_engine()
-        ocr_res = ocr_engine.process_images(pages)
+        # reuse the pass already made for pair discovery instead of OCR-ing twice
+        ocr_res = kv["ocr_res"] if kv else ocr_engine.process_images(pages)
         ocr_lines_by_page = [p.lines for p in ocr_res.pages]
 
         if event_callback:
@@ -1241,6 +1416,6 @@ class LearnedAnchorPipeline(OCRPipeline):
                 "ocr_metadata": ocr_res.model_dump(),
             },
         )
-        self._attach_discovered_pairs(cold_pipeline_result, pages, ocr_lines_by_page)
+        self._attach_discovered_pairs(cold_pipeline_result, kv, template_fields)
         return cold_pipeline_result
 
