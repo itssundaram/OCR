@@ -40,7 +40,7 @@ class HealthService:
 
             queue = Queue(settings.REDIS_QUEUE_NAME, connection=self.redis)
             workers = Worker.all(connection=self.redis)
-            active = [w for w in workers if queue in w.queues]
+            active = [w for w in workers if any(q.name == settings.REDIS_QUEUE_NAME for q in w.queues)]
             return {
                 "status": "ok" if active else "error",
                 "worker_count": len(active),

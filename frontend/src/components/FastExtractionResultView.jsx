@@ -2,8 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   ArrowLeft, FileText, CheckCircle2, XCircle, Clock, Zap, Cpu,
   Copy, Check, RefreshCw, ZoomIn, ZoomOut, Maximize, Crosshair,
-  ShieldCheck, Eye, Layers, Sparkles, ChevronRight, AlertCircle, Database,
-  Edit2, Lock, Unlock, RotateCcw, Save, X
+  ShieldCheck, Eye, Layers, Sparkles, ChevronRight, ChevronLeft, AlertCircle, Database,
+  Edit2, Lock, Unlock, RotateCcw, Save, X, Trash2, Search, PlusCircle, Table as TableIcon
 } from 'lucide-react';
 import { JsonView, allExpanded, darkStyles } from 'react-json-view-lite';
 import { Document, Page, pdfjs } from 'react-pdf';
@@ -11,6 +11,7 @@ import { Badge } from './ui/Badge';
 import { evidenceService } from '../services/evidence';
 import { extractService } from '../services/extract';
 import { templatesService } from '../services/templates';
+import { processingService } from '../services/processing';
 import { config } from '../config';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -31,6 +32,12 @@ const parseJSONRecursively = (data) => {
   return parsed;
 };
 
+const parsePageNumber = (val) => {
+  if (val === null || val === undefined) return null;
+  const num = Number(val);
+  return Number.isFinite(num) && num >= 1 ? Math.floor(num) : null;
+};
+
 const FastExtractionResultView = ({
   activeJob,
   onBack,
@@ -38,10 +45,13 @@ const FastExtractionResultView = ({
   setZoomedImage,
   onRerun,
 }) => {
+  const [currentJob, setCurrentJob] = useState(activeJob);
   const [activeTab, setActiveTab] = useState('results');
   const [selectedField, setSelectedField] = useState(null);
   const [copiedKey, setCopiedKey] = useState(null);
   const [numPages, setNumPages] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [viewMode, setViewMode] = useState('original'); // 'original' | 'cleaned'
   const [pageDimensions, setPageDimensions] = useState({
     width: 620,
     height: 877,
@@ -64,6 +74,9 @@ const FastExtractionResultView = ({
   const [hoveredField, setHoveredField] = useState(null);
   const [showOnlyDetected, setShowOnlyDetected] = useState(true);
   const [showReferenceAnchors, setShowReferenceAnchors] = useState(true);
+  const [showAllDetections, setShowAllDetections] = useState(true);
+  const [isScanning, setIsScanning] = useState(true);
+  const [detectionSearch, setDetectionSearch] = useState('');
 
   // Dynamic zoom & container tracking for seeing full PDF correctly
   const [zoomScale, setZoomScale] = useState(1.0);
@@ -71,6 +84,39 @@ const FastExtractionResultView = ({
   const canvasContainerRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const dragStateRef = useRef(null);
+
+  // Sync activeJob prop with currentJob
+  useEffect(() => {
+    setCurrentJob(activeJob);
+  }, [activeJob]);
+
+  // Live auto-polling while job is in progress
+  useEffect(() => {
+    if (!currentJob?.job_id) return;
+    const isWorking = currentJob.status === 'PROCESSING' || currentJob.status === 'QUEUED';
+    if (!isWorking) {
+      setIsScanning(false);
+      return;
+    }
+
+    setIsScanning(true);
+    const interval = setInterval(async () => {
+      try {
+        const res = await processingService.getJob(currentJob.job_id);
+        if (res?.data) {
+          setCurrentJob(res.data);
+          if (res.data.status === 'COMPLETED' || res.data.status === 'WARNING' || res.data.status === 'FAILED') {
+            setIsScanning(false);
+            clearInterval(interval);
+          }
+        }
+      } catch (err) {
+        console.error('FastExtractionResultView polling error:', err);
+      }
+    }, 1500);
+
+    return () => clearInterval(interval);
+  }, [currentJob?.job_id, currentJob?.status]);
 
   // Measure container dimensions for responsive page fitting
   useEffect(() => {
@@ -91,25 +137,30 @@ const FastExtractionResultView = ({
 
   // Sync state on job update
   useEffect(() => {
-    if (activeJob) {
-      const parsed = activeJob.extracted_json ? parseJSONRecursively(activeJob.extracted_json) : null;
+    if (currentJob) {
+      const parsed = currentJob.extracted_json ? parseJSONRecursively(currentJob.extracted_json) : null;
       const f = parsed?.fields || {};
       setLocalFields(f);
-      const ocrMeta = activeJob.ocr_metadata_json ? parseJSONRecursively(activeJob.ocr_metadata_json) : {};
+      const ocrMeta = currentJob.ocr_metadata_json ? parseJSONRecursively(currentJob.ocr_metadata_json) : {};
       const la = ocrMeta?.learned_anchors || parsed?.learned_anchors;
       setLearnedAnchorsState(la || null);
       setIsGeometryLocked(Boolean(la?.is_verified));
     }
-  }, [activeJob]);
+  }, [currentJob]);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
   };
 
-  if (!activeJob) return null;
+  if (!currentJob) return null;
 
-  const ocrMetadata = activeJob.ocr_metadata_json ? parseJSONRecursively(activeJob.ocr_metadata_json) : {};
+  const isWorking = currentJob.status === 'PROCESSING' || currentJob.status === 'QUEUED';
+  const ocrMetadata = currentJob.ocr_metadata_json ? parseJSONRecursively(currentJob.ocr_metadata_json) : {};
+  const allDetections = ocrMetadata?.all_detections || [];
+  const parsedEnvelope = currentJob.extracted_json ? parseJSONRecursively(currentJob.extracted_json) : {};
+  const extractedTables = parsedEnvelope?.tables || [];
+
   const fieldKeys = Object.keys(localFields);
   const totalFields = fieldKeys.length;
   const extractedCount = fieldKeys.filter((k) => localFields[k]?.found).length;
@@ -118,7 +169,7 @@ const FastExtractionResultView = ({
     return Boolean(d?.found && d?.value && String(d.value).trim().length > 0);
   }).length;
 
-  const isWarmHit = ocrMetadata?.mode === 'WARM_ANCHOR_HIT' || activeJob.ocr_metadata_json?.includes?.('WARM_ANCHOR_HIT');
+  const isWarmHit = ocrMetadata?.mode === 'WARM_ANCHOR_HIT' || currentJob.ocr_metadata_json?.includes?.('WARM_ANCHOR_HIT');
   const learnedAnchors = learnedAnchorsState || ocrMetadata?.learned_anchors;
 
   const modifiedFieldKeys = Object.keys(localFields).filter(
@@ -128,9 +179,9 @@ const FastExtractionResultView = ({
 
   // Genuine execution duration
   const latencyStr = (() => {
-    if (activeJob.started_at && activeJob.completed_at) {
-      const started = new Date(activeJob.started_at);
-      const completed = new Date(activeJob.completed_at);
+    if (currentJob.started_at && currentJob.completed_at) {
+      const started = new Date(currentJob.started_at);
+      const completed = new Date(currentJob.completed_at);
       const diffMs = completed - started;
       if (!isNaN(diffMs)) {
         return diffMs < 1000 ? `${diffMs}ms` : `${(diffMs / 1000).toFixed(2)}s`;
@@ -143,6 +194,85 @@ const FastExtractionResultView = ({
     ? (fieldKeys.reduce((acc, k) => acc + (localFields[k]?.confidence || 0), 0) / totalFields) * 100
     : 0;
 
+  const flaggedCount = fieldKeys.filter((k) => {
+    const d = localFields[k];
+    const conf = d?.confidence || 0;
+    return conf < 0.8 || !d?.found || !d?.value || String(d.value).trim().length === 0;
+  }).length;
+  const verifiedCount = Math.max(0, totalFields - flaggedCount);
+
+  const triggerScanAnimation = () => {
+    setIsScanning(true);
+    setTimeout(() => setIsScanning(false), 2500);
+  };
+
+  useEffect(() => {
+    if (activeJob) {
+      triggerScanAnimation();
+    }
+  }, [activeJob?.job_id]);
+
+  const handleAddDetectionToTemplate = async (det) => {
+    const defaultName = (det.text || 'field')
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '_')
+      .replace(/_+/g, '_')
+      .slice(0, 30);
+    const fieldName = window.prompt(`Enter field name for detected text "${det.text}":`, defaultName);
+    if (!fieldName || !fieldName.trim()) return;
+
+    const cleanKey = fieldName.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
+    try {
+      await extractService.manageTemplateField(
+        currentJob.job_id,
+        'add',
+        cleanKey,
+        det.text,
+        det.bbox,
+        parsePageNumber(det.page_number) || parsePageNumber(currentPage) || 1,
+        true
+      );
+      setLocalFields((prev) => ({
+        ...prev,
+        [cleanKey]: {
+          value: det.text,
+          confidence: det.confidence || 1.0,
+          found: true,
+          bbox: det.bbox,
+          source_page: parsePageNumber(det.page_number) || parsePageNumber(currentPage) || 1,
+          match_strategy: 'USER_ADDED',
+          is_verified: true,
+        },
+      }));
+      showToast(`Field "${cleanKey}" added to template & saved to DB!`, 'success');
+    } catch (err) {
+      showToast(`Failed to add field: ${err.message}`, 'error');
+    }
+  };
+
+  const handleRemoveField = async (key) => {
+    if (!window.confirm(`Are you sure you want to remove field "${key.replace(/_/g, ' ')}" from this template?`)) return;
+    try {
+      await extractService.manageTemplateField(
+        currentJob.job_id,
+        'remove',
+        key,
+        null,
+        null,
+        1,
+        true
+      );
+      setLocalFields((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+      showToast(`Field "${key}" removed from template.`, 'info');
+    } catch (err) {
+      showToast(`Failed to remove field: ${err.message}`, 'error');
+    }
+  };
+
   const handleCopy = (key, value) => {
     navigator.clipboard.writeText(String(value));
     setCopiedKey(key);
@@ -151,12 +281,21 @@ const FastExtractionResultView = ({
 
   const handleSelectField = (key) => {
     setSelectedField(key);
+    const data = localFields[key];
+    const targetPage =
+      parsePageNumber(data?.page_number) ||
+      parsePageNumber(data?.source_page) ||
+      parsePageNumber(learnedAnchors?.fields?.[key]?.page_number) ||
+      parsePageNumber(currentPage) ||
+      1;
+    if (targetPage !== currentPage) {
+      setCurrentPage(targetPage);
+    }
     if (fieldRefs.current[key]) {
       fieldRefs.current[key].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
     // Auto-scroll the PDF container to center the bounding box
     if (scrollContainerRef.current) {
-      const data = localFields[key];
       if (data?.bbox) {
         const boxTop = data.bbox.y1 * scaleY;
         const container = scrollContainerRef.current;
@@ -165,6 +304,7 @@ const FastExtractionResultView = ({
       }
     }
   };
+
 
   const onPdfPageLoadSuccess = (page) => {
     setPageDimensions((prev) => ({
@@ -176,16 +316,16 @@ const FastExtractionResultView = ({
 
   // ── Document & Rendered Dimensions ─────────────────────────────────────
   const docImgWidth =
-    activeJob.doc_page_width ||
+    currentJob.doc_page_width ||
     ocrMetadata?.doc_page_width ||
-    activeJob.page_dimensions?.[0]?.width ||
+    currentJob.page_dimensions?.[0]?.width ||
     pageDimensions.originalWidth ||
     1654;
 
   const docImgHeight =
-    activeJob.doc_page_height ||
+    currentJob.doc_page_height ||
     ocrMetadata?.doc_page_height ||
-    activeJob.page_dimensions?.[0]?.height ||
+    currentJob.page_dimensions?.[0]?.height ||
     pageDimensions.originalHeight ||
     2338;
 
@@ -315,7 +455,7 @@ const FastExtractionResultView = ({
 
     setReOcrLoading((prev) => ({ ...prev, [key]: true }));
     try {
-      const res = await extractService.reOcrField(activeJob.job_id, key, fieldData.bbox);
+      const res = await extractService.reOcrField(currentJob.job_id, key, fieldData.bbox);
       if (res?.data) {
         const { value, confidence, bbox, image_data } = res.data;
         setLocalFields((prev) => ({
@@ -352,7 +492,7 @@ const FastExtractionResultView = ({
   const saveEditing = async (key) => {
     const fieldData = localFields[key];
     try {
-      await extractService.updateField(activeJob.job_id, key, editValue, fieldData?.bbox);
+      await extractService.updateField(currentJob.job_id, key, editValue, fieldData?.bbox);
       setLocalFields((prev) => ({
         ...prev,
         [key]: {
@@ -378,7 +518,7 @@ const FastExtractionResultView = ({
 
   // ── Save / Lock Template Ground Truth ──────────────────────────────────
   const handleLockTemplateAnchors = async () => {
-    const targetTemplateId = activeJob.template_id;
+    const targetTemplateId = currentJob.template_id;
     if (!targetTemplateId) {
       showToast('Template ID not associated with this job.', 'error');
       return;
@@ -428,7 +568,7 @@ const FastExtractionResultView = ({
 
   // ── Unlock Template Ground Truth ──────────────────────────────────────
   const handleUnlockTemplateAnchors = async () => {
-    const targetTemplateId = activeJob.template_id;
+    const targetTemplateId = currentJob.template_id;
     if (!targetTemplateId) {
       showToast('Template ID not associated with this job.', 'error');
       return;
@@ -449,7 +589,7 @@ const FastExtractionResultView = ({
 
   // ── Reset Template Anchor Memory ──────────────────────────────────────
   const handleResetTemplateAnchors = async () => {
-    const targetTemplateId = activeJob.template_id;
+    const targetTemplateId = currentJob.template_id;
     if (!targetTemplateId) {
       showToast('Template ID not associated with this job.', 'error');
       return;
@@ -485,70 +625,106 @@ const FastExtractionResultView = ({
         </div>
       )}
 
-      {/* Top Banner: Pipeline Status, Verification Lock & True Latency */}
-      <div className="flex flex-col gap-3 bg-white border border-slate-200 rounded-xl p-4 mb-4 shadow-sm flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {onBack && (
-              <button
-                className="p-2 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors text-slate-600 cursor-pointer"
-                onClick={onBack}
-                title="Go back"
-              >
-                <ArrowLeft size={18} />
-              </button>
+      {/* Top Breadcrumb & Document Review Header (Inspired by Image 4) */}
+      <div className="bg-white border border-slate-200 rounded-xl p-3.5 mb-3 shadow-xs flex flex-col gap-2 flex-shrink-0">
+        {/* Breadcrumb path */}
+        <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+          {onBack ? (
+            <button
+              onClick={onBack}
+              className="hover:text-blue-700 transition-colors flex items-center gap-1 cursor-pointer font-semibold text-slate-600"
+            >
+              <ArrowLeft size={13} /> Review queue
+            </button>
+          ) : (
+            <span className="flex items-center gap-1 font-semibold text-slate-600">
+              Review queue
+            </span>
+          )}
+          <span className="text-slate-300">/</span>
+          <span className="text-slate-800 font-semibold truncate max-w-[380px]">
+            {currentJob.original_filename || currentJob.filename || `Job_${(currentJob.job_id || '').substring(0, 8)}`}
+          </span>
+        </div>
+
+        {/* Document Review Title & Meta Row */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-0.5">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h1 className="text-lg font-bold text-slate-900 tracking-tight font-sans m-0">
+              {currentJob.original_filename || currentJob.filename || 'Document'}
+            </h1>
+            <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
+              USM-{(currentJob.document_id || currentJob.job_id || '2026-000020').substring(0, 8).toUpperCase()}
+            </span>
+
+            {/* Verification Status Badge */}
+            {isWorking ? (
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-mono animate-pulse">
+                <RefreshCw size={12} className="animate-spin" /> In Progress
+              </span>
+            ) : flaggedCount > 0 ? (
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-300">
+                <AlertCircle size={12} className="text-amber-600" /> Needs review
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300">
+                <CheckCircle2 size={12} className="text-emerald-600" /> Verified
+              </span>
             )}
-            <div>
-              <div className="flex items-center gap-3">
-                <h1 className="text-xl font-bold text-slate-900 tracking-tight m-0 font-heading">
-                  Learned Geometric Extraction
-                </h1>
-                {isWarmHit ? (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-sm animate-pulse">
-                    <Zap size={14} className="text-emerald-600" />
-                    WARM ANCHOR HIT ({latencyStr})
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 border border-indigo-300 shadow-sm">
-                    <Sparkles size={14} className="text-indigo-600" />
-                    COLD LEARNED CACHE ({latencyStr})
-                  </span>
-                )}
-                <span className="text-xs font-mono text-slate-400 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
-                  JOB #{activeJob.job_id ? activeJob.job_id.substring(0, 8) : 'unknown'}
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 mt-1">
-                Sub-second geometric anchor matching with autonomous template coordinate memory. Drag bounding boxes to calibrate.
-              </p>
+
+            {/* Document Type Selector Pill */}
+            <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-0.5 text-xs font-medium text-slate-700">
+              <span className="text-slate-400 font-bold uppercase text-[9px]">Document type:</span>
+              <span className="font-semibold text-blue-800 font-mono text-[11px]">
+                {currentJob.template_code || 'TMS engine chasis no'}
+              </span>
             </div>
+
+            {/* Template Version Pill */}
+            <span className="text-[11px] text-slate-500 font-mono bg-slate-100 px-2 py-0.5 rounded border border-slate-200/60">
+              tms_family v1.0.0
+            </span>
+
+            {/* Flagged Count Pill */}
+            {flaggedCount > 0 && (
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-amber-100/90 text-amber-800 border border-amber-200 flex items-center gap-1">
+                ⚠️ {flaggedCount} flagged
+              </span>
+            )}
+
+            <span className="text-[11px] text-slate-400 font-mono">↻ run #1</span>
           </div>
 
+          {/* Action Buttons on Right */}
           <div className="flex items-center gap-2">
+            <span className="text-xs font-mono font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded border border-slate-200">
+              Run #1 (current) ▾
+            </span>
+
             {/* Ground Truth Status & Management Action */}
             {hasUnsavedModifications ? (
               <button
                 onClick={handleLockTemplateAnchors}
                 disabled={locking}
-                className="py-1.5 px-3.5 text-xs flex items-center gap-2 rounded-lg font-bold shadow-md bg-blue-600 hover:bg-blue-700 text-white border border-blue-600 animate-pulse transition-all cursor-pointer"
+                className="py-1 px-3 text-xs flex items-center gap-1.5 rounded-lg font-bold shadow-sm bg-blue-600 hover:bg-blue-700 text-white border border-blue-600 animate-pulse transition-all cursor-pointer"
                 title="Save your modified bounding boxes into template ground truth"
               >
-                {locking ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
-                <span>Save Ground Truth Changes ({modifiedFieldKeys.length})</span>
+                {locking ? <RefreshCw size={12} className="animate-spin" /> : <Save size={12} />}
+                <span>Save Changes ({modifiedFieldKeys.length})</span>
               </button>
             ) : isGeometryLocked ? (
               <div className="flex items-center gap-1.5">
-                <span className="py-1.5 px-3 text-xs flex items-center gap-1.5 rounded-lg font-bold bg-emerald-50 text-emerald-800 border border-emerald-300 shadow-sm">
-                  <ShieldCheck size={14} className="text-emerald-600" />
+                <span className="py-1 px-2.5 text-xs flex items-center gap-1.5 rounded-lg font-bold bg-emerald-50 text-emerald-800 border border-emerald-300 shadow-2xs">
+                  <ShieldCheck size={13} className="text-emerald-600" />
                   <span>Ground Truth Locked</span>
                 </span>
                 <button
                   onClick={handleUnlockTemplateAnchors}
                   disabled={locking}
-                  className="py-1.5 px-2.5 text-xs flex items-center gap-1.5 rounded-lg font-bold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-sm transition-all cursor-pointer"
+                  className="py-1 px-2 text-xs flex items-center gap-1 rounded-lg font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-2xs transition-all cursor-pointer"
                   title="Unlock ground truth to allow calibration & modification"
                 >
-                  {locking ? <RefreshCw size={13} className="animate-spin" /> : <Unlock size={13} className="text-slate-500" />}
+                  {locking ? <RefreshCw size={12} className="animate-spin" /> : <Unlock size={12} className="text-slate-500" />}
                   <span>Unlock</span>
                 </button>
               </div>
@@ -556,44 +732,22 @@ const FastExtractionResultView = ({
               <button
                 onClick={handleLockTemplateAnchors}
                 disabled={locking}
-                className="py-1.5 px-3.5 text-xs flex items-center gap-2 rounded-lg font-bold shadow-sm bg-[#1e3a8a] hover:bg-[#1e40af] text-white border border-[#1e3a8a] transition-all cursor-pointer"
+                className="py-1 px-3 text-xs flex items-center gap-1.5 rounded-lg font-bold shadow-2xs bg-[#1e3a8a] hover:bg-[#1e40af] text-white border border-[#1e3a8a] transition-all cursor-pointer"
                 title="Approve and lock current geometry as ground truth in template DB"
               >
-                {locking ? <RefreshCw size={14} className="animate-spin" /> : <Lock size={14} />}
+                {locking ? <RefreshCw size={12} className="animate-spin" /> : <Lock size={12} />}
                 <span>Lock Ground Truth</span>
               </button>
             )}
 
             {onRerun && (
               <button
-                className="btn btn-secondary py-1.5 px-3 text-xs flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 shadow-sm cursor-pointer"
+                className="py-1 px-2.5 text-xs flex items-center gap-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 shadow-2xs cursor-pointer rounded-lg font-medium"
                 onClick={onRerun}
               >
-                <RefreshCw size={14} /> Re-extract
+                <RefreshCw size={12} /> Re-run
               </button>
             )}
-          </div>
-        </div>
-
-        {/* Live Metrics Strip */}
-        <div className="border-t border-slate-100 pt-3 grid grid-cols-4 gap-4 text-xs font-mono">
-          <div className="flex flex-col">
-            <span className="text-slate-400 font-sans text-[0.65rem] uppercase tracking-wider font-bold">Template Code</span>
-            <span className="text-slate-800 font-semibold truncate">{activeJob.template_code || 'AUTODETECT'}</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-slate-400 font-sans text-[0.65rem] uppercase tracking-wider font-bold">Extraction Strategy</span>
-            <span className="text-blue-700 font-semibold">{isWarmHit ? 'Geometric Anchor Crops' : 'Adaptive VLM Geometry'}</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-slate-400 font-sans text-[0.65rem] uppercase tracking-wider font-bold">Fields Extracted</span>
-            <span className="text-slate-800 font-semibold">{extractedCount} / {totalFields} fields</span>
-          </div>
-          <div className="flex flex-col">
-            <span className="text-slate-400 font-sans text-[0.65rem] uppercase tracking-wider font-bold">Overall Accuracy</span>
-            <span className={`font-bold ${avgConfidence >= 80 ? 'text-emerald-600' : 'text-amber-600'}`}>
-              {avgConfidence.toFixed(1)}%
-            </span>
           </div>
         </div>
       </div>
@@ -602,36 +756,70 @@ const FastExtractionResultView = ({
       <div className="flex flex-1 gap-5 overflow-hidden min-h-0">
         {/* Left Column: Interactive Document Canvas with Full Vertical Scrolling */}
         <div className="flex-1 flex flex-col bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm max-w-[48%] h-full">
-          <div className="flex items-center justify-between p-3 border-b border-slate-200 bg-slate-50 flex-shrink-0">
-            <div className="text-xs font-bold text-slate-700 flex items-center gap-2">
-              <Crosshair size={16} className="text-blue-600" />
-              Document Spatial Geometry & Anchors
+          {/* Document Viewer Toolbar (Inspired by Image 4) */}
+          <div className="flex flex-wrap items-center justify-between p-2.5 border-b border-slate-200 bg-slate-50 flex-shrink-0 gap-2">
+            {/* Page navigation controls */}
+            <div className="flex items-center gap-1.5">
+              <div className="flex items-center bg-white border border-slate-200 rounded-lg p-0.5 shadow-2xs">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, (parsePageNumber(p) || 1) - 1))}
+                  disabled={(parsePageNumber(currentPage) || 1) <= 1}
+                  className="p-1 text-slate-500 hover:text-slate-800 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer rounded"
+                  title="Previous Page"
+                >
+                  <ChevronLeft size={14} />
+                </button>
+                <span className="font-mono text-xs px-2 font-bold text-slate-700 whitespace-nowrap">
+                  Page {parsePageNumber(currentPage) || 1} / {numPages || 1}
+                </span>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(numPages || 1, (parsePageNumber(p) || 1) + 1))}
+                  disabled={(parsePageNumber(currentPage) || 1) >= (numPages || 1)}
+                  className="p-1 text-slate-500 hover:text-slate-800 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer rounded"
+                  title="Next Page"
+                >
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+
+              {/* Original | Cleaned Segmented Toggle */}
+              <div className="flex items-center bg-slate-200/80 p-0.5 rounded-lg border border-slate-200 shadow-2xs text-xs font-semibold">
+                <button
+                  onClick={() => setViewMode('original')}
+                  className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+                    viewMode === 'original'
+                      ? 'bg-white text-slate-900 font-bold shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  title="View original unprocessed document"
+                >
+                  Original
+                </button>
+                <button
+                  onClick={() => setViewMode('cleaned')}
+                  className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
+                    viewMode === 'cleaned'
+                      ? 'bg-white text-blue-700 font-bold shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  title="View contrast-enhanced cleaned preview"
+                >
+                  Cleaned
+                </button>
+              </div>
             </div>
-            <div className="flex items-center gap-2 text-xs text-slate-500">
-              {/* Zoom Controls: Fit Page, Fit Width, -, + */}
-              <div className="flex items-center bg-white border border-slate-200 rounded p-0.5 shadow-2xs">
-                <button
-                  onClick={handleFitPage}
-                  className="px-1.5 py-0.5 text-[10px] font-bold text-slate-600 hover:text-blue-700 hover:bg-slate-100 rounded transition-colors cursor-pointer"
-                  title="Fit whole page in view"
-                >
-                  Fit Page
-                </button>
-                <button
-                  onClick={handleFitWidth}
-                  className="px-1.5 py-0.5 text-[10px] font-bold text-slate-600 hover:text-blue-700 hover:bg-slate-100 rounded transition-colors cursor-pointer"
-                  title="Fit to width"
-                >
-                  Fit Width
-                </button>
+
+            {/* Zoom Controls & Layer Toggles */}
+            <div className="flex items-center gap-1.5">
+              <div className="flex items-center bg-white border border-slate-200 rounded-lg p-0.5 shadow-2xs">
                 <button
                   onClick={handleZoomOut}
                   className="p-1 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded transition-colors cursor-pointer"
                   title="Zoom Out"
                 >
-                  <ZoomOut size={12} />
+                  <ZoomOut size={13} />
                 </button>
-                <span className="text-[10px] font-mono px-1 font-bold text-slate-700">
+                <span className="text-[11px] font-mono px-1 font-bold text-slate-700 min-w-[36px] text-center">
                   {Math.round(zoomScale * 100)}%
                 </span>
                 <button
@@ -639,41 +827,41 @@ const FastExtractionResultView = ({
                   className="p-1 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded transition-colors cursor-pointer"
                   title="Zoom In"
                 >
-                  <ZoomIn size={12} />
+                  <ZoomIn size={13} />
                 </button>
               </div>
 
-              {/* Filter toggle: only display boxes for detected values */}
-              <button
-                onClick={() => setShowOnlyDetected(!showOnlyDetected)}
-                className={`px-2 py-0.5 rounded text-[11px] font-bold border transition-colors cursor-pointer flex items-center gap-1 ${
-                  showOnlyDetected
-                    ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                    : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-100'
-                }`}
-                title={showOnlyDetected ? "Currently showing only bounding boxes for detected values on this PDF" : "Currently showing all fields"}
-              >
-                <span>{showOnlyDetected ? `✓ Valid Values Only (${validFieldsCount}/${totalFields})` : `All Fields (${totalFields})`}</span>
-              </button>
+              <div className="flex items-center bg-white border border-slate-200 rounded-lg p-0.5 shadow-2xs">
+                <button
+                  onClick={handleFitPage}
+                  className="px-2 py-0.5 text-[10px] font-bold text-slate-600 hover:text-blue-700 hover:bg-slate-100 rounded transition-colors cursor-pointer"
+                  title="Fit whole page in view"
+                >
+                  Fit Page
+                </button>
+                <button
+                  onClick={handleFitWidth}
+                  className="px-2 py-0.5 text-[10px] font-bold text-slate-600 hover:text-blue-700 hover:bg-slate-100 rounded transition-colors cursor-pointer"
+                  title="Fit to width"
+                >
+                  Fit Width
+                </button>
+              </div>
 
               {/* Reference Anchor toggle */}
               {learnedAnchors && (
                 <button
                   onClick={() => setShowReferenceAnchors(!showReferenceAnchors)}
-                  className={`px-2 py-0.5 rounded text-[11px] font-bold border transition-colors cursor-pointer flex items-center gap-1 ${
+                  className={`px-2 py-1 rounded-md text-[10px] font-bold border transition-colors cursor-pointer flex items-center gap-1 ${
                     showReferenceAnchors
                       ? 'bg-indigo-50 text-indigo-800 border-indigo-300'
                       : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-100'
                   }`}
                   title="Toggle dashed ground truth reference anchors"
                 >
-                  <span>{showReferenceAnchors ? '📐 Ref Anchors: ON' : '📐 Ref Anchors: OFF'}</span>
+                  <span>📐 {showReferenceAnchors ? 'Anchors: ON' : 'Anchors: OFF'}</span>
                 </button>
               )}
-
-              <span className="px-2 py-0.5 bg-white border border-slate-200 rounded font-mono text-[0.7rem]">
-                Page 1 of {numPages || 1}
-              </span>
             </div>
           </div>
 
@@ -682,22 +870,33 @@ const FastExtractionResultView = ({
             ref={canvasContainerRef}
             className="flex-1 overflow-hidden bg-slate-100 relative flex flex-col min-h-0"
           >
-            {activeJob.document_id ? (
+            <style>{`
+              @keyframes docScanSweep {
+                0% { top: 0%; opacity: 0.85; }
+                50% { opacity: 1; }
+                100% { top: 100%; opacity: 0.15; }
+              }
+            `}</style>
+            {currentJob.document_id ? (
               <div
                 ref={scrollContainerRef}
                 className="flex-1 overflow-y-auto overflow-x-auto p-4 select-none scroll-smooth flex flex-col items-center"
               >
                 <div
-                  className="relative inline-block shadow-md my-auto bg-white"
-                  style={{ width: renderedWidth, minHeight: renderedHeight }}
+                  className="relative inline-block shadow-md my-auto bg-white transition-all"
+                  style={{
+                    width: renderedWidth,
+                    minHeight: renderedHeight,
+                    filter: viewMode === 'cleaned' ? 'contrast(1.25) saturate(1.1) brightness(1.02)' : 'none',
+                  }}
                 >
                   <Document
-                    file={`${config.API_BASE_URL}/documents/${activeJob.document_id}/file`}
+                    file={`${config.API_BASE_URL}/documents/${currentJob.document_id}/file`}
                     onLoadSuccess={({ numPages }) => setNumPages(numPages)}
                     loading={<div className="p-10 text-center text-xs text-slate-500">Loading document canvas...</div>}
                   >
                     <Page
-                      pageNumber={1}
+                      pageNumber={parsePageNumber(currentPage) || 1}
                       width={renderedWidth}
                       renderTextLayer={false}
                       renderAnnotationLayer={false}
@@ -705,11 +904,27 @@ const FastExtractionResultView = ({
                     />
                   </Document>
 
+                  {/* Real-Time Laser Scanning Overlay Animation */}
+                  {isScanning && (
+                    <div className="absolute inset-0 pointer-events-none overflow-hidden z-30">
+                      <div
+                        className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_15px_#22d3ee]"
+                        style={{
+                          animation: 'docScanSweep 2.2s ease-in-out infinite',
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-cyan-500/5 backdrop-blur-[0.5px]" />
+                    </div>
+                  )}
+
                   {/* 1. Ground Truth Reference Bounding Boxes (Dashed Template Baseline) */}
                   {showReferenceAnchors &&
                     learnedAnchors?.fields &&
                     Object.entries(learnedAnchors.fields).map(([refKey, refData]) => {
                       if (!refData?.bbox || refData.bbox.x1 === undefined) return null;
+                      const refPage = parsePageNumber(refData.page_number) || 1;
+                      if (refPage !== (parsePageNumber(currentPage) || 1)) return null;
+
                       const isSelected = selectedField === refKey;
                       const isHovered = hoveredField === refKey;
                       const refLeft = refData.bbox.x1 * refScaleX;
@@ -746,9 +961,51 @@ const FastExtractionResultView = ({
                       );
                     })}
 
-                  {/* 2. Interactive Bounding Box Overlays for Actual Detected Values */}
+                  {/* 2. Universal Raw OCR Detections Overlay */}
+                  {showAllDetections &&
+                    allDetections
+                      .filter((det) => (parsePageNumber(det.page_number) || 1) === (parsePageNumber(currentPage) || 1))
+                      .map((det) => {
+                        if (!det.bbox) return null;
+                        const { x1, y1, x2, y2 } = det.bbox;
+                        const dLeft = x1 * scaleX;
+                        const dTop = y1 * scaleY;
+                        const dWidth = (x2 - x1) * scaleX;
+                        const dHeight = (y2 - y1) * scaleY;
+
+                        return (
+                          <div
+                            key={det.id || `det_${det.bbox.x1}_${det.bbox.y1}`}
+                            className="absolute border border-dashed border-purple-400/60 bg-purple-500/10 hover:border-purple-600 hover:bg-purple-500/25 transition-all cursor-pointer z-12 group rounded-xs"
+                            style={{
+                              left: `${dLeft}px`,
+                              top: `${dTop}px`,
+                              width: `${Math.max(12, dWidth)}px`,
+                              height: `${Math.max(8, dHeight)}px`,
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAddDetectionToTemplate(det);
+                            }}
+                            title={`Raw OCR: "${det.text}" (${Math.round((det.confidence || 1) * 100)}%) - Click to add to template`}
+                          >
+                            <span className="opacity-0 group-hover:opacity-100 absolute -top-5 left-0 text-[8px] font-mono font-bold px-1 py-0.5 rounded bg-purple-900 text-white shadow-md pointer-events-none whitespace-nowrap z-30 transition-opacity">
+                              + Add "{det.text?.slice(0, 15)}"
+                            </span>
+                          </div>
+                        );
+                      })}
+
+                  {/* 3. Interactive Bounding Box Overlays for Actual Detected Values */}
                   {Object.entries(localFields).map(([key, data]) => {
                     if (!data?.bbox || data.bbox.x1 === undefined) return null;
+                    const fieldPage =
+                      parsePageNumber(data.page_number) ||
+                      parsePageNumber(data.source_page) ||
+                      parsePageNumber(learnedAnchors?.fields?.[key]?.page_number) ||
+                      1;
+                    if (fieldPage !== (parsePageNumber(currentPage) || 1)) return null;
+
                     const isSelected = selectedField === key;
                     const isHovered = hoveredField === key;
                     const hasValidValue = Boolean(data.found && data.value && String(data.value).trim().length > 0);
@@ -870,29 +1127,93 @@ const FastExtractionResultView = ({
           </div>
         </div>
 
-        {/* Right Column: High-Priority Extracted Results & Upright Source Crops (Original Clean UI) */}
+        {/* Right Column: Structured Review & Verification Table (Inspired by Image 4) */}
         <div className="flex-1 flex flex-col min-w-0 h-full bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+          {/* Document Confidence Overview Card */}
+          <div className="p-3.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-4 flex-shrink-0">
+            <div className="flex items-center gap-3.5">
+              <div
+                className={`text-3xl font-extrabold font-mono tracking-tight leading-none ${
+                  avgConfidence >= 80 ? 'text-emerald-600' : avgConfidence >= 50 ? 'text-amber-600' : 'text-red-500'
+                }`}
+              >
+                {Math.round(avgConfidence)}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-slate-800">
+                  Document confidence{' '}
+                  <span className="font-normal text-slate-400">· average field score (uncalibrated)</span>
+                </span>
+                <span className="text-[11px] text-slate-500 mt-0.5">
+                  <strong className="text-slate-700">{verifiedCount}</strong> of {totalFields} fields checked ·{' '}
+                  <strong className="text-amber-700">{flaggedCount}</strong> need review
+                </span>
+              </div>
+            </div>
+
+            {/* Quick mini indicators for key fields */}
+            <div className="hidden xl:flex items-center gap-3 border-l border-slate-200 pl-3">
+              {fieldKeys.slice(0, 3).map((k) => {
+                const sc = Math.round((localFields[k]?.confidence || 0) * 100);
+                return (
+                  <div key={k} className="flex flex-col gap-0.5 w-24">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase truncate">
+                      {k.replace(/_/g, ' ')}
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${
+                            sc >= 80 ? 'bg-emerald-500' : sc >= 50 ? 'bg-amber-500' : 'bg-red-400'
+                          }`}
+                          style={{ width: `${sc}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] font-mono text-slate-600 font-bold">{sc}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Tabs Navigation */}
-          <div className="flex items-center justify-between border-b border-slate-200 px-4 pt-2 bg-slate-50 flex-shrink-0">
+          <div className="flex items-center justify-between border-b border-slate-200 px-4 pt-2 bg-white flex-shrink-0">
             <div className="flex gap-4">
               <button
-                className={`pb-2.5 text-xs font-bold relative transition-colors cursor-pointer ${
+                className={`pb-2 text-xs font-bold relative transition-colors cursor-pointer ${
                   activeTab === 'results' ? 'text-blue-700 border-b-2 border-blue-700' : 'text-slate-500 hover:text-slate-800'
                 }`}
                 onClick={() => setActiveTab('results')}
               >
-                Extracted Fields ({extractedCount})
+                Fields ({fieldKeys.length})
               </button>
               <button
-                className={`pb-2.5 text-xs font-bold relative transition-colors cursor-pointer ${
+                className={`pb-2 text-xs font-bold relative transition-colors cursor-pointer ${
+                  activeTab === 'tables' ? 'text-blue-700 border-b-2 border-blue-700' : 'text-slate-500 hover:text-slate-800'
+                }`}
+                onClick={() => setActiveTab('tables')}
+              >
+                Line items ({extractedTables.length})
+              </button>
+              <button
+                className={`pb-2 text-xs font-bold relative transition-colors cursor-pointer ${
+                  activeTab === 'detections' ? 'text-blue-700 border-b-2 border-blue-700' : 'text-slate-500 hover:text-slate-800'
+                }`}
+                onClick={() => setActiveTab('detections')}
+              >
+                All Detections ({allDetections.length})
+              </button>
+              <button
+                className={`pb-2 text-xs font-bold relative transition-colors cursor-pointer ${
                   activeTab === 'geometry' ? 'text-blue-700 border-b-2 border-blue-700' : 'text-slate-500 hover:text-slate-800'
                 }`}
                 onClick={() => setActiveTab('geometry')}
               >
-                Learned Geometry Memory
+                Learned Geometry
               </button>
               <button
-                className={`pb-2.5 text-xs font-bold relative transition-colors cursor-pointer ${
+                className={`pb-2 text-xs font-bold relative transition-colors cursor-pointer ${
                   activeTab === 'json' ? 'text-blue-700 border-b-2 border-blue-700' : 'text-slate-500 hover:text-slate-800'
                 }`}
                 onClick={() => setActiveTab('json')}
@@ -901,206 +1222,381 @@ const FastExtractionResultView = ({
               </button>
             </div>
             <span className="text-[11px] font-mono text-slate-400 pb-2">
-              Showing {extractedCount} verified results
+              Showing {extractedCount} extracted values
             </span>
           </div>
 
-          {/* Results Tab Content */}
+          {/* Results Tab Content: Structured Fields Table (Inspiration Image 4) */}
           {activeTab === 'results' && (
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/50">
-              {fieldKeys.map((key) => {
-                const data = localFields[key] || {};
-                const confPercent = Math.round((data.confidence || 0) * 100);
-                const isSelected = selectedField === key;
-                const isHovered = hoveredField === key;
-                const hasBbox = data.bbox && data.bbox.x1 !== undefined;
-                const isEditing = editingField === key;
-                const cropSrc = cropOverrides[key] || evidenceService.imageUrl(activeJob.job_id, key);
-                const refBbox = learnedAnchors?.fields?.[key]?.bbox;
-                const deltaX = refBbox && hasBbox ? Math.round(data.bbox.x1 - refBbox.x1) : null;
-                const deltaY = refBbox && hasBbox ? Math.round(data.bbox.y1 - refBbox.y1) : null;
+            <div className="flex-1 overflow-y-auto bg-slate-50/50 p-3">
+              <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+                {/* Table Header */}
+                <div className="grid grid-cols-[1.3fr_1.8fr_0.9fr_0.8fr_0.5fr] text-[10px] font-bold text-slate-500 uppercase tracking-wider bg-slate-100/90 px-3.5 py-2.5 border-b border-slate-200">
+                  <div>Field</div>
+                  <div>Value</div>
+                  <div>Status</div>
+                  <div className="text-right">Score</div>
+                  <div className="text-right">Action</div>
+                </div>
 
-                return (
-                  <div
-                    key={key}
-                    ref={(el) => (fieldRefs.current[key] = el)}
-                    className={`rounded-xl border transition-all duration-200 bg-white overflow-hidden shadow-sm ${
-                      isSelected
-                        ? 'border-blue-500 ring-2 ring-blue-100 shadow-md'
-                        : isHovered
-                        ? 'border-blue-400 ring-1 ring-blue-50 shadow-sm'
-                        : 'border-slate-200 hover:border-slate-300'
-                    }`}
-                    onClick={() => setSelectedField(key)}
-                    onMouseEnter={() => setHoveredField(key)}
-                    onMouseLeave={() => setHoveredField(null)}
-                  >
-                    {/* Field Header */}
-                    <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50 border-b border-slate-100">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                          {key.replace(/_/g, ' ')}
-                        </span>
-                        {data.found ? (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 font-mono">
-                            {data.match_strategy || 'LEARNED_ANCHOR'}
+                {/* Table Rows */}
+                <div className="divide-y divide-slate-100">
+                  {fieldKeys.map((key) => {
+                    const data = localFields[key] || {};
+                    const confPercent = Math.round((data.confidence || 0) * 100);
+                    const isSelected = selectedField === key;
+                    const isHovered = hoveredField === key;
+                    const hasBbox = data.bbox && data.bbox.x1 !== undefined;
+                    const isEditing = editingField === key;
+                    const cropSrc = cropOverrides[key] || evidenceService.imageUrl(currentJob.job_id, key);
+                    const refBbox = learnedAnchors?.fields?.[key]?.bbox;
+                    const isVerified = confPercent >= 80 && Boolean(data.found && data.value && String(data.value).trim().length > 0);
+
+                    return (
+                      <div
+                        key={key}
+                        ref={(el) => (fieldRefs.current[key] = el)}
+                        className={`grid grid-cols-[1.3fr_1.8fr_0.9fr_0.8fr_0.5fr] items-center px-3.5 py-2.5 text-xs transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-blue-50/80 border-l-4 border-l-blue-600'
+                            : isHovered
+                            ? 'bg-slate-50 border-l-4 border-l-blue-400'
+                            : 'hover:bg-slate-50/60 border-l-4 border-l-transparent'
+                        }`}
+                        onClick={() => handleSelectField(key)}
+                        onMouseEnter={() => setHoveredField(key)}
+                        onMouseLeave={() => setHoveredField(null)}
+                      >
+                        {/* FIELD Column */}
+                        <div className="flex flex-col pr-2">
+                          <span className="font-bold text-slate-800 text-xs truncate" title={key.replace(/_/g, ' ')}>
+                            {key.replace(/_/g, ' ')}
                           </span>
-                        ) : (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-700 border border-red-200">
-                            NOT FOUND
-                          </span>
-                        )}
-                        {data.manually_edited && (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
-                            MANUAL
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {/* Re-OCR Button */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleReOcr(key);
-                          }}
-                          disabled={reOcrLoading[key]}
-                          className="flex items-center gap-1 text-[11px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-1 rounded transition-colors disabled:opacity-50 shadow-xs cursor-pointer"
-                          title="Re-run micro-OCR on this field's bounding box"
-                        >
-                          {reOcrLoading[key] ? <RefreshCw size={11} className="animate-spin" /> : <Zap size={11} />}
-                          <span>Re-OCR</span>
-                        </button>
-
-                        <span
-                          className={`text-xs font-bold font-mono px-2 py-0.5 rounded ${
-                            confPercent >= 80
-                              ? 'bg-emerald-50 text-emerald-700'
-                              : confPercent >= 50
-                              ? 'bg-amber-50 text-amber-700'
-                              : 'bg-red-50 text-red-700'
-                          }`}
-                        >
-                          {confPercent}% Conf
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Field Body: Resolved Value & Inline Edit */}
-                    <div className="p-3.5 flex flex-col gap-2">
-                      {isEditing ? (
-                        <div className="flex items-center gap-2 bg-white border-2 border-blue-500 rounded-lg p-2 shadow-sm" onClick={(e) => e.stopPropagation()}>
-                          <input
-                            type="text"
-                            className="font-mono text-sm font-bold text-slate-900 flex-1 outline-none bg-transparent"
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') saveEditing(key);
-                              if (e.key === 'Escape') cancelEditing();
-                            }}
-                            autoFocus
-                            placeholder="Type ground truth value..."
-                          />
-                          <button
-                            onClick={() => saveEditing(key)}
-                            className="p-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded transition-colors cursor-pointer"
-                            title="Save value (Enter)"
-                          >
-                            <Check size={14} />
-                          </button>
-                          <button
-                            onClick={cancelEditing}
-                            className="p-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded transition-colors cursor-pointer"
-                            title="Cancel (Esc)"
-                          >
-                            <X size={14} />
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg p-2.5 group">
-                          <div className="font-mono text-sm font-bold text-slate-900 break-all select-all flex-1">
-                            {data.found ? String(data.value) : <span className="text-red-500 italic">Not extracted</span>}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <button
-                              className="p-1.5 hover:bg-white rounded text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                startEditing(key, data.value);
-                              }}
-                              title="Manually edit field value"
-                            >
-                              <Edit2 size={13} />
-                            </button>
-                            <button
-                              className="p-1.5 hover:bg-white rounded text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleCopy(key, data.value);
-                              }}
-                              title="Copy to clipboard"
-                            >
-                              {copiedKey === key ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Extraction Source Crop & Spatial Coordinates */}
-                      {data.found && (
-                        <div className="mt-1 pt-2 border-t border-slate-100 flex items-center justify-between gap-4">
-                          <div className="flex items-center gap-3">
-                            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                              SOURCE CROP:
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              {refBbox ? 'anchor' : 'discovered'}
                             </span>
-                            <div
-                              className="bg-slate-100 border border-slate-200 rounded p-1 max-h-12 max-w-[240px] overflow-hidden flex items-center justify-center cursor-pointer hover:border-blue-400 hover:shadow-sm transition-all"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (setZoomedImage) {
-                                  setZoomedImage(cropSrc);
-                                }
-                              }}
-                              title="Click to zoom source crop"
-                            >
-                              <img
-                                src={cropSrc}
-                                alt={`Crop for ${key}`}
-                                className="h-9 object-contain"
-                                onError={(e) => {
-                                  e.target.style.display = 'none';
-                                }}
-                              />
-                            </div>
+                            {data.manually_edited && (
+                              <span className="text-[9px] font-bold px-1 py-0.2 rounded bg-purple-100 text-purple-700 font-mono">
+                                manual
+                              </span>
+                            )}
                           </div>
+                        </div>
 
-                          {hasBbox && (
-                            <div className="flex flex-col items-end gap-1">
-                              <div className="flex items-center gap-1.5 text-[11px] font-mono text-slate-700 bg-slate-50 px-2.5 py-0.5 rounded border border-slate-200 shadow-2xs">
-                                <Crosshair size={12} className="text-emerald-600" />
-                                <span className="font-bold text-[9px] text-slate-400 uppercase tracking-wider">CROP:</span>
-                                <span>
-                                  ({Math.round(data.bbox.x1)}, {Math.round(data.bbox.y1)}) - ({Math.round(data.bbox.x2)}, {Math.round(data.bbox.y2)})
-                                </span>
+                        {/* VALUE Column */}
+                        <div className="flex items-center gap-1.5 pr-2 min-w-0" onClick={(e) => e.stopPropagation()}>
+                          <span className="text-[9px] font-bold uppercase tracking-wider px-1 py-0.5 rounded bg-slate-100 text-slate-500 border border-slate-200 flex-shrink-0">
+                            {key.includes('date') ? 'DATE' : key.includes('no') || key.includes('num') ? 'NUMBER' : 'TEXT'}
+                          </span>
+                          {isEditing ? (
+                            <div className="flex items-center gap-1 flex-1 min-w-0">
+                              <input
+                                type="text"
+                                className="w-full bg-white border border-blue-500 rounded px-2 py-1 text-xs font-mono font-bold text-slate-900 outline-none"
+                                value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') saveEditing(key);
+                                  if (e.key === 'Escape') cancelEditing();
+                                }}
+                                autoFocus
+                              />
+                              <button
+                                onClick={() => saveEditing(key)}
+                                className="p-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded cursor-pointer"
+                                title="Save"
+                              >
+                                <Check size={11} />
+                              </button>
+                              <button
+                                onClick={cancelEditing}
+                                className="p-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded cursor-pointer"
+                                title="Cancel"
+                              >
+                                <X size={11} />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-between gap-1 flex-1 min-w-0 bg-slate-50 hover:bg-slate-100/90 px-2 py-1 rounded border border-slate-200">
+                              <span className="font-mono text-xs font-bold text-slate-900 truncate" title={String(data.value || '')}>
+                                {data.found ? String(data.value) : <span className="text-red-500 italic">Not extracted</span>}
+                              </span>
+                              <div className="flex items-center gap-0.5 opacity-60 hover:opacity-100 flex-shrink-0">
+                                <button
+                                  onClick={() => startEditing(key, data.value)}
+                                  className="p-1 hover:text-blue-600 rounded cursor-pointer"
+                                  title="Edit value"
+                                >
+                                  <Edit2 size={11} />
+                                </button>
+                                <button
+                                  onClick={() => handleCopy(key, data.value)}
+                                  className="p-1 hover:text-slate-800 rounded cursor-pointer"
+                                  title="Copy"
+                                >
+                                  {copiedKey === key ? <Check size={11} className="text-emerald-600" /> : <Copy size={11} />}
+                                </button>
                               </div>
-                              {refBbox && (
-                                <div className="flex items-center gap-1.5 text-[10px] font-mono text-slate-500 bg-indigo-50/70 px-2 py-0.5 rounded border border-indigo-100">
-                                  <span className="font-bold text-indigo-700">Ref:</span>
-                                  <span>({refBbox.x1}, {refBbox.y1})</span>
-                                  <span className={`font-semibold ${deltaX === 0 && deltaY === 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
-                                    (Δx: {deltaX >= 0 ? `+${deltaX}` : deltaX}, Δy: {deltaY >= 0 ? `+${deltaY}` : deltaY})
-                                  </span>
-                                </div>
-                              )}
                             </div>
                           )}
                         </div>
+
+                        {/* STATUS Column */}
+                        <div>
+                          {isVerified ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <CheckCircle2 size={11} /> Verified
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-300">
+                              <AlertCircle size={11} /> Flagged
+                            </span>
+                          )}
+                        </div>
+
+                        {/* SCORE Column */}
+                        <div className="flex items-center justify-end gap-2 text-right">
+                          <div className="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden hidden sm:block">
+                            <div
+                              className={`h-full rounded-full ${
+                                confPercent >= 80 ? 'bg-emerald-500' : confPercent >= 50 ? 'bg-amber-500' : 'bg-red-400'
+                              }`}
+                              style={{ width: `${confPercent}%` }}
+                            />
+                          </div>
+                          <span
+                            className={`font-mono text-xs font-bold min-w-[24px] ${
+                              confPercent >= 80 ? 'text-emerald-600' : confPercent >= 50 ? 'text-amber-600' : 'text-red-500'
+                            }`}
+                          >
+                            {confPercent}
+                          </span>
+                        </div>
+
+                        {/* ACTIONS Column */}
+                        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                          {/* Re-OCR button */}
+                          <button
+                            onClick={() => handleReOcr(key)}
+                            disabled={reOcrLoading[key]}
+                            className="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors cursor-pointer"
+                            title="Re-run micro OCR"
+                          >
+                            {reOcrLoading[key] ? <RefreshCw size={11} className="animate-spin" /> : <Zap size={11} />}
+                          </button>
+
+                          {/* Delete field button */}
+                          <button
+                            onClick={() => handleRemoveField(key)}
+                            className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors cursor-pointer"
+                            title="Remove field"
+                          >
+                            <Trash2 size={11} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* All Detections Tab Content */}
+          {activeTab === 'detections' && (
+            <div className="flex-1 flex flex-col min-h-0 bg-slate-50/50">
+              {/* Header filter bar */}
+              <div className="p-3 bg-white border-b border-slate-200 flex items-center justify-between gap-3 flex-shrink-0">
+                <div className="relative flex-1">
+                  <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search raw detected OCR tokens..."
+                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-blue-500 focus:bg-white transition-all font-mono"
+                    value={detectionSearch}
+                    onChange={(e) => setDetectionSearch(e.target.value)}
+                  />
+                  {detectionSearch && (
+                    <button
+                      onClick={() => setDetectionSearch('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
+                <span className="text-[11px] font-mono text-slate-500 whitespace-nowrap">
+                  {allDetections.filter(d => !detectionSearch || (d.text && d.text.toLowerCase().includes(detectionSearch.toLowerCase()))).length} / {allDetections.length} tokens
+                </span>
+              </div>
+
+              {/* Detections List */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
+                {allDetections.length === 0 ? (
+                  <div className="p-8 text-center text-xs text-slate-400 italic">
+                    No raw OCR tokens recorded for this job.
+                  </div>
+                ) : (
+                  allDetections
+                    .filter(d => !detectionSearch || (d.text && d.text.toLowerCase().includes(detectionSearch.toLowerCase())))
+                    .map((det, idx) => {
+                      const detPage = parsePageNumber(det.page_number) || 1;
+                      const isCurrentPage = detPage === (parsePageNumber(currentPage) || 1);
+                      return (
+                        <div
+                          key={det.id || idx}
+                          className={`p-3 bg-white border rounded-xl flex items-center justify-between gap-3 shadow-2xs hover:border-blue-300 transition-all ${
+                            isCurrentPage ? 'border-slate-200' : 'border-slate-200/60 opacity-80'
+                          }`}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-xs font-mono font-bold text-slate-900 truncate">
+                                "{det.text}"
+                              </span>
+                              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-purple-50 text-purple-700 border border-purple-200 font-bold">
+                                {Math.round((det.confidence || 1) * 100)}% Conf
+                              </span>
+                              <button
+                                onClick={() => setCurrentPage(detPage)}
+                                className={`text-[9px] font-mono px-1.5 py-0.2 rounded font-bold cursor-pointer transition-colors ${
+                                  isCurrentPage
+                                    ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200'
+                                }`}
+                                title="Click to view this token's page on canvas"
+                              >
+                                Page {detPage}
+                              </button>
+                            </div>
+                            {det.bbox && (
+                              <div className="text-[10px] font-mono text-slate-400">
+                                Bbox: ({det.bbox.x1}, {det.bbox.y1}) - ({det.bbox.x2}, {det.bbox.y2})
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => handleCopy(`det_${idx}`, det.text)}
+                              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors cursor-pointer"
+                              title="Copy text"
+                            >
+                              {copiedKey === `det_${idx}` ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} />}
+                            </button>
+                            <button
+                              onClick={() => handleAddDetectionToTemplate(det)}
+                              className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-bold flex items-center gap-1 shadow-2xs transition-all cursor-pointer whitespace-nowrap"
+                              title="Add this token as a template field"
+                            >
+                              <PlusCircle size={12} />
+                              <span>+ Add as Field</span>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Tables Tab Content */}
+          {activeTab === 'tables' && (
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
+              {extractedTables.length === 0 ? (
+                <div className="p-12 text-center bg-white border border-slate-200 rounded-xl shadow-xs">
+                  <TableIcon size={32} className="mx-auto text-slate-300 mb-2" />
+                  <div className="text-sm font-bold text-slate-700">No Structured Tables Detected</div>
+                  <div className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                    The TATR table engine analyzes document structure. If this document has tables, they will appear here with full cell coordinates, headers, and markdown.
+                  </div>
+                </div>
+              ) : (
+                extractedTables.map((tbl, tIdx) => {
+                  const cells = tbl.cells || [];
+                  const rowsMap = {};
+                  let maxCol = 0;
+                  cells.forEach((c) => {
+                    const r = c.row ?? 0;
+                    const col = c.col ?? 0;
+                    if (!rowsMap[r]) rowsMap[r] = {};
+                    rowsMap[r][col] = c;
+                    if (col > maxCol) maxCol = col;
+                  });
+                  const sortedRowIndices = Object.keys(rowsMap).map(Number).sort((a, b) => a - b);
+
+                  return (
+                    <div key={tIdx} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                      {/* Table Header Card */}
+                      <div className="flex items-center justify-between px-4 py-3 bg-slate-50 border-b border-slate-200">
+                        <div className="flex items-center gap-2">
+                          <TableIcon size={15} className="text-blue-600" />
+                          <span className="text-xs font-bold text-slate-800">
+                            Table #{tIdx + 1}
+                          </span>
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 font-bold">
+                            Page {parsePageNumber(tbl.page_number) || 1}
+                          </span>
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold">
+                            {Math.round((tbl.confidence || 1) * 100)}% Conf
+                          </span>
+                        </div>
+                        {tbl.bbox && (
+                          <span className="text-[10px] font-mono text-slate-400">
+                            ({tbl.bbox.x1}, {tbl.bbox.y1}) - ({tbl.bbox.x2}, {tbl.bbox.y2})
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Rendered HTML Grid of Cells */}
+                      {sortedRowIndices.length > 0 ? (
+                        <div className="p-3 overflow-x-auto">
+                          <table className="w-full border-collapse text-xs font-mono">
+                            <tbody>
+                              {sortedRowIndices.map((rIdx) => {
+                                const rowCells = rowsMap[rIdx] || {};
+                                const isHeaderRow = Object.values(rowCells).some((c) => c.is_header);
+                                return (
+                                  <tr
+                                    key={rIdx}
+                                    className={isHeaderRow ? 'bg-slate-100 font-bold text-slate-900 border-b-2 border-slate-300' : 'hover:bg-slate-50 border-b border-slate-200'}
+                                  >
+                                    {Array.from({ length: maxCol + 1 }, (_, cIdx) => {
+                                      const cell = rowCells[cIdx];
+                                      const cellText = cell?.text || '';
+                                      return (
+                                        <td
+                                          key={cIdx}
+                                          className={`px-3 py-2 border-r border-slate-200 last:border-r-0 ${
+                                            cell?.is_header ? 'bg-slate-100 text-slate-800 font-bold' : 'text-slate-700'
+                                          }`}
+                                          title={cell?.bbox ? `Cell (${cell.bbox.x1}, ${cell.bbox.y1})` : undefined}
+                                        >
+                                          {cellText || <span className="text-slate-300 italic">-</span>}
+                                        </td>
+                                      );
+                                    })}
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : tbl.markdown ? (
+                        <div className="p-3 bg-slate-900 text-slate-100 font-mono text-xs overflow-x-auto">
+                          <pre>{tbl.markdown}</pre>
+                        </div>
+                      ) : (
+                        <div className="p-4 text-center text-xs text-slate-400 italic">
+                          Table bounding box detected, cells not segmented.
+                        </div>
                       )}
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           )}
 

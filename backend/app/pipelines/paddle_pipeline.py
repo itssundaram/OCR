@@ -39,9 +39,10 @@ class PaddlePipeline(OCRPipeline):
         )
         
     def __init__(self):
+        from app.core.model_registry import get_tatr_engine
         self.paddle = PaddleOCREngine()
         self.layout_engine = PPStructureLayoutEngine()
-        self.tatr = TATRTableEngine()
+        self.tatr = get_tatr_engine()
         self.trocr = None
 
     def extract_fields(
@@ -64,7 +65,8 @@ class PaddlePipeline(OCRPipeline):
         
         preprocessed_pages = []
         for img in pages:
-            preprocessed_pages.append(preprocess_page(img, {"greyscale": True}))
+            from app.ocr.preprocessing import preprocess_for_ocr
+            preprocessed_pages.append(preprocess_for_ocr(img, deskew=True, apply_clahe=True, denoise=True, binarize=False))
             
         if event_callback:
             event_callback("PREPROCESS_DONE")

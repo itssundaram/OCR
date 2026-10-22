@@ -39,6 +39,8 @@ class OCRTable(BaseModel):
     headers: list[str] = Field(default_factory=list)
     rows: list[list[str]] = Field(default_factory=list)
     markdown: str = ""
+    bbox: dict | None = None
+    cells: list[dict] = Field(default_factory=list)
 
 
 class OCRPage(BaseModel):

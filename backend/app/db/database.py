@@ -6,6 +6,7 @@ No Oracle Instant Client required.
 from __future__ import annotations
 
 import json
+import re
 from typing import Generator, Any
 
 from sqlalchemy import create_engine, text
@@ -52,14 +53,22 @@ class Base(DeclarativeBase):
     pass
 
 
-import re
+_engine = None
+_ENGINE_INITIALIZED = False
+
 
 def _build_engine():
+    global _engine, _ENGINE_INITIALIZED
+    if _engine is not None:
+        return _engine
+
     raw_url = str(settings.database_url)
     safe_url = re.sub(r"://([^:]+):([^@]+)@", r"://\1:***@", raw_url)
-    logger.info("database_engine_creating", url=safe_url)
 
-    engine = create_engine(
+    if not _ENGINE_INITIALIZED:
+        logger.info("database_engine_creating", url=safe_url)
+
+    _engine = create_engine(
         settings.database_url,
         pool_size=5,
         max_overflow=10,
@@ -68,8 +77,12 @@ def _build_engine():
         echo=False,  # Disabled to remove noisy terminal logs
         future=True,
     )
-    logger.info("database_engine_created")
-    return engine
+
+    if not _ENGINE_INITIALIZED:
+        logger.info("database_engine_created")
+        _ENGINE_INITIALIZED = True
+
+    return _engine
 
 
 engine = _build_engine()

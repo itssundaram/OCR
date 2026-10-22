@@ -86,6 +86,8 @@ def build_field_extraction_rows_from_pipeline_result(
     for f in pipeline_result.fields:
         status = statuses.get(f.field_name)
         bbox_json = f.bbox or {}
+        if isinstance(bbox_json, dict):
+            bbox_json["page_number"] = f.page_number or 1
         
         if f.crop_image:
             try:
@@ -108,6 +110,7 @@ def build_field_extraction_rows_from_pipeline_result(
             "fallback_method": "needs_review" if status and status.needs_review else None,
             "bbox_json": bbox_json,
             "page_id": (page_ids or {}).get(f.page_number),
+            "_page_number": f.page_number or 1,
             "is_final": is_final,
         })
     return rows
@@ -245,7 +248,8 @@ def run_single_pipeline_job(job_id: str, pipeline_name: str, force_relearn: bool
                 db, job.id, pipeline_run.id, result, is_final=1, page_ids=page_ids,
             )
             for row in rows:
-                db.add(FieldExtraction(**row))
+                db_data = {k: v for k, v in row.items() if not k.startswith("_")}
+                db.add(FieldExtraction(**db_data))
 
             flagged = [r["field_name"] for r in rows if r["fallback_method"] == "needs_review"]
             if flagged:
@@ -258,12 +262,15 @@ def run_single_pipeline_job(job_id: str, pipeline_name: str, force_relearn: bool
             # Build the ResponseBuilder-compatible envelope for the frontend
             fields_out = {}
             for r in rows:
+                p_num = r.get("_page_number") or 1
                 fields_out[r["field_name"]] = {
                     "value": r["field_value"],
                     "confidence": r["confidence"],
                     "found": bool(r["field_value"]),
                     "match_strategy": r.get("extraction_method"),
-                    "source_page": r.get("page_id"),
+                    "source_page": p_num,
+                    "page_number": p_num,
+                    "page_id": r.get("page_id"),
                     "bbox": r.get("bbox_json"),
                 }
 
@@ -271,7 +278,13 @@ def run_single_pipeline_job(job_id: str, pipeline_name: str, force_relearn: bool
             for t in result.tables:
                 tables_out.append({
                     "table_name": f"Table_{t.table_index}",
-                    "rows": t.rows
+                    "table_index": t.table_index,
+                    "page_number": t.page_number,
+                    "headers": t.headers,
+                    "rows": t.rows,
+                    "cells": getattr(t, "cells", []),
+                    "bbox": getattr(t, "bbox", None),
+                    "markdown": getattr(t, "markdown", ""),
                 })
 
             envelope = {
@@ -291,6 +304,8 @@ def run_single_pipeline_job(job_id: str, pipeline_name: str, force_relearn: bool
             template_la = (template.template_json or {}).get("learned_anchors")
             final_la = result.metadata.get("learned_anchors") or template_la
 
+            all_dets = result.all_detections or result.metadata.get("all_detections", [])
+
             ocr_metadata.update({
                 "mode": result.metadata.get("mode", "single_pipeline"),
                 "pipeline": pipeline_name,
@@ -298,6 +313,9 @@ def run_single_pipeline_job(job_id: str, pipeline_name: str, force_relearn: bool
                 "anchor_matched": bool(result.metadata.get("anchor_matched") or template_la),
                 "anchor_learned": result.metadata.get("anchor_learned"),
                 "learned_anchors": final_la,
+                "all_detections": all_dets,
+                "doc_page_width": result.metadata.get("doc_page_width"),
+                "doc_page_height": result.metadata.get("doc_page_height"),
             })
 
             existing_res = db.query(ProcessingResult).filter_by(job_id=job.id).first()

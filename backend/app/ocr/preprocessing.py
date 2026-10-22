@@ -174,3 +174,61 @@ def preprocess_page(img: Image.Image, config: dict | None = None) -> Image.Image
     use, now additionally configurable via settings or an explicit `config` dict."""
     processed, _metadata = preprocess_page_with_metadata(img, config)
     return processed
+
+
+def preprocess_for_ocr(
+    img: Image.Image,
+    deskew: bool = True,
+    apply_clahe: bool = True,
+    denoise: bool = True,
+    binarize: bool = False,
+) -> Image.Image:
+    """
+    Full OCR preprocessing pipeline using OpenCV:
+    1. Grayscale conversion
+    2. Background inversion check (ensures dark text on light background)
+    3. CLAHE (Contrast Limited Adaptive Histogram Equalization) for lighting normalization
+    4. Bilateral/Gaussian edge-preserving denoising
+    5. Adaptive/Otsu binarization -> high-clarity black/white image
+    6. Morphological cleanup (removes isolated speckles, closes small gaps)
+    7. Deskewing
+    Returns: Preprocessed PIL Image optimized for OCR engines (Tesseract / Surya)
+    """
+    try:
+        cv_img = np.array(img.convert("RGB"))
+        gray = cv2.cvtColor(cv_img, cv2.COLOR_RGB2GRAY)
+
+        # 1. Background inversion check (ensure bright background, dark text)
+        if np.mean(gray) < 110:
+            gray = cv2.bitwise_not(gray)
+
+        # 2. CLAHE for contrast normalization
+        if apply_clahe:
+            clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+            gray = clahe.apply(gray)
+
+        # 3. Bilateral denoising (preserves sharp font edges while removing scan noise)
+        if denoise:
+            gray = cv2.bilateralFilter(gray, d=5, sigmaColor=50, sigmaSpace=50)
+
+        # 4. Otsu binarization -> Black & White
+        if binarize:
+            _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            # 5. Morphological cleanup
+            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (1, 1))
+            cleaned = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel)
+            result = cleaned
+        else:
+            result = gray
+
+        processed_img = Image.fromarray(result)
+
+        # 6. Deskew
+        if deskew:
+            processed_img = deskew_image(processed_img)
+
+        return processed_img
+    except Exception as exc:
+        logger.warning("preprocess_for_ocr_fallback", error=str(exc))
+        return img
+

@@ -70,16 +70,37 @@ class LearnedAnchorPipeline(OCRPipeline):
         )
 
     def __init__(self) -> None:
-        self.tesseract_engine = None
+        pass
 
     def _get_ocr_engine(self) -> TesseractOCREngine:
-        if self.tesseract_engine is None:
-            self.tesseract_engine = TesseractOCREngine()
-        return self.tesseract_engine
+        from app.core.model_registry import get_tesseract_engine
+        return get_tesseract_engine()
 
     def extract_tables(self, pages: list[Image.Image], job_id: str) -> list[TableResult]:
-        # Table extraction handled via cold fallback or empty for pure kvp documents
-        return []
+        """Extract structured tables with per-cell bounding boxes using singleton TATR engine."""
+        results = []
+        try:
+            from app.core.model_registry import get_tatr_engine
+            tatr = get_tatr_engine()
+            table_idx = 1
+            for p_idx, page in enumerate(pages):
+                tables = tatr.extract_tables(page)
+                for t in tables:
+                    results.append(TableResult(
+                        table_index=table_idx,
+                        page_number=p_idx + 1,
+                        headers=t.headers,
+                        rows=t.rows,
+                        confidence=0.90,
+                        bbox=t.bbox,
+                        cells=getattr(t, "cells", []),
+                        markdown=t.markdown,
+                        extraction_method="tatr",
+                    ))
+                    table_idx += 1
+        except Exception as exc:
+            logger.warning("learned_anchor_extract_tables_failed", error=str(exc))
+        return results
 
     def extract_fields(
         self,
@@ -178,10 +199,10 @@ class LearnedAnchorPipeline(OCRPipeline):
 
     @staticmethod
     def _preprocess_image(img: Image.Image) -> Image.Image:
-        """Autocontrast and grayscale enhancement for high-clarity OCR."""
+        """Grayscale & contrast enhancement without destructive binarization."""
         try:
-            gray = img.convert("L")
-            return ImageOps.autocontrast(gray, cutoff=1)
+            from app.ocr.preprocessing import preprocess_for_ocr
+            return preprocess_for_ocr(img, deskew=False, binarize=False)
         except Exception:
             return img
 
@@ -231,12 +252,13 @@ class LearnedAnchorPipeline(OCRPipeline):
             return None
 
     def _normalize_key(self, k: str) -> str:
-        k_clean = re.sub(r"[^a-z0-9]", "", str(k).lower())
+        k_str = str(k).lower().strip()
+        k_clean = re.sub(r"[^a-z0-9]", "", k_str)
         if "engine" in k_clean:
             return "engine_no"
         if "chasi" in k_clean or "chass" in k_clean:
             return "chasis_no"
-        if "ba" in k_clean:
+        if re.search(r"\bba\b", k_str) or k_clean in ("bano", "ba", "banumber"):
             return "ba_no"
         return k_clean
 
@@ -249,12 +271,12 @@ class LearnedAnchorPipeline(OCRPipeline):
         "chasis_no": {
             "patterns": ["chassis no:", "chasis no:", "chassis no.", "chasis no.", "chassis:", "chasis:"],
             "regex": r"(STLN[\s\w\-]+|MA5[\s\w\-]+|LPTA[\s\w\-]+|[A-Z0-9\-]{8,24})",
-            "blacklist": ["carried out", "tyres", "adequate", "correct", "inadequate", "rotary", "pump"],
+            "blacklist": ["carried out", "tyres", "adequate", "correct", "inadequate", "rotary", "pump", "bar type"],
         },
         "ba_no": {
             "patterns": ["ba no :", "ba no:", "ba number", "ba no.", "b.a. number", "ba:"],
             "regex": r"\d{2}[A-Z]\s*\d{5,7}[A-Z]?",
-            "blacklist": ["run:", "km", "hours", "distance", "maintained", "wksp", "workshop", "nature", "service"],
+            "blacklist": ["run:", "km", "hours", "distance", "maintained", "wksp", "workshop", "nature", "service", "bar type"],
         },
     }
 
@@ -310,7 +332,7 @@ class LearnedAnchorPipeline(OCRPipeline):
             candidates.extend(["engine no:", "engine no.", "engine no", "engine number:", "engine#"])
         elif "chasis" in clean or "chassis" in clean:
             candidates.extend(["chassis no:", "chasis no:", "chassis no.", "chasis no.", "chassis:", "chasis:"])
-        elif "ba" in clean:
+        elif re.search(r"\bba\b", clean) or clean in ("ba no", "bano", "ba"):
             candidates.extend(["ba no :", "ba no:", "ba number", "ba no.", "b.a. number", "ba:"])
 
         best_match = None
@@ -328,13 +350,16 @@ class LearnedAnchorPipeline(OCRPipeline):
                 w_norm = re.sub(r"[^a-z0-9]", "", win_txt)
                 p_norm = re.sub(r"[^a-z0-9]", "", pat)
 
-                score = SequenceMatcher(None, p_norm, w_norm).ratio()
-                if p_norm == w_norm:
-                    score = 1.0
-                elif len(p_norm) >= 3 and p_norm in w_norm:
-                    score = max(score, 0.92)
+                if len(p_norm) <= 3:
+                    score = 1.0 if p_norm == w_norm else 0.0
+                else:
+                    score = SequenceMatcher(None, p_norm, w_norm).ratio()
+                    if p_norm == w_norm:
+                        score = 1.0
+                    elif len(p_norm) >= 5 and p_norm in w_norm:
+                        score = max(score, 0.92)
 
-                if score > best_score and score >= 0.75:
+                if score > best_score and score >= 0.82:
                     lx1 = min(w["x1"] for w in window)
                     ly1 = min(w["y1"] for w in window)
                     lx2 = max(w["x2"] for w in window)
@@ -357,16 +382,21 @@ class LearnedAnchorPipeline(OCRPipeline):
                         line_str = " ".join(w["text"] for w in line_words)
                         m = re.search(val_regex, line_str, re.IGNORECASE)
                         if m:
-                            direct_value = m.group(0).strip()
-                            m_words = [w for w in line_words if any(part in w["text"] for part in direct_value.split())]
-                            if m_words:
-                                pad = 4
-                                direct_bbox = {
-                                    "x1": max(0, min(w["x1"] for w in m_words) - pad),
-                                    "y1": max(0, min(w["y1"] for w in m_words) - pad),
-                                    "x2": min(page_width, max(w["x2"] for w in m_words) + pad),
-                                    "y2": min(page_height, max(w["y2"] for w in m_words) + pad),
-                                }
+                            cand_val = m.group(0).strip()
+                            # Blacklist check
+                            if spec and spec.get("blacklist") and any(b in cand_val.lower() for b in spec["blacklist"]):
+                                cand_val = None
+                            if cand_val:
+                                direct_value = cand_val
+                                m_words = [w for w in line_words if any(part in w["text"] for part in direct_value.split())]
+                                if m_words:
+                                    pad = 4
+                                    direct_bbox = {
+                                        "x1": max(0, min(w["x1"] for w in m_words) - pad),
+                                        "y1": max(0, min(w["y1"] for w in m_words) - pad),
+                                        "x2": min(page_width, max(w["x2"] for w in m_words) + pad),
+                                        "y2": min(page_height, max(w["y2"] for w in m_words) + pad),
+                                    }
 
                     if direct_bbox:
                         vx1, vy1, vx2, vy2 = direct_bbox["x1"], direct_bbox["y1"], direct_bbox["x2"], direct_bbox["y2"]
@@ -419,24 +449,44 @@ class LearnedAnchorPipeline(OCRPipeline):
         dx, dy = 0, 0
         anchor_matched = False
 
-        # Fast Preprocessing on Page 0 for label detection
-        prep_page0 = self._preprocess_image(page0)
-        p0_words = []
-        try:
-            t_data = pytesseract.image_to_data(prep_page0, output_type=pytesseract.Output.DICT)
-            for idx in range(len(t_data.get("text", []))):
-                w_txt = t_data["text"][idx].strip()
-                if w_txt:
-                    p0_words.append({
-                        "text": w_txt,
-                        "x1": t_data["left"][idx],
-                        "y1": t_data["top"][idx],
-                        "x2": t_data["left"][idx] + t_data["width"][idx],
-                        "y2": t_data["top"][idx] + t_data["height"][idx],
-                        "conf": float(t_data["conf"][idx]) if float(t_data["conf"][idx]) > 0 else 0.0,
-                    })
-        except Exception as e:
-            logger.warning("p0_words_extraction_failed", error=str(e))
+        # Fast Preprocessing on all pages for label detection and universal detections
+        words_by_page = []
+        all_detections = []
+        for p_idx, page in enumerate(pages):
+            prep_page = self._preprocess_image(page)
+            p_words = []
+            try:
+                t_data = pytesseract.image_to_data(prep_page, output_type=pytesseract.Output.DICT)
+                for idx in range(len(t_data.get("text", []))):
+                    w_txt = t_data["text"][idx].strip()
+                    if w_txt:
+                        box = {
+                            "x1": t_data["left"][idx],
+                            "y1": t_data["top"][idx],
+                            "x2": t_data["left"][idx] + t_data["width"][idx],
+                            "y2": t_data["top"][idx] + t_data["height"][idx],
+                        }
+                        c_val = float(t_data["conf"][idx]) / 100.0 if float(t_data["conf"][idx]) > 0 else 0.8
+                        p_words.append({
+                            "text": w_txt,
+                            "x1": box["x1"],
+                            "y1": box["y1"],
+                            "x2": box["x2"],
+                            "y2": box["y2"],
+                            "conf": c_val,
+                        })
+                        all_detections.append({
+                            "id": f"det_p{p_idx+1}_{idx}",
+                            "text": w_txt,
+                            "bbox": box,
+                            "confidence": round(c_val, 3),
+                            "page_number": p_idx + 1,
+                        })
+            except Exception as e:
+                logger.warning("warm_words_extraction_failed", page=p_idx, error=str(e))
+            words_by_page.append(p_words)
+
+        p0_words = words_by_page[0] if words_by_page else []
 
         anchored_fields = dict(learned_anchors.get("fields", {}))
         target_keys = [f["name"] for f in template_fields] if template_fields else list(anchored_fields.keys())
@@ -669,12 +719,14 @@ class LearnedAnchorPipeline(OCRPipeline):
             status="completed",
             fields=fields_out,
             overall_confidence=round(avg_conf, 4),
+            all_detections=all_detections,
             metadata={
                 "mode": "WARM_ANCHOR_HIT",
                 "speed": "ultra_fast",
                 "anchor_matched": anchor_matched,
                 "learned_anchors": learned_anchors,
                 "fields_extracted": len(fields_out),
+                "all_detections": all_detections,
                 "doc_page_width": cur_w,
                 "doc_page_height": cur_h,
             },
@@ -708,36 +760,7 @@ class LearnedAnchorPipeline(OCRPipeline):
         if event_callback:
             event_callback("OCR_GEOMETRY_DETECTED", {"pages": len(pages)})
 
-        # Step B: Run Qwen 2.5-VL / LLM semantic extraction
-        ai_result = ai_orchestrator.run_smart_extraction(
-            ocr_res,
-            schema or {},
-            doc_id=job_id,
-            department=department,
-            doc_type=doc_type,
-            template_version=template_version,
-            extraction_instructions=extraction_instructions,
-            page_images=pages,
-        )
-
-        if event_callback:
-            event_callback("VLM_EXTRACTION_DONE", {"model": ai_result.model_name})
-
-        conf_by_field = {c.field_name: c.confidence_score for c in ai_result.confidence_scores}
-        envelope = ai_result.parsed_data or {}
-        raw_fields = envelope.get("fields", envelope)
-
-        fields_out = []
-        fields_learned = {}
-        total_conf = 0.0
-
-        # Extract word-level bboxes for tight bounding box localization.
-        #
-        # ocr_res (Step A above) already ran Tesseract once per page and now
-        # carries per-word boxes on each OCRLine (see app/ocr/tesseract.py).
-        # Reuse that instead of paying for a second full-page
-        # pytesseract.image_to_data() subprocess call per page -- that redundant
-        # pass was pure wasted latency on every cold-learning run.
+        # Extract word-level bboxes for tight bounding box localization and direct matching.
         words_by_page = []
         for p_idx, page_img in enumerate(pages):
             p_words = []
@@ -760,9 +783,6 @@ class LearnedAnchorPipeline(OCRPipeline):
                 p_words = []
 
             if not p_words:
-                # Fallback: engines that don't populate per-word boxes (or an
-                # unexpected empty page) still get a word list via a direct
-                # image_to_data call, same as before.
                 try:
                     t_data = pytesseract.image_to_data(page_img, output_type=pytesseract.Output.DICT)
                     for idx in range(len(t_data.get("text", []))):
@@ -780,6 +800,78 @@ class LearnedAnchorPipeline(OCRPipeline):
                     logger.warning("word_extraction_failed_for_page", page=p_idx, error=str(e))
 
             words_by_page.append(p_words)
+
+        # Step B: Fast deterministic layout matching against template fields
+        direct_matched_fields = {}
+        target_fields = [f for f in template_fields if isinstance(f, dict) and f.get("type") != "table"]
+        if target_fields and words_by_page:
+            for f in target_fields:
+                fn = f.get("name", "")
+                fa = f.get("aliases", [])
+                spec = self.FIELD_SPECS.get(self._normalize_key(fn))
+                lbl_m = self._find_field_bbox_by_label(
+                    fn, fa, words_by_page[0], pages[0].width, pages[0].height, spec=spec
+                )
+                if lbl_m:
+                    val = lbl_m.get("direct_value")
+                    val_box = lbl_m.get("val_bbox")
+                    if not val and val_box:
+                        c_img = self._safe_crop(pages[0], val_box["x1"], val_box["y1"], val_box["x2"], val_box["y2"])
+                        if c_img:
+                            try:
+                                prep = self._preprocess_image(c_img)
+                                val_raw = pytesseract.image_to_string(prep, config="--psm 6").strip()
+                                val_raw = re.sub(r"^[\s:\-\|\~\+\.\*]+", "", val_raw).strip()
+                                val = re.sub(r"[\_\~\|\s]+$", "", val_raw).strip()
+                                if spec and spec.get("regex"):
+                                    m_spec = re.search(spec["regex"], val, re.IGNORECASE)
+                                    val = m_spec.group(0).strip() if m_spec else ""
+                                if spec and spec.get("blacklist") and any(b in val.lower() for b in spec["blacklist"]):
+                                    val = ""
+                            except Exception:
+                                val = ""
+                    if val:
+                        direct_matched_fields[fn] = {
+                            "value": val,
+                            "confidence": 0.95,
+                            "bbox": val_box,
+                        }
+
+        # If at least 70% of scalar fields are found via deterministic layout, bypass Ollama
+        if target_fields and len(direct_matched_fields) >= max(1, int(len(target_fields) * 0.7)):
+            logger.info("cold_path_bypassing_vlm_via_direct_match", matched=len(direct_matched_fields), total=len(target_fields))
+            raw_fields = direct_matched_fields
+            conf_by_field = {k: 0.95 for k in direct_matched_fields}
+            ai_result_engine = "learned_anchor_layout"
+            ai_result_model = "deterministic_geometry"
+        else:
+            # Fall back to Qwen 2.5-VL / LLM semantic extraction
+            ai_result = ai_orchestrator.run_smart_extraction(
+                ocr_res,
+                schema or {},
+                doc_id=job_id,
+                department=department,
+                doc_type=doc_type,
+                template_version=template_version,
+                extraction_instructions=extraction_instructions,
+                page_images=pages,
+            )
+            ai_result_engine = ai_result.engine_name
+            ai_result_model = ai_result.model_name
+            if event_callback:
+                event_callback("VLM_EXTRACTION_DONE", {"model": ai_result.model_name})
+
+            conf_by_field = {c.field_name: c.confidence_score for c in ai_result.confidence_scores}
+            envelope = ai_result.parsed_data or {}
+            raw_fields = envelope.get("fields", envelope)
+            # Merge in direct matched fields for any missing
+            for k, v in direct_matched_fields.items():
+                if k not in raw_fields or not raw_fields[k]:
+                    raw_fields[k] = v
+
+        fields_out = []
+        fields_learned = {}
+        total_conf = 0.0
 
         for field_name, field_data in raw_fields.items():
             if field_name == "tables":
@@ -1017,20 +1109,34 @@ class LearnedAnchorPipeline(OCRPipeline):
                 "learned_fields": len(fields_learned),
             })
 
+        all_detections = []
+        for p_idx, p_words in enumerate(words_by_page):
+            for w_idx, w in enumerate(p_words):
+                all_detections.append({
+                    "id": f"det_p{p_idx+1}_{w_idx}",
+                    "text": w["text"],
+                    "bbox": {"x1": w["x1"], "y1": w["y1"], "x2": w["x2"], "y2": w["y2"]},
+                    "confidence": round(w.get("conf", 0.0), 3),
+                    "page_number": p_idx + 1,
+                })
+
         return PipelineResult(
             pipeline_name=self.name,
             status="completed",
             fields=fields_out,
             overall_confidence=round(overall_conf, 4),
+            all_detections=all_detections,
             metadata={
                 "mode": "COLD_LEARNED_CACHE",
                 "anchor_learned": bool(fields_learned),
                 "anchors_persisted": anchors_persisted,
                 "learned_anchors": new_learned_anchors,
-                "doc_page_width": p0.width,
-                "doc_page_height": p0.height,
-                "ai_engine": ai_result.engine_name,
-                "ai_model": ai_result.model_name,
+                "all_detections": all_detections,
+                "doc_page_width": pages[0].width if pages else 0,
+                "doc_page_height": pages[0].height if pages else 0,
+                "ai_engine": ai_result_engine,
+                "ai_model": ai_result_model,
                 "ocr_metadata": ocr_res.model_dump(),
             },
         )
+

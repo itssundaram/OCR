@@ -20,7 +20,7 @@ logger = get_logger(__name__)
 
 class OllamaExtractionEngine(AIExtractionEngine):
     def __init__(self) -> None:
-        self.base_url = settings.OLLAMA_BASE_URL
+        self.base_url = settings.OLLAMA_BASE_URL.rstrip("/")
         self.model_name = settings.AI_MODEL
         
         # Initialize client

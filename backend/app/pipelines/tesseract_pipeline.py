@@ -38,7 +38,8 @@ class TesseractPipeline(OCRPipeline):
         )
         
     def __init__(self):
-        self.tesseract = TesseractOCREngine()
+        from app.core.model_registry import get_tesseract_engine
+        self.tesseract = get_tesseract_engine()
         self.layout_engine = PPStructureLayoutEngine()
 
     def extract_fields(
@@ -61,7 +62,8 @@ class TesseractPipeline(OCRPipeline):
         
         preprocessed_pages = []
         for img in pages:
-            preprocessed_pages.append(preprocess_page(img, {"greyscale": True}))
+            from app.ocr.preprocessing import preprocess_for_ocr
+            preprocessed_pages.append(preprocess_for_ocr(img, deskew=True, binarize=False))
             
         if event_callback:
             event_callback("PREPROCESS_DONE")

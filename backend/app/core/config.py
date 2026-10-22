@@ -137,8 +137,8 @@ class Settings(BaseSettings):
     # Pages with fewer than this many extractable characters are treated as scanned.
     SCANNED_PAGE_TEXT_THRESHOLD: int = 50
     # DPI multiplier for PyMuPDF rendering (lower = faster; higher = more accurate for Tesseract)
-    OCR_DPI_NATIVE: float = 1.5    # For text-native PDF pages (LLM vision only)
-    OCR_DPI_SCANNED: float = 2.0   # For scanned/photographed pages (Tesseract reads these)
+    OCR_DPI_NATIVE: float = 2.0    # For text-native PDF pages (LLM vision only)
+    OCR_DPI_SCANNED: float = 3.0   # For scanned/photographed pages (Tesseract / OCR clarity)
     # DPI for DIRECT_LLM_CALL path — Tesseract is skipped so we only need enough
     # resolution to fill LLM_IMAGE_MAX_PX. 1.0x (72 DPI) is enough for a 800px thumbnail.
     OCR_DPI_DIRECT_LLM: float = 1.0
@@ -153,7 +153,7 @@ class Settings(BaseSettings):
     AI_PROVIDER: Literal["ollama", "transformers"] = "ollama"
     # Change AI_MODEL in .env to switch models — no code changes required.
     AI_MODEL: str = "llama3.2-vision"
-    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_BASE_URL: str = "http://127.0.0.1:11435"
     # What to send to the LLM: text, image, or both
     LLM_PAYLOAD_MODE: Literal["text", "image", "both"] = "both"
     # Max pixel dimension for images sent to the vision model (smaller = faster tokens)

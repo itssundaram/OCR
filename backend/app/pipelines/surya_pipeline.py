@@ -40,10 +40,26 @@ class SuryaPipeline(OCRPipeline):
         )
         
     def __init__(self):
-        self.surya_ocr = SuryaOCREngine()
-        self.layout_engine = SuryaLayoutEngine()
-        self.tatr = TATRTableEngine()
+        self._surya_ocr = None
+        self._layout_engine = None
+        self._tatr = None
         self.trocr = None
+
+    @property
+    def surya_ocr(self):
+        from app.core.model_registry import get_surya_ocr_engine
+        return get_surya_ocr_engine()
+
+    @property
+    def layout_engine(self):
+        from app.core.model_registry import get_surya_layout_engine
+        return get_surya_layout_engine()
+
+    @property
+    def tatr(self):
+        from app.core.model_registry import get_tatr_engine
+        return get_tatr_engine()
+
 
     def extract_fields(
         self,
@@ -65,7 +81,8 @@ class SuryaPipeline(OCRPipeline):
         
         preprocessed_pages = []
         for img in pages:
-            preprocessed_pages.append(preprocess_page(img, {"deskew": True, "orient": True}))
+            from app.ocr.preprocessing import preprocess_for_ocr
+            preprocessed_pages.append(preprocess_for_ocr(img, deskew=True, apply_clahe=True, denoise=True, binarize=False))
             
         if event_callback:
             event_callback("PREPROCESS_DONE")
@@ -269,6 +286,9 @@ class SuryaPipeline(OCRPipeline):
                         rows=t.rows,
                         headers=t.headers,
                         markdown=t.markdown,
-                        extraction_method="tatr"
+                        cells=getattr(t, "cells", []),
+                        bbox=getattr(t, "bbox", None),
+                        extraction_method="tatr",
                     ))
         return tables
+

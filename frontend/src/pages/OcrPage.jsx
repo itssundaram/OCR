@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   UploadCloud, File, AlertCircle, Play, Cpu, ArrowLeft, XCircle, Clock,
-  Eye, Layers, CheckCircle2, ChevronRight
+  Eye, Layers, CheckCircle2, ChevronRight, Trash2, ArrowRight, Sparkles,
+  Search, Filter, ListFilter
 } from 'lucide-react';
 import { JsonView, allExpanded, darkStyles } from 'react-json-view-lite';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
@@ -63,6 +64,21 @@ const OcrPage = () => {
   const [zoomedImage, setZoomedImage] = useState(null);
   const [elapsedMs, setElapsedMs] = useState(0);
 
+  // Recent Uploads Queue (Last 10 uploads saved in localStorage)
+  const [recentUploads, setRecentUploads] = useState(() => {
+    try {
+      const saved = localStorage.getItem('docint_recent_uploads');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [autoOpenResults, setAutoOpenResults] = useState(true);
+  const [loadingJobId, setLoadingJobId] = useState(null);
+  const [activeView, setActiveView] = useState('ingest'); // 'ingest' | 'queue'
+  const [queueFilter, setQueueFilter] = useState('all'); // 'all' | 'processing' | 'review' | 'completed'
+  const [queueSearch, setQueueSearch] = useState('');
+
   const fileInputRef = useRef(null);
   const prefillApplied = useRef(false);
 
@@ -113,20 +129,69 @@ const OcrPage = () => {
     }).catch((err) => console.error(err));
   }, [selectedDept, searchParams]);
 
+  // Save recent uploads to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('docint_recent_uploads', JSON.stringify(recentUploads));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [recentUploads]);
+
+  // Background polling for all processing/queued items in recentUploads
+  useEffect(() => {
+    const hasPending = recentUploads.some((j) => j.status === 'PROCESSING' || j.status === 'QUEUED');
+    if (!hasPending) return undefined;
+
+    const interval = setInterval(async () => {
+      let changed = false;
+      const updated = await Promise.all(
+        recentUploads.map(async (item) => {
+          if (item.status === 'PROCESSING' || item.status === 'QUEUED') {
+            try {
+              const res = await processingService.getJob(item.job_id);
+              if (res.data && res.data.status !== item.status) {
+                changed = true;
+                return {
+                  ...item,
+                  status: res.data.status,
+                  overall_confidence: res.data.overall_confidence,
+                  completed_at: res.data.completed_at,
+                };
+              }
+            } catch (err) {
+              // transient poll error
+            }
+          }
+          return item;
+        })
+      );
+      if (changed) {
+        setRecentUploads(updated);
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [recentUploads]);
+
   // Poll the active job and pipeline steps
   useEffect(() => {
     if (!activeJob?.job_id) return undefined;
     if (activeJob.status !== 'QUEUED' && activeJob.status !== 'PROCESSING') return undefined;
-    
+
     let cancelled = false;
     const poll = async () => {
       try {
         const [resJob, resSteps] = await Promise.all([
           processingService.getJob(activeJob.job_id),
-          processingService.getPipelineSteps(activeJob.job_id)
+          processingService.getPipelineSteps(activeJob.job_id),
         ]);
         if (!cancelled) {
           setActiveJob(resJob.data);
+          // Also update recentUploads item
+          setRecentUploads((prev) =>
+            prev.map((it) => (it.job_id === activeJob.job_id ? { ...it, status: resJob.data.status } : it))
+          );
           if (resSteps.data.pipelines && Object.keys(resSteps.data.pipelines).length > 0) {
             const pName = Object.keys(resSteps.data.pipelines)[0];
             setPipelineSteps(resSteps.data.pipelines[pName].steps || []);
@@ -139,9 +204,12 @@ const OcrPage = () => {
         setTimeout(poll, 1500);
       }
     };
-    
+
     const t = setTimeout(poll, 1500);
-    return () => { cancelled = true; clearTimeout(t); };
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
   }, [activeJob?.job_id, activeJob?.status]);
 
   useEffect(() => {
@@ -164,15 +232,33 @@ const OcrPage = () => {
   }, [activeJob?.job_id, activeJob?.status, activeJob?.started_at, activeJob?.completed_at]);
 
   const handleDrag = (e) => {
-    e.preventDefault(); e.stopPropagation();
+    e.preventDefault();
+    e.stopPropagation();
     if (e.type === 'dragenter' || e.type === 'dragover') setDragActive(true);
     else if (e.type === 'dragleave') setDragActive(false);
   };
   const handleDrop = (e) => {
-    e.preventDefault(); e.stopPropagation(); setDragActive(false);
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
     if (e.dataTransfer.files?.[0]) setFile(e.dataTransfer.files[0]);
   };
-  const handleFileChange = (e) => { if (e.target.files?.[0]) setFile(e.target.files[0]); };
+  const handleFileChange = (e) => {
+    if (e.target.files?.[0]) setFile(e.target.files[0]);
+  };
+
+  const handleOpenJob = async (jobId) => {
+    setLoadingJobId(jobId);
+    setError(null);
+    try {
+      const res = await processingService.getJob(jobId);
+      setActiveJob(res.data);
+    } catch (err) {
+      setError('Failed to load job: ' + err.message);
+    } finally {
+      setLoadingJobId(null);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -184,9 +270,29 @@ const OcrPage = () => {
     setError(null);
     setPipelineSteps([]);
     try {
-      const res = await extractService.uploadWithPipeline(selectedDept, selectedTemplateCode, selectedPipeline, file, false);
-      const job = await processingService.getJob(res.data.job_id);
-      setActiveJob(job.data);
+      const res = await extractService.uploadWithPipeline(
+        selectedDept,
+        selectedTemplateCode,
+        selectedPipeline,
+        file,
+        false
+      );
+      const newJobId = res.data.job_id;
+
+      const newUploadItem = {
+        job_id: newJobId,
+        filename: file.name,
+        file_size: file.size,
+        department: selectedDept,
+        template: selectedTemplateCode,
+        pipeline: selectedPipeline,
+        status: 'PROCESSING',
+        created_at: new Date().toISOString(),
+      };
+
+      setRecentUploads((prev) => [newUploadItem, ...prev.filter((x) => x.job_id !== newJobId)].slice(0, 10));
+      setFile(null);
+      // User stays on the upload form with persistent Recent Uploads Queue tracking
     } catch (err) {
       setError(err.message || 'Upload failed');
     } finally {
@@ -194,7 +300,18 @@ const OcrPage = () => {
     }
   };
 
-  const reset = () => { setActiveJob(null); setFile(null); setError(null); setPipelineSteps([]); };
+  const reset = () => {
+    setActiveJob(null);
+    setFile(null);
+    setError(null);
+    setPipelineSteps([]);
+  };
+
+  const clearRecentUploads = () => {
+    setRecentUploads([]);
+    localStorage.removeItem('docint_recent_uploads');
+  };
+
 
   if (loadingInitial) {
     return <div className="h-full flex items-center justify-center"><Loader text="Loading..." /></div>;
@@ -203,32 +320,39 @@ const OcrPage = () => {
   if (activeJob) {
     const status = activeJob.status;
     const isFinished = status === 'COMPLETED' || status === 'WARNING';
+    const metaStr = typeof activeJob.ocr_metadata_json === 'string'
+      ? activeJob.ocr_metadata_json
+      : JSON.stringify(activeJob.ocr_metadata_json || {});
 
-    if (isFinished) {
-      const metaStr = typeof activeJob.ocr_metadata_json === 'string'
-        ? activeJob.ocr_metadata_json
-        : JSON.stringify(activeJob.ocr_metadata_json || {});
+    const isLearnedAnchor =
+      activeJob.pipeline_mode === 'learned_anchor' ||
+      activeJob.pipeline === 'learned_anchor' ||
+      selectedPipeline === 'learned_anchor' ||
+      metaStr.includes('learned_anchor') ||
+      metaStr.includes('WARM_ANCHOR_HIT') ||
+      metaStr.includes('COLD_LEARNED_CACHE') ||
+      metaStr.includes('ANCHOR');
 
-      const isLearnedAnchor =
-        activeJob.pipeline_mode === 'learned_anchor' ||
-        metaStr.includes('learned_anchor') ||
-        metaStr.includes('WARM_ANCHOR_HIT') ||
-        metaStr.includes('COLD_LEARNED_CACHE') ||
-        metaStr.includes('ANCHOR');
-
+    // If learned_anchor, ALWAYS show FastExtractionResultView immediately
+    // It features live scanning laser sweeps and auto-polls until job completes
+    if (isLearnedAnchor) {
       return (
         <div className="flex flex-col h-full w-full p-4 overflow-hidden animate-fade-in-up max-w-[1600px] mx-auto">
-          {isLearnedAnchor ? (
-            <FastExtractionResultView
-              activeJob={activeJob}
-              onBack={reset}
-              setZoomedImage={setZoomedImage}
-              pipelineSteps={pipelineSteps}
-              onRerun={reset}
-            />
-          ) : (
-            <ExtractionResultView activeJob={activeJob} onBack={reset} setZoomedImage={setZoomedImage} />
-          )}
+          <FastExtractionResultView
+            activeJob={activeJob}
+            onBack={reset}
+            setZoomedImage={setZoomedImage}
+            pipelineSteps={pipelineSteps}
+            onRerun={reset}
+          />
+        </div>
+      );
+    }
+
+    if (isFinished) {
+      return (
+        <div className="flex flex-col h-full w-full p-4 overflow-hidden animate-fade-in-up max-w-[1600px] mx-auto">
+          <ExtractionResultView activeJob={activeJob} onBack={reset} setZoomedImage={setZoomedImage} />
         </div>
       );
     }
@@ -416,238 +540,717 @@ const OcrPage = () => {
 
   }
 
+  const queuePendingCount = recentUploads.filter((j) => j.status === 'PROCESSING' || j.status === 'QUEUED').length;
+  const queueNeedsReviewCount = recentUploads.filter((j) => j.status === 'WARNING').length;
+  const queueCompletedCount = recentUploads.filter((j) => j.status === 'COMPLETED').length;
+  const queueFailedCount = recentUploads.filter((j) => j.status === 'FAILED').length;
+
+  const filteredQueue = recentUploads.filter((j) => {
+    if (queueFilter === 'processing') return j.status === 'PROCESSING' || j.status === 'QUEUED';
+    if (queueFilter === 'review') return j.status === 'WARNING';
+    if (queueFilter === 'completed') return j.status === 'COMPLETED';
+    return true;
+  }).filter((j) => {
+    if (!queueSearch) return true;
+    const q = queueSearch.toLowerCase();
+    return (
+      (j.filename && j.filename.toLowerCase().includes(q)) ||
+      (j.job_id && j.job_id.toLowerCase().includes(q)) ||
+      (j.template && j.template.toLowerCase().includes(q)) ||
+      (j.department && j.department.toLowerCase().includes(q))
+    );
+  });
+
   return (
-    <div className="flex flex-col gap-6 max-w-[1400px] mx-auto min-h-full p-4">
-      {/* Header Area */}
-      <div className="flex flex-col mb-4">
-        <div className="flex items-center justify-between mb-2">
-          {/* Breadcrumbs */}
-          <div className="text-sm font-semibold text-secondary flex items-center gap-2">
-            DocInt Orchestrator <span className="text-tertiary">/</span> Ingestion <span className="text-tertiary">/</span> <span className="text-[#1e3a8a]">Single Pipeline OCR</span>
+    <div className="flex flex-col gap-5 max-w-[1500px] mx-auto min-h-full p-4">
+      {/* Top Header with Breadcrumbs & Segmented View Switcher */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-200 gap-3">
+        <div>
+          <div className="text-xs font-semibold text-secondary flex items-center gap-1.5 mb-1">
+            <span>DocInt Orchestrator</span>
+            <span className="text-slate-300">/</span>
+            <span>Ingestion</span>
+            <span className="text-slate-300">/</span>
+            <span className="text-[#1e3a8a] font-bold">Document Processing Hub</span>
           </div>
-        </div>
-        
-        <h2 className="text-2xl font-bold text-primary mb-1 mt-1 font-heading">Single Pipeline OCR & Document Extraction</h2>
-        <p className="text-sm text-secondary">Execute isolated model parsing, evaluate single-engine fidelity, or perform ad-hoc document extractions with strict cryptographic chain-of-custody.</p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6">
-        {/* Left Column */}
-        <div className="flex flex-col gap-6">
-          {/* Card 1: Department & Extraction Context */}
-          <Card className="border shadow-sm rounded-lg overflow-visible">
-            <CardHeader className="border-b border-border-color pb-3 mb-4 bg-bg-secondary/30 flex flex-row justify-between items-center rounded-t-lg">
-              <div className="flex items-center gap-2 font-semibold text-primary">
-                <Layers size={16} className="text-primary-accent" /> Department & Extraction Context
-              </div>
-              <span className="text-[0.65rem] text-tertiary uppercase tracking-wider font-bold">CONFIG PHASE 01</span>
-            </CardHeader>
-            <CardContent className="pt-0">
-               <div className="grid grid-cols-2 gap-4 mb-4">
-                 <div>
-                   <div className="flex justify-between items-end mb-1">
-                     <label className="text-xs font-semibold text-secondary uppercase tracking-wide">Department / Agency Unit</label>
-                     <span className="text-[0.65rem] text-tertiary font-mono">AUTH-CODE: 491-M</span>
-                   </div>
-                   <select className="input-field py-2 bg-white" value={selectedDept} onChange={(e) => setSelectedDept(e.target.value)} disabled={uploading}>
-                     <option value="" disabled>Select Department...</option>
-                     {departments.map((d) => <option key={d.slug} value={d.slug}>{d.name}</option>)}
-                   </select>
-                 </div>
-                 <div>
-                   <div className="flex justify-between items-end mb-1">
-                     <label className="text-xs font-semibold text-secondary uppercase tracking-wide">Target Extraction Template v2.1</label>
-                     <span className="text-[0.65rem] text-tertiary font-mono">Schema</span>
-                   </div>
-                   <select className="input-field py-2 bg-white" value={selectedTemplateCode} onChange={(e) => setSelectedTemplateCode(e.target.value)} disabled={!selectedDept || templates.length === 0 || uploading}>
-                     {templates.length === 0 && <option value="" disabled>No active templates</option>}
-                     {templates.map((t) => <option key={t.id} value={t.code}>{t.code}</option>)}
-                   </select>
-                 </div>
-               </div>
-
-            </CardContent>
-          </Card>
-
-          {/* Card 2: Select Primary OCR Pipeline */}
-          <div className="flex flex-col gap-2">
-            <div className="flex items-end justify-between mb-2">
-              <div>
-                <h3 className="text-lg font-bold text-primary">Select Primary OCR Pipeline</h3>
-                <p className="text-xs text-secondary mt-0.5">Choose a deterministic extraction model tailored for document layout complexity.</p>
-              </div>
-              <div className="flex items-center gap-1.5 text-[#1e3a8a] font-semibold text-sm">
-                <CheckCircle2 size={16} /> 1 Selected
-              </div>
-            </div>
-            
-            <div className="flex flex-col gap-4">
-              {pipelines.length === 0 && <div className="text-sm text-secondary italic">No pipelines registered</div>}
-              {pipelines.map((p) => {
-                const isSelected = selectedPipeline === p.name;
-                return (
-                  <div 
-                    key={p.name}
-                    onClick={() => !uploading && setSelectedPipeline(p.name)}
-                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 relative bg-white
-                      ${isSelected ? 'border-[#1e3a8a] shadow-md shadow-blue-900/5' : 'border-border-color hover:border-gray-300'}
-                      ${uploading ? 'opacity-50 pointer-events-none' : ''}
-                    `}
-                  >
-                    <div className="flex gap-4">
-                      <div className="mt-1 flex-shrink-0">
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSelected ? 'border-[#1e3a8a]' : 'border-gray-300'}`}>
-                          {isSelected && <div className="w-2.5 h-2.5 bg-[#1e3a8a] rounded-full"></div>}
-                        </div>
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex justify-between items-start mb-1">
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-bold text-[1.1rem] text-primary capitalize tracking-tight">
-                              {p.name === 'surya' ? 'Surya Engine' : p.name === 'learned_anchor' ? 'Learned Geometric Anchor' : p.name}
-                            </h3>
-                            {p.name === 'learned_anchor' && <Badge className="text-[0.6rem] uppercase tracking-wider py-0 px-2 bg-emerald-600 text-white border-none rounded-sm flex items-center gap-1">⚡ SUB-SECOND (&lt;300ms)</Badge>}
-                            {p.requires_gpu && <Badge className="text-[0.6rem] uppercase tracking-wider py-0 px-1.5 bg-gray-100 text-gray-600 border border-gray-200 rounded-sm">GPU Accelerated</Badge>}
-                            {p.name === 'surya' && <Badge className="text-[0.6rem] uppercase tracking-wider py-0 px-1.5 bg-gray-100 text-gray-600 border border-gray-200 rounded-sm">Surya-Layout</Badge>}
-                          </div>
-                          <div className="flex flex-col items-end text-right">
-                            <span className="text-sm font-semibold text-primary">{p.name === 'learned_anchor' ? '<300ms (Warm)' : p.name === 'surya' ? '~0.8s' : '~1.0s'} Latency</span>
-                            <span className="text-xs text-secondary mt-0.5">{p.name === 'learned_anchor' ? '99.5%' : p.name === 'surya' ? '98.9%' : '90.0%'} F1 Score</span>
-                          </div>
-                        </div>
-                        <p className="text-[0.8rem] text-secondary leading-relaxed mb-3">
-                          {p.name === 'learned_anchor' ? 'Autonomous geometric anchor pipeline with template memory. Learns layout coordinates on initial run, then processes subsequent identical/similar documents in under 300ms with parallel micro-OCR.' : p.name === 'surya' ? 'Specialized in lightning-fast document layout analysis, reading order reconstruction, and precise multilingual text parsing.' : p.description || "Pipeline"}
-                        </p>
-                        
-                        {p.stack && (
-                          <div className="pt-2 mt-2 border-t border-gray-100">
-                            <div className="flex items-center text-xs mt-2">
-                              <span className="font-bold text-gray-500 uppercase tracking-widest text-[0.65rem] w-24 flex-shrink-0">PIPELINE GRAPH:</span>
-                              <div className="flex items-center gap-2 flex-wrap">
-                                {p.stack.map((step, idx) => (
-                                  <React.Fragment key={idx}>
-                                    <span className="text-gray-600 text-[0.7rem]">{step}</span>
-                                    {idx < p.stack.length - 1 && <span className="text-gray-300">→</span>}
-                                  </React.Fragment>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <h2 className="text-2xl font-bold text-slate-900 font-heading tracking-tight">
+            Single Pipeline OCR & Document Extraction
+          </h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Deterministic extraction engine with geometric template learning, sub-second latency, and verified audit queue.
+          </p>
         </div>
 
-        {/* Right Column */}
-        <div className="flex flex-col gap-6">
-          {/* Card 1: Encrypted Document Ingestion */}
-          <Card className="border shadow-sm rounded-lg bg-white">
-            <CardHeader className="flex flex-row justify-between items-center pb-2 bg-transparent">
-              <div className="flex items-center gap-2 font-bold text-primary text-[1.05rem]">
-                <div className="w-6 h-6 rounded-md bg-blue-50 flex items-center justify-center text-blue-700">
-                  <UploadCloud size={14} strokeWidth={3} />
-                </div>
-                Encrypted Document Ingestion
-              </div>
-              <Badge className="bg-green-50 text-green-700 border border-green-200 font-mono text-[0.65rem] px-2 py-1 flex flex-col items-end leading-tight rounded-sm">
-                <span>TLS 1.3</span>
-                <span>Vault</span>
-              </Badge>
-            </CardHeader>
-            <CardContent>
-              <div
-                className={`border-2 border-dashed transition-all duration-300 flex flex-col items-center justify-center cursor-pointer min-h-[220px] mt-2 mb-2
-                  ${dragActive ? 'border-[#1e3a8a] bg-[#1e3a8a]/5' : 'border-gray-300 bg-gray-50/50 hover:border-gray-400'}
-                  ${file ? 'bg-[#1e3a8a]/5 border-[#1e3a8a]' : ''}`}
-                onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop}
-                onClick={() => fileInputRef.current?.click()}
-                style={{ borderStyle: dragActive ? 'solid' : 'dashed', borderRadius: '4px' }}
-              >
-                <input ref={fileInputRef} type="file" className="hidden" accept="image/jpeg,image/png,application/pdf" onChange={handleFileChange} disabled={uploading} />
-                
-                <div className="p-3 bg-white border border-gray-200 rounded-full text-blue-600 shadow-sm mb-4 mt-2">
-                  <UploadCloud size={24} />
-                </div>
-                <div className="text-sm font-bold text-primary mb-1">Drag & drop technical document here</div>
-                <div className="text-[0.8rem] text-secondary mb-6 text-center">or <span className="text-blue-600 font-medium underline underline-offset-2">browse local GovCloud storage</span> to initiate<br/>cryptographic staging.</div>
-                
-                <div className="flex items-center justify-center gap-2 mb-2">
-                  <Badge className="bg-gray-200 text-gray-600 text-[0.65rem] rounded-sm font-semibold border-none px-2 py-0.5">PDF</Badge>
-                  <Badge className="bg-gray-200 text-gray-600 text-[0.65rem] rounded-sm font-semibold border-none px-2 py-0.5">PNG</Badge>
-                  <Badge className="bg-gray-200 text-gray-600 text-[0.65rem] rounded-sm font-semibold border-none px-2 py-0.5">TIFF</Badge>
-                  <Badge className="bg-gray-200 text-gray-600 text-[0.65rem] rounded-sm font-semibold border-none px-2 py-0.5">JPEG</Badge>
-                  <span className="text-[0.7rem] text-gray-400 font-medium ml-2 tracking-wide">• Max 25 MB</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Card 2: STAGED DOCUMENT FOR EXECUTION */}
-          <div className={`flex flex-col gap-2 transition-opacity duration-300 ${file ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-            {file && (
-              <>
-                <div className="flex justify-between items-end mb-1">
-                  <span className="text-[0.7rem] font-bold text-secondary uppercase tracking-widest">STAGED DOCUMENT FOR EXECUTION</span>
-                  <span className="text-xs text-green-600 font-semibold flex items-center gap-1"><CheckCircle2 size={14} /> Validated & Cached</span>
-                </div>
-                <div className="border border-gray-200 rounded bg-gray-50/80 p-3 flex items-center gap-4 shadow-sm">
-                  <div className="w-10 h-12 bg-red-50 rounded flex items-center justify-center text-red-600 font-bold text-xs border border-red-100 flex-shrink-0">
-                    PDF
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-bold text-primary truncate mb-1">{file.name}</div>
-                    <div className="flex items-center gap-4 text-xs text-secondary font-mono">
-                      <span>{(file.size / 1024).toFixed(0)} KB</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-400">
-                    <button type="button" className="p-1.5 hover:text-primary transition-colors bg-white rounded border border-gray-200 shadow-sm"><Eye size={16} /></button>
-                    <button type="button" className="p-1.5 hover:text-white hover:bg-red-500 hover:border-red-500 transition-colors bg-white rounded border border-gray-200 shadow-sm text-red-500" onClick={(e) => { e.stopPropagation(); setFile(null); }}><AlertCircle size={16} /></button>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Card 3: PRE-FLIGHT AUDIT SUMMARY */}
-          <div className={`mt-2 transition-opacity duration-300 ${file && selectedPipeline && selectedTemplateCode ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-            <span className="text-[0.7rem] font-bold text-secondary uppercase tracking-widest block mb-3">PRE-FLIGHT AUDIT SUMMARY</span>
-            <div className="flex flex-col gap-3 text-sm bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-              <div className="flex justify-between items-center border-b border-gray-100 pb-2.5">
-                <span className="text-secondary">Engine Architecture:</span>
-                <span className="font-bold text-primary text-[0.8rem]">{selectedPipeline === 'paddle' ? 'PaddleOCR' : selectedPipeline === 'tesseract' ? 'Tesseract OCR' : selectedPipeline === 'learned_anchor' ? 'Learned Geometric Anchor' : 'Surya OCR'}</span>
-              </div>
-              <div className="flex justify-between items-center border-b border-gray-100 pb-2.5">
-                <span className="text-secondary">Assigned Compute:</span>
-                <span className="font-bold text-primary text-[0.8rem]">Local CPU (Offline)</span>
-              </div>
-              <div className="flex justify-between items-center border-b border-gray-100 pb-2.5">
-                <span className="text-secondary">Target Destination:</span>
-                <span className="font-bold text-primary text-[0.8rem]">Oracle Database (DATA_OCR)</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-secondary">Department Scope:</span>
-                <span className="font-mono text-[0.75rem] font-bold text-primary">{selectedDept || 'GENERAL'}</span>
-              </div>
-            </div>
-
-            <button type="submit" className="btn btn-primary w-full flex justify-center py-3 text-sm font-bold shadow-md shadow-blue-900/20 mt-6 bg-[#1e3a8a] hover:bg-[#1e40af] text-white rounded-md" disabled={uploading || !file}>
-              {uploading ? <span className="flex items-center gap-2"><Loader size={16} /> INITIALIZING...</span> : <span className="flex items-center gap-2 tracking-wide">EXECUTE EXTRACTION <ChevronRight size={16} /></span>}
+        {/* View Switcher Tabs */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-2xs">
+            <button
+              type="button"
+              onClick={() => setActiveView('ingest')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                activeView === 'ingest'
+                  ? 'bg-white text-slate-900 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <UploadCloud size={14} className={activeView === 'ingest' ? 'text-blue-600' : ''} />
+              <span>Ingest & Process</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveView('queue')}
+              className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                activeView === 'queue'
+                  ? 'bg-white text-slate-900 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Clock size={14} className={activeView === 'queue' ? 'text-blue-600' : ''} />
+              <span>Review Queue</span>
+              {recentUploads.length > 0 && (
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold ${
+                  queuePendingCount > 0
+                    ? 'bg-blue-100 text-blue-700 animate-pulse'
+                    : 'bg-slate-200 text-slate-700'
+                }`}>
+                  {recentUploads.length}
+                </span>
+              )}
             </button>
           </div>
-          
-          {error && (
-            <div className="p-3 bg-danger bg-opacity-10 border border-danger rounded text-danger text-sm flex items-center gap-2 animate-fade-in-up mt-4">
-              <AlertCircle size={16} /><span>{error}</span>
-            </div>
-          )}
         </div>
-      </form>
+      </div>
+
+      {activeView === 'ingest' ? (
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          {/* Section 1: Department, Template & Compact OCR Pipeline Selector */}
+          <Card className="border shadow-sm rounded-xl overflow-hidden bg-white">
+            <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Layers size={16} className="text-[#1e3a8a]" />
+                <span className="font-bold text-sm text-slate-900">Target Extraction Scope & Model Pipeline</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold">CONFIG PHASE 01 & 02</span>
+              </div>
+            </div>
+
+            <CardContent className="p-5 flex flex-col gap-4">
+              {/* Row 1: Department & Template */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <div className="flex justify-between items-end mb-1">
+                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">Department / Agency Unit</label>
+                    <span className="text-[10px] text-slate-400 font-mono">AUTH: 491-M</span>
+                  </div>
+                  <select
+                    className="input-field py-2 bg-white text-xs border-slate-300 rounded-lg shadow-2xs font-medium"
+                    value={selectedDept}
+                    onChange={(e) => setSelectedDept(e.target.value)}
+                    disabled={uploading}
+                  >
+                    <option value="" disabled>Select Department...</option>
+                    {departments.map((d) => <option key={d.slug} value={d.slug}>{d.name}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <div className="flex justify-between items-end mb-1">
+                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wide">Target Extraction Template</label>
+                    <span className="text-[10px] text-blue-600 font-mono font-bold">{selectedTemplateCode || 'Auto'}</span>
+                  </div>
+                  <select
+                    className="input-field py-2 bg-white text-xs border-slate-300 rounded-lg shadow-2xs font-medium"
+                    value={selectedTemplateCode}
+                    onChange={(e) => setSelectedTemplateCode(e.target.value)}
+                    disabled={!selectedDept || templates.length === 0 || uploading}
+                  >
+                    {templates.length === 0 && <option value="" disabled>No active templates</option>}
+                    {templates.map((t) => <option key={t.id} value={t.code}>{t.code}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              {/* Row 2: Compact 4-Card Horizontal OCR Pipeline Grid */}
+              <div className="flex flex-col gap-2 pt-2 border-t border-slate-100">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-700 uppercase tracking-wide">Select Primary OCR Pipeline</span>
+                  <span className="text-[11px] text-blue-700 font-semibold flex items-center gap-1">
+                    <CheckCircle2 size={13} /> {selectedPipeline ? selectedPipeline.toUpperCase() : 'None selected'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                  {pipelines.length === 0 && (
+                    <div className="text-xs text-slate-400 italic col-span-4 p-3 bg-slate-50 rounded-lg border text-center">
+                      No pipelines registered
+                    </div>
+                  )}
+                  {pipelines.map((p) => {
+                    const isSelected = selectedPipeline === p.name;
+                    const isLearned = p.name === 'learned_anchor';
+                    const isSurya = p.name === 'surya';
+                    const isPaddle = p.name === 'paddle';
+                    const isTesseract = p.name === 'tesseract';
+
+                    const displayName = isLearned
+                      ? 'Learned Geometric Anchor'
+                      : isSurya
+                      ? 'Surya Engine'
+                      : isPaddle
+                      ? 'PaddleOCR'
+                      : isTesseract
+                      ? 'Tesseract OCR'
+                      : p.name;
+
+                    const latency = isLearned ? '<300ms (Warm)' : isSurya ? '~0.8s' : isPaddle ? '~1.0s' : '~1.2s';
+                    const f1 = isLearned ? '99.5%' : isSurya ? '98.9%' : isPaddle ? '95.0%' : '90.0%';
+                    const tag = isLearned
+                      ? 'Template memory & parallel micro-OCR'
+                      : isSurya
+                      ? 'Layout analysis & reading order'
+                      : isPaddle
+                      ? 'Deep multi-lingual recognition'
+                      : 'Deterministic offline character OCR';
+
+                    return (
+                      <div
+                        key={p.name}
+                        onClick={() => !uploading && setSelectedPipeline(p.name)}
+                        className={`p-3 rounded-xl border transition-all cursor-pointer relative bg-white flex flex-col justify-between select-none ${
+                          isSelected
+                            ? 'border-blue-600 bg-blue-50/20 ring-2 ring-blue-500/20 shadow-sm'
+                            : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/60'
+                        } ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
+                      >
+                        <div>
+                          <div className="flex items-start justify-between gap-1 mb-1">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                                isSelected ? 'border-blue-600' : 'border-slate-300'
+                              }`}>
+                                {isSelected && <div className="w-1.5 h-1.5 bg-blue-600 rounded-full" />}
+                              </div>
+                              <span className="font-bold text-xs text-slate-900 truncate">
+                                {displayName}
+                              </span>
+                            </div>
+                            {isLearned && (
+                              <span className="text-[8px] font-bold px-1 py-0.2 rounded bg-emerald-100 text-emerald-800 font-mono flex-shrink-0">
+                                ⚡ FAST
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-500 leading-snug line-clamp-2 mt-1">
+                            {tag}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2 mt-2 border-t border-slate-100 text-[10px] font-mono">
+                          <span className="text-slate-600 font-semibold">{latency}</span>
+                          <span className="text-emerald-700 font-bold">{f1} F1</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Section 2: Side-by-Side Ingestion Dropzone & Ingestion Queue */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1.3fr] gap-6 items-start">
+            {/* Left Column: Dropzone & Execution */}
+            <div className="flex flex-col gap-4">
+              <Card className="border shadow-sm rounded-xl bg-white overflow-hidden">
+                <CardHeader className="flex flex-row justify-between items-center pb-2 bg-slate-50 border-b border-slate-200 px-4 py-3">
+                  <div className="flex items-center gap-2 font-bold text-slate-800 text-xs">
+                    <UploadCloud size={15} className="text-blue-600" />
+                    <span>Document Staging & Cryptographic Ingestion</span>
+                  </div>
+                  <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-mono text-[9px] px-2 py-0.5 rounded font-bold">
+                    TLS 1.3 Vault
+                  </span>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <div
+                    className={`border-2 border-dashed transition-all duration-200 flex flex-col items-center justify-center cursor-pointer min-h-[170px] rounded-xl p-4 text-center ${
+                      dragActive ? 'border-blue-600 bg-blue-50/20' : 'border-slate-300 bg-slate-50/50 hover:border-slate-400'
+                    } ${file ? 'bg-blue-50/20 border-blue-600' : ''}`}
+                    onDragEnter={handleDrag}
+                    onDragLeave={handleDrag}
+                    onDragOver={handleDrag}
+                    onDrop={handleDrop}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      className="hidden"
+                      accept="image/jpeg,image/png,application/pdf"
+                      onChange={handleFileChange}
+                      disabled={uploading}
+                    />
+
+                    <div className="p-2.5 bg-white border border-slate-200 rounded-full text-blue-600 shadow-2xs mb-2">
+                      <UploadCloud size={20} />
+                    </div>
+                    <div className="text-xs font-bold text-slate-800 mb-0.5">
+                      Drag & drop document or click to browse
+                    </div>
+                    <div className="text-[11px] text-slate-500 mb-3">
+                      Accepts PDF, PNG, TIFF, or JPEG (Max 25 MB)
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <span className="px-1.5 py-0.5 bg-slate-200 text-slate-700 text-[9px] font-bold rounded font-mono">PDF</span>
+                      <span className="px-1.5 py-0.5 bg-slate-200 text-slate-700 text-[9px] font-bold rounded font-mono">PNG</span>
+                      <span className="px-1.5 py-0.5 bg-slate-200 text-slate-700 text-[9px] font-bold rounded font-mono">JPEG</span>
+                    </div>
+                  </div>
+
+                  {/* Staged Document Indicator */}
+                  {file && (
+                    <div className="mt-3 border border-slate-200 rounded-xl bg-slate-50 p-2.5 flex items-center justify-between gap-3 animate-fade-in-up">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-red-50 text-red-600 font-bold text-[10px] flex items-center justify-center border border-red-200 flex-shrink-0">
+                          PDF
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs font-bold text-slate-800 truncate">{file.name}</div>
+                          <div className="text-[10px] font-mono text-slate-400">{(file.size / 1024).toFixed(0)} KB • Staged for extraction</div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setFile(null); }}
+                        className="p-1 hover:text-red-600 text-slate-400 rounded cursor-pointer"
+                        title="Remove file"
+                      >
+                        <XCircle size={16} />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Pre-Flight Mini Summary */}
+                  <div className="mt-3 p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-[11px] flex flex-col gap-1.5">
+                    <div className="flex justify-between items-center text-slate-500">
+                      <span>Engine:</span>
+                      <span className="font-bold text-slate-800 font-mono">
+                        {selectedPipeline === 'learned_anchor' ? '⚡ Learned Anchor' : selectedPipeline?.toUpperCase() || 'Auto'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-slate-500">
+                      <span>Destination:</span>
+                      <span className="font-bold text-slate-800 font-mono">Oracle DB (DATA_OCR)</span>
+                    </div>
+                  </div>
+
+                  {/* Submit Action Button */}
+                  <button
+                    type="submit"
+                    className="w-full flex items-center justify-center gap-2 py-3 mt-4 text-xs font-bold shadow-md bg-[#1e3a8a] hover:bg-[#1e40af] text-white rounded-xl transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={uploading || !file || !selectedTemplateCode || !selectedPipeline}
+                  >
+                    {uploading ? (
+                      <>
+                        <Loader size={14} className="animate-spin" />
+                        <span>INITIALIZING OCR PIPELINE...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>EXECUTE EXTRACTION</span>
+                        <ChevronRight size={14} />
+                      </>
+                    )}
+                  </button>
+
+                  {error && (
+                    <div className="p-2.5 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs flex items-center gap-2 mt-3">
+                      <AlertCircle size={14} className="flex-shrink-0" />
+                      <span>{error}</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Right Column: Ingestion Queue Prominently Placed Side-by-Side! */}
+            <div className="flex flex-col gap-3">
+              <Card className="border shadow-sm rounded-xl bg-white overflow-hidden">
+                <CardHeader className="flex flex-row justify-between items-center pb-2 bg-slate-50 border-b border-slate-200 px-4 py-3">
+                  <div className="flex items-center gap-2 font-bold text-slate-800 text-xs">
+                    <Clock size={15} className="text-[#1e3a8a]" />
+                    <span>Recent Ingestion Jobs & Review Queue</span>
+                    {recentUploads.length > 0 && (
+                      <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-blue-100 text-blue-700">
+                        {recentUploads.length}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveView('queue')}
+                      className="text-xs text-blue-700 hover:text-blue-800 font-bold flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>Full Queue</span>
+                      <ArrowRight size={12} />
+                    </button>
+                    {recentUploads.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={clearRecentUploads}
+                        className="text-[11px] text-red-600 hover:text-red-700 font-medium cursor-pointer ml-1"
+                        title="Clear history"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  {recentUploads.length === 0 ? (
+                    <div className="p-8 text-center text-slate-400 text-xs flex flex-col items-center justify-center">
+                      <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 mb-2">
+                        <UploadCloud size={20} />
+                      </div>
+                      <p className="font-bold text-slate-700 text-xs">No documents processed yet</p>
+                      <p className="text-[11px] text-slate-400 mt-1 max-w-xs">
+                        Stage a PDF on the left and click Execute to see extraction results and queue items here in real time.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-slate-100 max-h-[460px] overflow-y-auto">
+                      {recentUploads.slice(0, 6).map((job) => {
+                        const isProcessing = job.status === 'PROCESSING' || job.status === 'QUEUED';
+                        const isComp = job.status === 'COMPLETED';
+                        const isWarn = job.status === 'WARNING';
+                        const isFail = job.status === 'FAILED';
+                        const isLoadingThis = loadingJobId === job.job_id;
+
+                        return (
+                          <div
+                            key={job.job_id}
+                            className="p-3 flex items-center justify-between hover:bg-slate-50/80 transition-colors gap-3"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 font-bold text-xs ${
+                                isComp ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' :
+                                isWarn ? 'bg-amber-50 text-amber-600 border border-amber-200' :
+                                isFail ? 'bg-red-50 text-red-600 border border-red-200' :
+                                'bg-blue-50 text-blue-600 border border-blue-200 animate-pulse'
+                              }`}>
+                                <File size={16} />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5 mb-0.5">
+                                  <span className="font-bold text-xs text-slate-900 truncate max-w-[200px]" title={job.filename}>
+                                    {job.filename}
+                                  </span>
+                                  <span className="text-[9px] font-mono text-slate-400">
+                                    #{job.job_id ? job.job_id.substring(0, 6) : ''}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1.5 text-[10px] text-slate-500 flex-wrap">
+                                  <span className="px-1 py-0.2 bg-slate-100 rounded text-slate-700 font-bold font-mono">
+                                    {job.template}
+                                  </span>
+                                  <span className={`px-1 py-0.2 rounded font-mono font-bold ${
+                                    job.pipeline === 'learned_anchor' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-600'
+                                  }`}>
+                                    {job.pipeline === 'learned_anchor' ? '⚡ ANCHOR' : job.pipeline?.toUpperCase()}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              {isProcessing ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 font-mono animate-pulse">
+                                  <Loader size={10} className="animate-spin" /> Live
+                                </span>
+                              ) : isComp ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 font-mono">
+                                  <CheckCircle2 size={11} /> OK
+                                </span>
+                              ) : isWarn ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 font-mono">
+                                  <AlertCircle size={11} /> Review
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-50 text-red-700 border border-red-200 font-mono">
+                                  <XCircle size={11} /> Fail
+                                </span>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={() => handleOpenJob(job.job_id)}
+                                disabled={isLoadingThis}
+                                className={`px-2.5 py-1 text-xs font-bold rounded-lg flex items-center gap-1 transition-all cursor-pointer ${
+                                  isProcessing
+                                    ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs'
+                                    : 'bg-[#1e3a8a] hover:bg-[#1e40af] text-white shadow-2xs'
+                                }`}
+                              >
+                                {isLoadingThis ? <Loader size={10} className="animate-spin" /> : null}
+                                <span>{isProcessing ? '⚡ Scan' : 'Review'}</span>
+                                <ArrowRight size={11} />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </form>
+      ) : (
+        /* Full Review Queue Dashboard View (Inspired by Image 4) */
+        <div className="flex flex-col gap-4">
+          {/* Summary Metric Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="p-3.5 bg-white border border-slate-200 rounded-xl shadow-2xs flex flex-col">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total Documents</span>
+              <span className="text-2xl font-bold text-slate-900 mt-1 font-heading">{recentUploads.length}</span>
+            </div>
+            <div className="p-3.5 bg-white border border-slate-200 rounded-xl shadow-2xs flex flex-col">
+              <span className="text-[11px] font-semibold text-amber-600 uppercase tracking-wider flex items-center gap-1">
+                <AlertCircle size={12} /> Needs Review
+              </span>
+              <span className="text-2xl font-bold text-amber-700 mt-1 font-heading">{queueNeedsReviewCount}</span>
+            </div>
+            <div className="p-3.5 bg-white border border-slate-200 rounded-xl shadow-2xs flex flex-col">
+              <span className="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider flex items-center gap-1">
+                <CheckCircle2 size={12} /> Verified & Completed
+              </span>
+              <span className="text-2xl font-bold text-emerald-700 mt-1 font-heading">{queueCompletedCount}</span>
+            </div>
+            <div className="p-3.5 bg-white border border-slate-200 rounded-xl shadow-2xs flex flex-col">
+              <span className="text-[11px] font-semibold text-blue-600 uppercase tracking-wider flex items-center gap-1">
+                <Clock size={12} /> Currently Processing
+              </span>
+              <span className="text-2xl font-bold text-blue-700 mt-1 font-heading">{queuePendingCount}</span>
+            </div>
+          </div>
+
+          {/* Search, Filter & Controls */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
+            {/* Filter pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto">
+              <button
+                type="button"
+                onClick={() => setQueueFilter('all')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                  queueFilter === 'all'
+                    ? 'bg-slate-900 text-white'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                All ({recentUploads.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setQueueFilter('review')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                  queueFilter === 'review'
+                    ? 'bg-amber-600 text-white'
+                    : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'
+                }`}
+              >
+                Needs Review ({queueNeedsReviewCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => setQueueFilter('completed')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                  queueFilter === 'completed'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
+                }`}
+              >
+                Completed ({queueCompletedCount})
+              </button>
+              <button
+                type="button"
+                onClick={() => setQueueFilter('processing')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                  queueFilter === 'processing'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200'
+                }`}
+              >
+                Processing ({queuePendingCount})
+              </button>
+            </div>
+
+            {/* Search Input & Clear */}
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Filter documents..."
+                  className="pl-8 pr-3 py-1 text-xs bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-blue-500 w-48 font-medium"
+                  value={queueSearch}
+                  onChange={(e) => setQueueSearch(e.target.value)}
+                />
+              </div>
+
+              {recentUploads.length > 0 && (
+                <button
+                  type="button"
+                  onClick={clearRecentUploads}
+                  className="p-1.5 text-slate-400 hover:text-red-600 border border-slate-200 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
+                  title="Clear history"
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Full Queue Table (Inspired by Image 4 structured layout) */}
+          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    <th className="py-3 px-4">DOCUMENT</th>
+                    <th className="py-3 px-3">TEMPLATE / DEPT</th>
+                    <th className="py-3 px-3">PIPELINE</th>
+                    <th className="py-3 px-3">STATUS</th>
+                    <th className="py-3 px-3">INGESTED</th>
+                    <th className="py-3 px-4 text-right">ACTION</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-xs">
+                  {filteredQueue.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-12 text-center text-slate-400">
+                        <UploadCloud size={28} className="mx-auto mb-2 opacity-40" />
+                        <p className="font-bold text-slate-600">No documents found matching filters</p>
+                        <p className="text-[11px] text-slate-400 mt-1">Switch to Ingest & Process to upload and run extraction jobs.</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredQueue.map((job) => {
+                      const isProcessing = job.status === 'PROCESSING' || job.status === 'QUEUED';
+                      const isComp = job.status === 'COMPLETED';
+                      const isWarn = job.status === 'WARNING';
+                      const isFail = job.status === 'FAILED';
+                      const isLoadingThis = loadingJobId === job.job_id;
+
+                      return (
+                        <tr
+                          key={job.job_id}
+                          className="hover:bg-slate-50/70 transition-colors cursor-pointer"
+                          onClick={() => handleOpenJob(job.job_id)}
+                        >
+                          {/* Document Name */}
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-xs flex-shrink-0 ${
+                                isComp ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' :
+                                isWarn ? 'bg-amber-50 text-amber-600 border border-amber-200' :
+                                isFail ? 'bg-red-50 text-red-600 border border-red-200' :
+                                'bg-blue-50 text-blue-600 border border-blue-200 animate-pulse'
+                              }`}>
+                                <File size={16} />
+                              </div>
+                              <div className="min-w-0">
+                                <div className="font-bold text-slate-900 truncate max-w-[280px]">
+                                  {job.filename}
+                                </div>
+                                <div className="flex items-center gap-2 text-[10px] font-mono text-slate-400 mt-0.5">
+                                  <span>#{job.job_id ? job.job_id.substring(0, 8) : ''}</span>
+                                  {job.file_size && <span>• {(job.file_size / 1024).toFixed(0)} KB</span>}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Template & Dept */}
+                          <td className="py-3 px-3">
+                            <div className="flex flex-col gap-0.5">
+                              <span className="font-bold text-blue-700 font-mono text-[11px]">
+                                {job.template}
+                              </span>
+                              <span className="text-[10px] text-slate-500 font-mono uppercase">
+                                {job.department || 'GENERAL'}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* Pipeline */}
+                          <td className="py-3 px-3">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                              job.pipeline === 'learned_anchor'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                : 'bg-slate-100 text-slate-700'
+                            }`}>
+                              {job.pipeline === 'learned_anchor' ? '⚡ LEARNED ANCHOR' : job.pipeline?.toUpperCase()}
+                            </span>
+                          </td>
+
+                          {/* Status Badge */}
+                          <td className="py-3 px-3">
+                            {isProcessing ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200 font-mono animate-pulse">
+                                <Loader size={11} className="animate-spin" /> PROCESSING...
+                              </span>
+                            ) : isComp ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 font-mono">
+                                <CheckCircle2 size={12} /> VERIFIED
+                              </span>
+                            ) : isWarn ? (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200 font-mono">
+                                <AlertCircle size={12} /> NEEDS REVIEW
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-red-50 text-red-700 border border-red-200 font-mono">
+                                <XCircle size={12} /> FAILED
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Ingested Time */}
+                          <td className="py-3 px-3 text-slate-500 font-mono text-[11px]">
+                            {job.created_at ? new Date(job.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '-'}
+                          </td>
+
+                          {/* Actions */}
+                          <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenJob(job.job_id)}
+                              disabled={isLoadingThis}
+                              className={`px-3 py-1.5 text-xs font-bold rounded-lg inline-flex items-center gap-1.5 transition-all cursor-pointer ${
+                                isProcessing
+                                  ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs'
+                                  : 'bg-[#1e3a8a] hover:bg-[#1e40af] text-white shadow-2xs'
+                              }`}
+                            >
+                              {isLoadingThis ? <Loader size={12} className="animate-spin" /> : null}
+                              <span>{isProcessing ? '⚡ Live Scanning' : 'Review Document'}</span>
+                              <ArrowRight size={12} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {zoomedImage && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">

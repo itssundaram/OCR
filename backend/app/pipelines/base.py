@@ -35,6 +35,8 @@ class TableResult:
     bbox: dict | None = None
     crop_image: Image.Image | None = None
     extraction_method: str = ""
+    cells: list[dict] = field(default_factory=list)
+    markdown: str = ""
 
 @dataclass
 class PipelineResult:
@@ -48,6 +50,8 @@ class PipelineResult:
     error_message: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
     step_events: list[dict] = field(default_factory=list)
+    all_detections: list[dict] = field(default_factory=list)
+
 
 class OCRPipeline(ABC):
     """Plugin interface — all pipelines implement this."""
@@ -146,11 +150,15 @@ class OCRPipeline(ABC):
                 step_events=step_events,
             )
 
-        try:
-            result.tables = self.extract_tables(pages, job_id)
-        except Exception as table_exc:
-            result.status = "partial"
-            result.metadata.setdefault("warnings", []).append(f"extract_tables failed: {table_exc}")
+        has_table_fields = any(f.get("type") == "table" for f in template_fields) if template_fields else False
+        if has_table_fields:
+            try:
+                result.tables = self.extract_tables(pages, job_id)
+            except Exception as table_exc:
+                result.status = "partial"
+                result.metadata.setdefault("warnings", []).append(f"extract_tables failed: {table_exc}")
+        else:
+            result.tables = []
 
         result.processing_time_ms = int((time.perf_counter() - start) * 1000)
         _internal_event_callback("PIPELINE_COMPLETED", {"pipeline": self.name, "status": result.status, "overall_confidence": result.overall_confidence})

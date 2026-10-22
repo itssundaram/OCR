@@ -263,6 +263,107 @@ def update_field_value(req: UpdateFieldValueRequest, db: Session = Depends(get_d
     })
 
 
+class ManageTemplateFieldsRequest(BaseModel):
+    job_id: str
+    action: str  # "add", "remove", "update"
+    field_key: str
+    value: str | None = None
+    bbox: dict[str, Any] | None = None
+    page_number: int = 1
+    save_to_template: bool = True
+
+
+@router.post("/extract/manage-template-field", response_model=APIResponse[dict])
+def manage_template_field(req: ManageTemplateFieldsRequest, db: Session = Depends(get_db)):
+    """
+    Add, remove, or update a field in the current job result, and optionally persist
+    it directly to the template's learned_anchors so future runs automatically extract it.
+    """
+    job = db.get(ProcessingJob, req.job_id)
+    if not job:
+        raise DocIntError(f"Processing job {req.job_id} not found.", "JOB_NOT_FOUND")
+
+    template = db.get(Template, job.template_id) if job.template_id else None
+
+    # 1. Update ProcessingResult.extracted_json
+    res_stmt = select(ProcessingResult).where(ProcessingResult.job_id == req.job_id)
+    result = db.execute(res_stmt).scalars().first()
+    if result:
+        ej = dict(result.extracted_json or {})
+        fields = dict(ej.get("fields", {}))
+
+        if req.action == "remove":
+            if req.field_key in fields:
+                del fields[req.field_key]
+        else:  # "add" or "update"
+            fields[req.field_key] = {
+                "value": req.value or "",
+                "confidence": 1.0,
+                "found": bool(req.value),
+                "bbox": req.bbox,
+                "source_page": req.page_number,
+                "manually_managed": True,
+            }
+
+        ej["fields"] = fields
+        result.extracted_json = ej
+        flag_modified(result, "extracted_json")
+
+    # 2. Update FieldExtraction DB table
+    if req.action == "remove":
+        db.query(FieldExtraction).filter_by(job_id=req.job_id, field_name=req.field_key).delete()
+    else:
+        fe = db.query(FieldExtraction).filter_by(job_id=req.job_id, field_name=req.field_key).first()
+        if fe:
+            fe.field_value = req.value or ""
+            fe.confidence = 1.0
+            if req.bbox:
+                fe.bbox_json = req.bbox
+        else:
+            db.add(FieldExtraction(
+                job_id=req.job_id,
+                field_name=req.field_key,
+                field_value=req.value or "",
+                confidence=1.0,
+                bbox_json=req.bbox or {},
+                extraction_method="user_defined",
+                is_final=1,
+            ))
+
+    # 3. Persist to Template.template_json (learned_anchors)
+    if req.save_to_template and template:
+        tj = dict(template.template_json or {})
+        la = dict(tj.get("learned_anchors", {}))
+        la_fields = dict(la.get("fields", {}))
+
+        if req.action == "remove":
+            if req.field_key in la_fields:
+                del la_fields[req.field_key]
+        else:
+            la_fields[req.field_key] = {
+                "bbox": req.bbox,
+                "page_number": req.page_number,
+                "value": req.value,
+            }
+
+        la["fields"] = la_fields
+        tj["learned_anchors"] = la
+        template.template_json = tj
+        flag_modified(template, "template_json")
+
+    db.commit()
+
+    return APIResponse(data={
+        "status": "success",
+        "action": req.action,
+        "field_key": req.field_key,
+        "value": req.value,
+        "bbox": req.bbox,
+        "template_updated": bool(req.save_to_template and template),
+    })
+
+
+
 def _resolve_department_and_template(db: Session, department_slug: str, template_code: str) -> Template:
     dept_stmt = select(Department).where(Department.slug == department_slug.upper())
     dept = db.execute(dept_stmt).scalars().first()

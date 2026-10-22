@@ -96,4 +96,17 @@ export const extractService = {
       value,
       bbox,
     }),
+
+  // Add, remove, or update template fields
+  manageTemplateField: (jobId, action, fieldKey, value = null, bbox = null, pageNumber = 1, saveToTemplate = true) =>
+    api.post('/extract/manage-template-field', {
+      job_id: jobId,
+      action,
+      field_key: fieldKey,
+      value,
+      bbox,
+      page_number: pageNumber,
+      save_to_template: saveToTemplate,
+    }),
 };
+
