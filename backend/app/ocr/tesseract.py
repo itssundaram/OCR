@@ -220,7 +220,9 @@ class TesseractOCREngine(OCREngine):
         """
         from collections import defaultdict
 
-        reader = csv.DictReader(io.StringIO(tsv_text), delimiter="\t")
+        # QUOTE_NONE: Tesseract TSV is not CSV. A word that starts with an OCR'd
+        # quote mark (") would otherwise swallow the following rows into one cell.
+        reader = csv.DictReader(io.StringIO(tsv_text), delimiter="\t", quoting=csv.QUOTE_NONE)
 
         # Group words by (block, paragraph, line)
         line_groups: dict[tuple, list[dict]] = defaultdict(list)

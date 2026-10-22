@@ -10,6 +10,8 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import { Badge } from './ui/Badge';
 import KeyValuePanel from './KeyValuePanel';
 import TableGrid from './TableGrid';
+import LiveFieldsPanel from './LiveFieldsPanel';
+import { useJobStream } from '../hooks/useJobStream';
 import { evidenceService } from '../services/evidence';
 import { extractService } from '../services/extract';
 import { templatesService } from '../services/templates';
@@ -120,6 +122,9 @@ const FastExtractionResultView = ({
 
     return () => clearInterval(interval);
   }, [currentJob?.job_id, currentJob?.status]);
+
+  // fast_ocr only: field-by-field results over SSE while the job runs (polling above is unchanged)
+  const live = useJobStream(currentJob?.job_id, isScanning && currentJob?.pipeline_mode === 'fast_ocr');
 
   // Measure container dimensions for responsive page fitting
   useEffect(() => {
@@ -933,6 +938,8 @@ const FastExtractionResultView = ({
                       <div className="absolute inset-0 bg-cyan-500/5 backdrop-blur-[0.5px]" />
                     </div>
                   )}
+
+                  <LiveFieldsPanel live={live} />
 
                   {/* 1. Ground Truth Reference Bounding Boxes (Dashed Template Baseline) */}
                   {showReferenceAnchors &&

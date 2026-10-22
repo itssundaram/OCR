@@ -587,10 +587,16 @@ def extract_document_with_pipeline(
     template = _resolve_department_and_template(db, department_slug, template_code)
     doc_id, job_id = _save_uploaded_file_and_create_job(db, file, template, pipeline_mode=pipeline_name)
 
-    dispatched_via = _dispatch_job(
-        "app.workers.tasks.run_single_pipeline_job", job_id, (pipeline_name, force_relearn),
-        background_tasks, run_single_pipeline_job,
-    )
+    if pipeline_name == "fast_ocr":
+        # Own runner + queue + live events (app/fast/); every other pipeline
+        # keeps the dispatch below, unchanged.
+        from app.fast.dispatch import dispatch_fast_job
+        dispatched_via = dispatch_fast_job(job_id, force_relearn, background_tasks)
+    else:
+        dispatched_via = _dispatch_job(
+            "app.workers.tasks.run_single_pipeline_job", job_id, (pipeline_name, force_relearn),
+            background_tasks, run_single_pipeline_job,
+        )
 
     base_url = f"/api/v1/{department_slug.lower()}/{template_code.lower()}"
     return APIResponse(data={
@@ -600,6 +606,7 @@ def extract_document_with_pipeline(
         "pipeline": pipeline_name,
         "dispatched_via": dispatched_via,
         "status_url": f"{base_url}/status/{job_id}",
+        **({"events_url": f"/api/v1/stream/jobs/{job_id}"} if pipeline_name == "fast_ocr" else {}),
     })
 
 

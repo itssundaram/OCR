@@ -38,6 +38,9 @@ def list_available_pipelines():
         elif name == "learned_anchor":
             desc = "Autonomous Geometric Anchor Pipeline. Instant <300ms warm extraction for known templates with adaptive VLM learning fallback."
             stack = ["Geometric Anchors", "Micro-Region OCR", "Qwen 2.5-VL Cold Learning", "Template Memory"]
+        elif name == "fast_ocr":
+            desc = "Fast layout-first pipeline: PDF text layer first, one cached OCR pass for scans, ruled tables from geometry, live field-by-field results, VLM only to re-read a single field."
+            stack = ["PyMuPDF text layer", "Tesseract (once per page)", "OpenCV tables", "Key:Value matching", "VLM single-field repair"]
         pipelines.append({
             "name": pipeline.name,
             "description": desc,

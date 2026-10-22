@@ -157,6 +157,35 @@ class Settings(BaseSettings):
     KV_FIRST_MIN_CONFIDENCE: float = 0.6
     # Share of the template's fields that must be matched for the shortcut (1.0 = all).
     KV_FIRST_MIN_MATCH_RATIO: float = 1.0
+
+    # ── fast_ocr pipeline (app/fast/) ───────────────────────────────────────────
+    # A separate pipeline: PyMuPDF text layer first (no OCR on digital PDFs), one
+    # cached Tesseract pass per scanned page, ruled-line tables read from geometry,
+    # fields streamed live over SSE, VLM only to re-read one cropped field.
+    FAST_PAGE_THREADS: int = 4              # pages read in parallel (Tesseract is a subprocess)
+    FAST_NATIVE_MIN_WORDS: int = 8          # fewer text-layer words than this = treat the page as scanned
+    # A page whose area is mostly one or more images is a scan, even when it has a
+    # text layer: those layers are usually a few watermark words or a poor embedded
+    # OCR. Set FAST_TRUST_EMBEDDED_OCR=true to use such layers when they are large.
+    FAST_IMAGE_PAGE_COVER: float = 0.5
+    FAST_TRUST_EMBEDDED_OCR: bool = False
+    FAST_EMBEDDED_OCR_MIN_WORDS: int = 60
+    FAST_OCR_CACHE_ENABLED: bool = True     # reuse OCR words for the same file bytes + page + engine
+    FAST_OCR_CACHE_DIR: str = "./data/ocr_cache"
+    FAST_OCR_CACHE_MAX_MB: int = 512
+    FAST_OCR_CACHE_MAX_AGE_DAYS: int = 14
+    FAST_TABLE_TIMEOUT_S: int = 20          # per page; a timeout means "no table", never a stuck job
+    FAST_TATR_FALLBACK_ENABLED: bool = False  # borderless tables via TATR on a crop (needs weights)
+    FAST_VLM_FALLBACK_ENABLED: bool = True  # re-read ONE cropped field when the cheap steps failed
+    FAST_VLM_TIMEOUT_S: int = 60
+    FAST_VLM_KEEP_ALIVE: str = "30m"
+    FAST_VLM_MAX_FIELDS: int = 8            # cap on VLM calls per job
+    FAST_QUEUE_NAME: str = "docint-fast"    # run_fast_worker.py listens here; falls back to REDIS_QUEUE_NAME
+    FAST_JOB_TIMEOUT_S: int = 600           # outer ceiling only; stage limits do the real work
+    FAST_ALLOW_BACKGROUND_FALLBACK: bool = False  # False: answer 503 if Redis is down
+    FAST_EVENT_STREAM_MAXLEN: int = 5000
+    FAST_EVENT_STREAM_TTL_S: int = 3600
+    FAST_SSE_HEARTBEAT_S: int = 15
     # Skip img2table on native-text pages (PyMuPDF already has the text structure)
     IMG2TABLE_SKIP_NATIVE: bool = True
     # Max img2table passes per page: 1=bordered only, 2=+implicit, 3=+borderless
