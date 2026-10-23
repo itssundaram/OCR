@@ -1,11 +1,16 @@
+import os
 import platform
+import time
+
 import redis
-from rq import Queue, Worker
+from rq import Queue, SimpleWorker, Worker
 
 from app.core.config import settings
 from app.core.logging import configure_logging, get_logger
 
 configure_logging()
+# Tesseract's own OpenMP threads fight with page/crop-parallel OCR; one each is faster overall
+os.environ.setdefault("OMP_THREAD_LIMIT", str(settings.TESSERACT_OMP_THREADS))
 logger = get_logger(__name__)
 
 
@@ -36,21 +41,32 @@ def _initialize_worker_process() -> None:
     # Loads Tesseract, Surya Layout, Surya OCR, and TATR into RAM/VRAM once.
     # Forked child processes inherit via copy-on-write at zero additional cost.
     logger.info("worker_preloading_models")
-    from app.core.model_registry import preload_all_models
-    preload_all_models()
-    logger.info("worker_models_ready")
+    t0 = time.perf_counter()
+    try:
+        from app.core.model_registry import preload_all_models
+        preload_all_models()
+        logger.info("worker_models_ready", seconds=round(time.perf_counter() - t0, 1))
+    except Exception as exc:
+        # a missing optional model must not keep the worker from starting; it loads on first use instead
+        logger.error("worker_preload_failed_continuing", error=str(exc), exc_info=True)
 
 
 def _build_worker(queues, connection):
-    """RQ's default Worker relies on os.fork(), which doesn't exist on
-    Windows — hence the rq-win WindowsWorker used on the dev box. On Linux
-    (the GPU server), the standard rq.Worker is the right, simpler choice;
-    only import rq_win when actually on Windows so this file runs on both
-    without requiring rq-win to be installed on Linux at all."""
+    """Which RQ worker runs the jobs.
+
+    * Windows: rq-win's WindowsWorker (no fork there).
+    * Linux, WORKER_MODE auto/simple (default): SimpleWorker - the job runs INSIDE this process. The classic
+      Worker forks a child per job; the parent has already loaded CUDA models (Surya/TATR) by then and a forked
+      child that touches CUDA, or an OpenMP thread pool, can deadlock - the "terminal got stuck" symptom.
+      In-process also means the preloaded models are used directly (no copy-on-write surprises).
+    * WORKER_MODE=fork: the classic forking Worker, if you really want process isolation per job.
+    """
     if platform.system() == "Windows":
         from rq_win import WindowsWorker
         return WindowsWorker(queues, connection=connection)
-    return Worker(queues, connection=connection)
+    if settings.WORKER_MODE == "fork":
+        return Worker(queues, connection=connection)
+    return SimpleWorker(queues, connection=connection)
 
 
 def main():
@@ -61,7 +77,9 @@ def main():
     conn = redis.from_url(settings.REDIS_URL)
     q = Queue(settings.REDIS_QUEUE_NAME, connection=conn)
     worker = _build_worker([q], connection=conn)
-    print(f"Starting RQ worker ({platform.system()}) on queue '{settings.REDIS_QUEUE_NAME}'...")
+    from app.core.stall_guard import start_heartbeat
+    start_heartbeat("worker")
+    print(f"Starting RQ worker ({type(worker).__name__}, {platform.system()}) on queue '{settings.REDIS_QUEUE_NAME}'...", flush=True)
     worker.work(with_scheduler=True)
 
 

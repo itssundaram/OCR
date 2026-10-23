@@ -163,6 +163,14 @@ class Settings(BaseSettings):
     # cached Tesseract pass per scanned page, ruled-line tables read from geometry,
     # fields streamed live over SSE, VLM only to re-read one cropped field.
     FAST_PAGE_THREADS: int = 4              # pages read in parallel (Tesseract is a subprocess)
+    # Optional JSON file: a list of lists of label phrases that mean the same field (extends app/ocr/label_kb.py)
+    LABEL_SYNONYMS_FILE: str | None = None
+    # Whole-page second read of ink the main pass skipped (app/fast/gapfill.py). MEASURED: adds ~7 s per scanned page
+    # on a 2-core box for a handful of words, so it is OFF by default. What is on by default is the cheap, targeted
+    # version: when a template field's label is found but no value was read next to it, only THAT spot is re-read.
+    FAST_GAP_FILL_ENABLED: bool = False
+    FAST_GAP_FILL_BUDGET_S: float = 3.0     # per page, when enabled
+    FAST_LABEL_REREAD_ENABLED: bool = True  # re-read the spot next to a found label that came back empty
     FAST_NATIVE_MIN_WORDS: int = 8          # fewer text-layer words than this = treat the page as scanned
     # A page whose area is mostly one or more images is a scan, even when it has a
     # text layer: those layers are usually a few watermark words or a poor embedded
@@ -177,7 +185,9 @@ class Settings(BaseSettings):
     FAST_TABLE_TIMEOUT_S: int = 20          # per page; a timeout means "no table", never a stuck job
     FAST_TATR_FALLBACK_ENABLED: bool = False  # borderless tables via TATR on a crop (needs weights)
     FAST_VLM_FALLBACK_ENABLED: bool = True  # re-read ONE cropped field when the cheap steps failed
-    FAST_VLM_TIMEOUT_S: int = 60
+    FAST_VLM_TIMEOUT_S: int = 40            # one crop read; a stalled call ends here
+    FAST_VLM_PARALLEL: int = 2              # crop reads in flight at once (Ollama queues the rest)
+    FAST_VLM_BUDGET_S: int = 45             # total VLM time per job; fields left over are flagged for review, not waited for
     FAST_VLM_KEEP_ALIVE: str = "30m"
     FAST_VLM_MAX_FIELDS: int = 8            # cap on VLM calls per job
     FAST_REFINE_ENABLED: bool = True        # re-read flagged table cells in the background after the first result
@@ -209,6 +219,10 @@ class Settings(BaseSettings):
     LLM_MAX_OUTPUT_TOKENS: int = 4096  # Cap on LLM response token length
     OLLAMA_NUM_PREDICT: int = 4096   # Max tokens to generate (aliased by LLM_MAX_OUTPUT_TOKENS)
     OLLAMA_NUM_CTX: int = 16384     # Context window size
+    # A stalled Ollama call used to block a worker forever (the client had no timeout). Every call now ends
+    # after this many seconds with a clear error; the pipeline then degrades instead of hanging.
+    OLLAMA_REQUEST_TIMEOUT_S: int = 180
+    OLLAMA_KEEP_ALIVE: str = "30m"   # keep the model loaded between jobs (no cold start per document)
 
     # Set ENABLE_OCR_CACHE=true to reuse stored OCR results on re-processing
     ENABLE_OCR_CACHE: bool = True
@@ -224,6 +238,15 @@ class Settings(BaseSettings):
     # ── Processing ────────────────────────────────────────────────────────────
     MAX_UPLOAD_SIZE_MB: int = 50
     WORKER_COUNT: int = 1
+    # How run_worker.py runs a job: "auto"/"simple" = inside the worker process (no fork, safe with CUDA models
+    # loaded in the parent), "fork" = classic RQ child process per job (can deadlock after CUDA init).
+    WORKER_MODE: Literal["auto", "simple", "fork"] = "auto"
+    # A job that has not finished after this long gets every thread's stack written to the log, repeatedly,
+    # so a stuck job always shows WHERE it is stuck. 0 = off.
+    WORKER_STALL_DUMP_S: int = 90
+    WORKER_HEARTBEAT_S: int = 30     # one "worker alive / current job" log line this often
+    # Tesseract's own OpenMP threads fight with parallel page reads; 1 is faster for page-parallel OCR.
+    TESSERACT_OMP_THREADS: int = 1
     # Number of pages from the start of a document to process. 0 = all pages.
     MAX_PAGES_TO_PROCESS: int = 0
 

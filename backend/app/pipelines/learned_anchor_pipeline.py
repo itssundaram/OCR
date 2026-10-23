@@ -48,6 +48,9 @@ from app.anchors import resolve_anchor, words_from_lines
 
 logger = get_logger(__name__)
 
+# every Tesseract call ends after this long (a hung subprocess used to block the whole job)
+_TESS_TIMEOUT = max(60, int(settings.TESSERACT_TIMEOUT) * 2)
+
 # Ensure pytesseract points to the configured binary
 if settings.TESSERACT_CMD:
     pytesseract.pytesseract.tesseract_cmd = settings.TESSERACT_CMD
@@ -951,7 +954,7 @@ class LearnedAnchorPipeline(OCRPipeline):
                 prep_page = self._preprocess_image(page)
                 p_words = []
                 try:
-                    t_data = pytesseract.image_to_data(prep_page, output_type=pytesseract.Output.DICT)
+                    t_data = pytesseract.image_to_data(prep_page, output_type=pytesseract.Output.DICT, timeout=_TESS_TIMEOUT)
                     for idx in range(len(t_data.get("text", []))):
                         w_txt = t_data["text"][idx].strip()
                         if w_txt:
@@ -1081,7 +1084,7 @@ class LearnedAnchorPipeline(OCRPipeline):
 
             try:
                 prep_crop = self._preprocess_image(crop_img)
-                data = pytesseract.image_to_data(prep_crop, output_type=pytesseract.Output.DICT, config="--psm 6")
+                data = pytesseract.image_to_data(prep_crop, output_type=pytesseract.Output.DICT, config="--psm 6", timeout=_TESS_TIMEOUT)
                 
                 c_words = []
                 for idx in range(len(data.get("text", []))):
@@ -1278,7 +1281,7 @@ class LearnedAnchorPipeline(OCRPipeline):
 
             if not p_words:
                 try:
-                    t_data = pytesseract.image_to_data(page_img, output_type=pytesseract.Output.DICT)
+                    t_data = pytesseract.image_to_data(page_img, output_type=pytesseract.Output.DICT, timeout=_TESS_TIMEOUT)
                     for idx in range(len(t_data.get("text", []))):
                         w_txt = t_data["text"][idx].strip()
                         if w_txt:
@@ -1314,7 +1317,7 @@ class LearnedAnchorPipeline(OCRPipeline):
                         if c_img:
                             try:
                                 prep = self._preprocess_image(c_img)
-                                val_raw = pytesseract.image_to_string(prep, config="--psm 6").strip()
+                                val_raw = pytesseract.image_to_string(prep, config="--psm 6", timeout=_TESS_TIMEOUT).strip()
                                 val_raw = re.sub(r"^[\s:\-\|\~\+\.\*]+", "", val_raw).strip()
                                 val = re.sub(r"[\_\~\|\s]+$", "", val_raw).strip()
                                 if spec and spec.get("regex"):
@@ -1339,29 +1342,43 @@ class LearnedAnchorPipeline(OCRPipeline):
             ai_result_engine = "learned_anchor_layout"
             ai_result_model = "deterministic_geometry"
         else:
-            # Fall back to Qwen 2.5-VL / LLM semantic extraction
-            ai_result = ai_orchestrator.run_smart_extraction(
-                ocr_res,
-                schema or {},
-                doc_id=job_id,
-                department=department,
-                doc_type=doc_type,
-                template_version=template_version,
-                extraction_instructions=extraction_instructions,
-                page_images=pages,
-            )
-            ai_result_engine = ai_result.engine_name
-            ai_result_model = ai_result.model_name
-            if event_callback:
-                event_callback("VLM_EXTRACTION_DONE", {"model": ai_result.model_name})
+            # Fall back to Qwen 2.5-VL / LLM semantic extraction. A stalled or unreachable model must not hang
+            # or fail the job: keep what the deterministic layout pass already found and say so.
+            try:
+                ai_result = ai_orchestrator.run_smart_extraction(
+                    ocr_res,
+                    schema or {},
+                    doc_id=job_id,
+                    department=department,
+                    doc_type=doc_type,
+                    template_version=template_version,
+                    extraction_instructions=extraction_instructions,
+                    page_images=pages,
+                )
+            except Exception as exc:
+                logger.error("cold_path_vlm_failed_degrading", error=str(exc), direct_fields=len(direct_matched_fields))
+                if event_callback:
+                    event_callback("VLM_EXTRACTION_SKIPPED", {"reason": str(exc)[:300]})
+                ai_result = None
 
-            conf_by_field = {c.field_name: c.confidence_score for c in ai_result.confidence_scores}
-            envelope = ai_result.parsed_data or {}
-            raw_fields = envelope.get("fields", envelope)
-            # Merge in direct matched fields for any missing
-            for k, v in direct_matched_fields.items():
-                if k not in raw_fields or not raw_fields[k]:
-                    raw_fields[k] = v
+            if ai_result is None:
+                raw_fields = dict(direct_matched_fields)
+                conf_by_field = {k: 0.95 for k in direct_matched_fields}
+                ai_result_engine = "learned_anchor_layout"
+                ai_result_model = "deterministic_geometry(vlm_unavailable)"
+            else:
+                ai_result_engine = ai_result.engine_name
+                ai_result_model = ai_result.model_name
+                if event_callback:
+                    event_callback("VLM_EXTRACTION_DONE", {"model": ai_result.model_name})
+
+                conf_by_field = {c.field_name: c.confidence_score for c in ai_result.confidence_scores}
+                envelope = ai_result.parsed_data or {}
+                raw_fields = envelope.get("fields", envelope)
+                # Merge in direct matched fields for any missing
+                for k, v in direct_matched_fields.items():
+                    if k not in raw_fields or not raw_fields[k]:
+                        raw_fields[k] = v
 
         fields_out = []
         fields_learned = {}
@@ -1477,7 +1494,7 @@ class LearnedAnchorPipeline(OCRPipeline):
                                 pages[best_p_idx], bbox["x1"] - 4, bbox["y1"] - 4, bbox["x2"] + 4, bbox["y2"] + 4
                             )
                             try:
-                                val_str = pytesseract.image_to_string(crop_val, config="--psm 6").strip() if crop_val else ""
+                                val_str = pytesseract.image_to_string(crop_val, config="--psm 6", timeout=_TESS_TIMEOUT).strip() if crop_val else ""
                                 clean_str = re.sub(r"^[\s:\-\|\~\+\.\*]+", "", val_str).strip()
                                 clean_str = re.sub(r"[\_\~\|\s]+$", "", clean_str).strip()
                                 if clean_str:
@@ -1529,7 +1546,7 @@ class LearnedAnchorPipeline(OCRPipeline):
                     crop_val = crop_val.rotate(270, expand=True)
                 val_txt = ""
                 try:
-                    val_str = pytesseract.image_to_string(crop_val, config="--psm 6").strip() if crop_val else ""
+                    val_str = pytesseract.image_to_string(crop_val, config="--psm 6", timeout=_TESS_TIMEOUT).strip() if crop_val else ""
                     val_txt = re.sub(r"^[\s:\-\|\~\+\.\*]+", "", val_str).strip()
                     val_txt = re.sub(r"[\_\~\|\s]+$", "", val_txt).strip()
                 except Exception:

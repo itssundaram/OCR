@@ -24,7 +24,8 @@ class OllamaExtractionEngine(AIExtractionEngine):
         self.model_name = settings.AI_MODEL
         
         # Initialize client
-        self.client = Client(host=self.base_url)
+        # explicit timeout: ollama.Client() waits forever by default, which froze workers when a model stalled
+        self.client = Client(host=self.base_url, timeout=float(settings.OLLAMA_REQUEST_TIMEOUT_S))
         
     @property
     def engine_name(self) -> str:
@@ -81,7 +82,8 @@ class OllamaExtractionEngine(AIExtractionEngine):
                     model=self.model_name,
                     messages=messages,
                     format="json",
-                    options=options
+                    options=options,
+                    keep_alive=settings.OLLAMA_KEEP_ALIVE,
                 )
                 
                 raw_output = response.message.content
@@ -123,6 +125,14 @@ class OllamaExtractionEngine(AIExtractionEngine):
                     completion_tokens=eval_count
                 )
 
+            except (httpx.TimeoutException, httpx.ConnectError) as e:
+                # the model is stalled or Ollama is down: retrying 3x would triple the wait; fail fast and clearly
+                logger.error("ollama_unreachable_or_timeout", attempt=attempt, error=type(e).__name__,
+                             timeout_s=settings.OLLAMA_REQUEST_TIMEOUT_S)
+                raise RuntimeError(
+                    f"Ollama did not answer within {settings.OLLAMA_REQUEST_TIMEOUT_S}s ({type(e).__name__}). "
+                    "Check that Ollama is running and the model is loaded."
+                ) from e
             except (ValueError, ResponseError) as e:
                 last_error = e
                 logger.warning("ollama_api_error_retry", attempt=attempt, error=str(e))

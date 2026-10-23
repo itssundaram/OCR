@@ -87,6 +87,18 @@ def lock_template_anchors(template_id: int, req: LockAnchorsRequest, db: Session
             "ANCHOR_VERSION_CONFLICT",
         )
     tj["learned_anchors"] = learned_anchors
+    # every confirmed field teaches the template the label it is printed under ("From" for a field called unit)
+    learned_aliases: list[dict] = []
+    try:
+        from app.ocr.label_kb import learn_aliases_from_anchors
+        fields_def = [dict(f) for f in (tj.get("fields") or []) if isinstance(f, dict)]
+        learned_aliases = learn_aliases_from_anchors(fields_def, learned_anchors.get("fields") or {},
+                                                     only=list((req.fields or {}).keys()))
+        if learned_aliases:
+            by_name = {f.get("name"): f for f in fields_def}
+            tj["fields"] = [by_name.get(f.get("name"), f) if isinstance(f, dict) else f for f in tj.get("fields") or []]
+    except Exception as exc:          # learning is a bonus; the lock itself must always succeed
+        logger.warning("alias_learning_failed", template_id=template_id, error=str(exc))
     template = repo.update(template_id, {"template_json": tj})
 
     logger.info("template_anchors_locked", template_id=template_id, version=report["version"],
@@ -96,6 +108,7 @@ def lock_template_anchors(template_id: int, req: LockAnchorsRequest, db: Session
         "template_id": template_id,
         "learned_anchors": {k: v for k, v in learned_anchors.items() if k != "history"},
         "report": report,
+        "learned_aliases": learned_aliases,
     })
 
 

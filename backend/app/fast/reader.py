@@ -13,7 +13,9 @@ import time
 
 from PIL import Image
 
+from app.core.config import settings
 from app.core.logging import get_logger
+from app.fast.gapfill import fill_gaps
 from app.fast.linefree import OCR_TAG, prepare_for_ocr, restore_lines
 from app.fast.ocr_cache import OcrCache, tesseract_version
 from app.fast.triage import DocumentSource
@@ -40,7 +42,17 @@ class PageReader:
         """One OCR pass on the ruling-line-free (and straightened) page; boxes
         come back in the original page pixels."""
         prepared, info = prepare_for_ocr(image)
-        lines = self._ocr()._ocr_image(prepared, index)
+        engine = self._ocr()
+        lines = engine._ocr_image(prepared, index)
+        if settings.FAST_GAP_FILL_ENABLED:
+            # one targeted second read of text-like ink the main pass skipped (see gapfill.py); never fails the page
+            try:
+                lines, gap = fill_gaps(prepared, lines, engine)
+                if gap.regions:
+                    logger.info("fast_gap_fill", page=index + 1, regions=gap.regions, read=gap.read,
+                                words_added=gap.words_added, ms=gap.ms)
+            except Exception as exc:
+                logger.warning("fast_gap_fill_failed", page=index + 1, error=str(exc))
         if info.changed:
             logger.info("fast_ocr_prepared", page=index + 1, regions=info.regions, skew=info.skew_deg)
         return restore_lines(lines, info)

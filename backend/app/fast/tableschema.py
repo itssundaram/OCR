@@ -26,11 +26,15 @@ from app.fast.validate import _NUMBER, parse_date
 from app.pipelines.base import TableResult
 
 # ── vocabulary ────────────────────────────────────────────────────────────────
+# General column-title words for forms, registers, invoices, stores lists, rosters... No document type owns this list;
+# anything not in it is still found by the structural rule in detect_header (text above data).
 _HEADER_WORDS = {
-    "sno", "slno", "srno", "serial", "sl", "sr", "msno", "afgno", "id", "no", "number", "name", "gender", "sex",
-    "dob", "date", "birth", "age", "service", "rank", "hospital", "internship", "designation", "department",
-    "address", "phone", "mobile", "email", "item", "description", "qty", "quantity", "unit", "rate", "price",
-    "amount", "total", "remarks", "status", "code", "particulars", "category", "grade", "batch", "branch",
+    "sno", "slno", "srno", "serial", "sl", "sr", "ser", "id", "no", "number", "name", "gender", "sex",
+    "dob", "date", "birth", "age", "rank", "designation", "department", "address", "phone", "mobile", "email",
+    "item", "items", "description", "particulars", "nomenclature", "qty", "quantity", "unit", "units", "rate", "price", "amount",
+    "total", "remarks", "remark", "status", "code", "category", "type", "grade", "batch", "branch", "location",
+    "from", "to", "ref", "reference", "size", "weight", "value", "uom", "au", "part", "model", "make", "balance",
+    "debit", "credit", "tax", "discount", "period", "year", "month", "place", "station", "authority",
 }
 _EDGE = " \t-_~\u2014\u2013=.,:;|'\"`\u00b4\u2018\u2019\u201c\u201d\u00ab\u00bb*!\\^+<>"
 _SERIAL_HDR = re.compile(r"^(s\.?\s?no|sl\.?\s?no|sr\.?\s?no|serial|#|sno)\b", re.I)
@@ -98,27 +102,68 @@ def _reason(code: str, message: str, level: str = "bad") -> dict:
 
 def _header_hits(cells: list[str], extra: set[str]) -> int:
     hits = 0
+    vocab = _HEADER_WORDS | extra
     for c in cells:
         key = _alnum(c)
         if not key:
             continue
         toks = [_alnum(t) for t in re.findall(r"[A-Za-z]+", c)]
-        vocab = _HEADER_WORDS | extra
-        if any(t in vocab for t in toks) or any(len(v) >= 3 and v in key for v in vocab):
+        # whole words always; a vocabulary word inside a longer glued word only when it is long enough to mean it
+        # ("date" must not fire on "update", "age" not on "message")
+        if any(t in vocab for t in toks) or any(len(v) >= 6 and v in key for v in vocab):
             hits += 1
     return hits
 
 
+def _is_alpha_cell(c: str) -> bool:
+    letters = sum(ch.isalpha() for ch in c)
+    alnum = sum(ch.isalnum() for ch in c)
+    return alnum > 0 and letters / alnum >= 0.7 and len(c.split()) <= 6
+
+
+def _has_digit(c: str) -> bool:
+    return any(ch.isdigit() for ch in c)
+
+
+def _text_over_data(rows: list[list[str]], i: int, n_cols: int) -> tuple[float, float]:
+    """(share of filled cells in row i that are short text, share of columns where text sits above digits).
+    A header is words over data; a first data row of names has no digits below it."""
+    row = rows[i]
+    filled = [(j, c.strip()) for j, c in enumerate(row) if c.strip()]
+    if not filled:
+        return 0.0, 0.0
+    alpha = sum(1 for _, c in filled if _is_alpha_cell(c)) / len(filled)
+    body = rows[i + 1:i + 7]
+    contrast = 0
+    for j, c in filled:
+        if not _is_alpha_cell(c) or _has_digit(c):
+            continue
+        below = [r[j].strip() for r in body if j < len(r) and r[j].strip()]
+        if below and sum(_has_digit(b) for b in below) / len(below) >= 0.5:
+            contrast += 1
+    return alpha, contrast / max(1, n_cols)
+
+
 def detect_header(rows: list[list[str]], extra_names: set[str]) -> int | None:
-    """Index of the header row among the first rows, or None."""
+    """Index of the header row among the first rows, or None.
+
+    Two independent signals, so no document type has to be known in advance:
+      * vocabulary - the row uses ordinary column-title words (or the template's own field names)
+      * structure  - the row is short text sitting above columns that hold digits
+    """
     best, best_i = 0.0, None
     n_cols = max((len(r) for r in rows), default=0)
     for i, r in enumerate(rows[:8]):
         filled = sum(1 for c in r if c.strip())
         if filled < max(2, n_cols // 2):
             continue
-        hits = _header_hits(r, extra_names)
-        score = hits / max(1, n_cols)
+        vocab = _header_hits(r, extra_names) / max(1, n_cols)
+        alpha, contrast = _text_over_data(rows, i, n_cols)
+        score = 0.0
+        if vocab >= 0.3:
+            score = vocab + 0.5 * contrast
+        elif alpha >= 0.8 and contrast >= 0.34:
+            score = 0.3 + 0.5 * contrast               # structural header without known words
         if score > best:
             best, best_i = score, i
     return best_i if best >= 0.3 else None
@@ -488,6 +533,15 @@ def _header_cleanliness(cell: dict | None) -> float:
     return (cell.get("confidence") or 0.0) * 0.5 + (letters / max(1, len(txt))) * 0.5 + (0.3 if _alnum(txt) and _header_hits([txt], set()) else 0)
 
 
+def _header_is_clear(text: str, confidence: float | None) -> bool:
+    """A header cell is trusted when it reads as words: a known column word, or plain letters the OCR was
+    reasonably sure of. (Not only the vocabulary: a stores list or a roster can title its columns anything.)"""
+    if _header_hits([text], set()) > 0:
+        return True
+    letters = sum(ch.isalpha() for ch in text)
+    return len(text.strip()) >= 3 and letters / max(1, len(text.replace(" ", ""))) >= 0.8 and (confidence is None or confidence >= 0.6)
+
+
 def _analyse(m: dict, index: int, pages: dict) -> TableResult:
     t: TableResult = m["t"]
     n_cols = len(t.headers)
@@ -512,7 +566,7 @@ def _analyse(m: dict, index: int, pages: dict) -> TableResult:
     cells_out: list[dict] = []
     for c in range(n_cols):
         hc = header_cells[c]
-        clear = bool(hc) and _header_hits([headers[c]], set()) > 0
+        clear = bool(hc) and _header_is_clear(headers[c], (hc or {}).get("confidence"))
         cells_out.append({
             "row": 0, "col": c, "text": headers[c], "bbox": (hc or {}).get("bbox"), "page": (hc or {}).get("page", t.page_number),
             "is_header": True, "confidence": (hc or {}).get("confidence"), "state": "accepted" if clear else "flagged",

@@ -55,8 +55,33 @@ def _save_page_files(doc_id: str, page) -> str | None:
         return None
 
 
+def _queue_wait_ms() -> int | None:
+    """Milliseconds this job sat in the queue before a worker took it (None outside RQ)."""
+    try:
+        from rq import get_current_job
+        cj = get_current_job()
+        enq = getattr(cj, "enqueued_at", None) if cj else None
+        if enq is None:
+            return None
+        if enq.tzinfo is None:
+            enq = enq.replace(tzinfo=datetime.timezone.utc)
+        return max(0, int((datetime.datetime.now(datetime.timezone.utc) - enq).total_seconds() * 1000))
+    except Exception:
+        return None
+
+
 def run_fast_job(job_id: str, force_relearn: bool = False) -> None:
+    """RQ entry point. The stall guard prints every thread's stack if the job is still running after
+    WORKER_STALL_DUMP_S, so a slow or stuck job always shows where it waits."""
+    from app.core.stall_guard import stall_guard
+    with stall_guard(f"fast_ocr:{job_id}"):
+        _run_fast_job(job_id, force_relearn)
+
+
+def _run_fast_job(job_id: str, force_relearn: bool = False) -> None:
     t_total = time.perf_counter()
+    queue_wait_ms = _queue_wait_ms()
+    logger.info("fast_job_picked_up", job_id=job_id, queue_wait_ms=queue_wait_ms)
     bus: EventBus | None = None
     cache = default_cache()
     io_pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="fast-io")
@@ -101,7 +126,11 @@ def run_fast_job(job_id: str, force_relearn: bool = False) -> None:
             reader = PageReader(source, cache)
             engine = FastEngine(tfields, bus, want_tables=want_tables,
                                 anchors=(None if force_relearn else (template.template_json or {}).get("learned_anchors")))
+            if queue_wait_ms is not None:
+                engine.timings["queue_wait_ms"] = queue_wait_ms
+            engine.timings["start_ms"] = int((time.perf_counter() - t_total) * 1000)   # pickup -> first event
             bus.emit("job_started", pages_total=source.page_count, template=template.code,
+                     queue_wait_ms=queue_wait_ms, start_ms=engine.timings["start_ms"],
                      fields_total=len([f for f in tfields if str(f.get("type") or "").lower() != "table"]),
                      tables_expected=want_tables)
 

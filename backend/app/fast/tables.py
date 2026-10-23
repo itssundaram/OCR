@@ -13,6 +13,7 @@ FAST_TATR_FALLBACK_ENABLED a TATR pass on a crop can be tried (time-boxed).
 from __future__ import annotations
 
 import bisect
+import re
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeout
 from statistics import median
 
@@ -119,6 +120,66 @@ def _boundaries(lines: list[float], extent: float, words_spans: list[tuple[float
     return b
 
 
+def _split_merged_header(row_b: list[float], col_b: list[float], words: list, x1: float, y1: float, med_h: float) -> list[float]:
+    """Faint or missing rule between the header and the first data row => both sit in ONE rule row.
+
+    Splits the first row in two when it holds (at least) two aligned text lines across several columns, the first
+    line is short text (a header) and the second line is data (digits) in most of the same columns. Row wrapping
+    inside ONE column (a cell that runs onto a second line) is never split. No vocabulary involved.
+    """
+    if len(row_b) < 3 or len(col_b) < 3:
+        return row_b
+    top, bottom = row_b[0], row_b[1]
+    inside = []
+    for w in words:
+        cy = (w.bbox.y1 + w.bbox.y2) / 2 - y1
+        cx = (w.bbox.x1 + w.bbox.x2) / 2 - x1
+        if top <= cy < bottom and col_b[0] <= cx <= col_b[-1]:
+            inside.append((cy, cx, w))
+    if len(inside) < 4:
+        return row_b
+    inside.sort(key=lambda t: t[0])
+    lines: list[list] = [[inside[0]]]
+    for item in inside[1:]:
+        cur = lines[-1]
+        if item[0] - sum(t[0] for t in cur) / len(cur) > 0.75 * med_h:
+            lines.append([item])
+        else:
+            cur.append(item)
+    if len(lines) < 2:
+        return row_b
+
+    def cols_of(line) -> set[int]:
+        return {min(len(col_b) - 2, max(0, bisect.bisect_right(col_b, t[1]) - 1)) for t in line}
+
+    def text_of(line) -> list[str]:
+        out: dict[int, list[str]] = {}
+        for t in sorted(line, key=lambda t: t[1]):
+            c = min(len(col_b) - 2, max(0, bisect.bisect_right(col_b, t[1]) - 1))
+            out.setdefault(c, []).append(t[2].text)
+        return [" ".join(v) for v in out.values()]
+
+    l0, l1 = lines[0], lines[1]
+    c0, c1 = cols_of(l0), cols_of(l1)
+    if len(c0) < 2 or len(c1) < 2 or len(c0 & c1) < max(2, int(0.6 * min(len(c0), len(c1)))):
+        return row_b                                   # not aligned across columns: a wrapped cell, keep as one row
+
+    def alpha_share(cells: list[str]) -> float:
+        good = sum(1 for c in cells if sum(ch.isalpha() for ch in c) >= 0.7 * max(1, sum(ch.isalnum() for ch in c)))
+        return good / max(1, len(cells))
+
+    def digit_share(cells: list[str]) -> float:
+        return sum(1 for c in cells if any(ch.isdigit() for ch in c)) / max(1, len(cells))
+
+    t0, t1 = text_of(l0), text_of(l1)
+    if alpha_share(t0) < 0.8 or digit_share(t1) < 0.3 or digit_share(t0) > 0.2:
+        return row_b                                   # line 1 is not "words over data"
+    cut = (max(t[2].bbox.y2 for t in l0) - y1 + min(t[2].bbox.y1 for t in l1) - y1) / 2
+    if not (top + 2 < cut < bottom - 2):
+        return row_b
+    return sorted([*row_b, cut])
+
+
 def _grid_table(page: PageData, region: tuple[int, int, int, int], index: int) -> TableResult | None:
     x1, y1, x2, y2 = region
     rw, rh = x2 - x1, y2 - y1
@@ -150,6 +211,7 @@ def _grid_table(page: PageData, region: tuple[int, int, int, int], index: int) -
         col_b = _merge_close(sorted(set([0.0, float(rw)] + xs)), 5)
     else:
         col_b = _columns_from_spans([(w.bbox.x1 - x1, w.bbox.x2 - x1) for w in words], 0.0, float(rw), med_h)
+    row_b = _split_merged_header(row_b, col_b, words, x1, y1, med_h)
     n_rows, n_cols = len(row_b) - 1, len(col_b) - 1
     if n_rows < 2 or n_cols < 2 or n_rows > 300 or n_cols > 40:
         return None
@@ -244,6 +306,23 @@ def _tatr_crop(page: PageData, region: tuple[int, int, int, int], index: int) ->
     )
 
 
+def looks_like_form_block(t: TableResult) -> bool:
+    """A boxed form ("Make: ... Date of inspection: ...") is drawn with rules like a table but is not one: few
+    columns, and every cell is a paragraph of "Label : value" lines. Those pairs are read by key:value
+    discovery already, so the block is not returned as a data table."""
+    cells = [c.get("text") or "" for c in t.cells if not c.get("is_header")] or [c for r in t.rows for c in r]
+    cells = [c for c in cells if c.strip()]
+    if len(t.headers) > 3 or len(cells) < 2:
+        return False
+    avg_len = sum(len(c) for c in cells) / len(cells)
+    label_runs = sum(len(re.findall(r"[A-Za-z][A-Za-z ./&()']{2,30}\s*:\s", c)) for c in cells) / len(cells)
+    if avg_len > 90 and label_runs >= 3:
+        return True
+    # a checklist laid out as 2-3 columns of "Label : value" cells
+    colon_share = sum(1 for c in cells if re.search(r"\w\s*:\s*\S", c)) / len(cells)
+    return len(cells) >= 4 and colon_share >= 0.6
+
+
 def extract_page_tables(page: PageData, first_index: int = 1) -> list[TableResult]:
     """All tables on one page. Pages without a ruled table cost one line scan."""
     if page.image is None:
@@ -260,6 +339,9 @@ def extract_page_tables(page: PageData, first_index: int = 1) -> list[TableResul
                     logger.warning("fast_tatr_timeout", page=page.page_number)
                 except Exception as exc:
                     logger.warning("fast_tatr_failed", page=page.page_number, error=str(exc))
+        if t is not None and looks_like_form_block(t):
+            logger.info("fast_table_skipped_form_block", page=page.page_number, cols=len(t.headers))
+            t = None
         if t is not None:
             out.append(t)
     return out

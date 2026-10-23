@@ -5,7 +5,11 @@ Re-export each entry point here so it can be enqueued as:
     q.enqueue('app.workers.tasks.process_document_job', job_id=...)
 """
 from app.services.extractor import process_document_job, mark_job_permanently_failed  # noqa: F401
-from app.services.orchestrator import run_single_pipeline_job, run_pipeline_comparison_job  # noqa: F401
+from app.services.orchestrator import (
+    run_single_pipeline_job as _run_single_pipeline_job,
+    run_pipeline_comparison_job as _run_pipeline_comparison_job,
+)
+from app.core.stall_guard import stall_guard
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -16,6 +20,18 @@ __all__ = [
     "run_pipeline_comparison_job",
     "job_failed_callback",
 ]
+
+
+def run_single_pipeline_job(job_id, *args, **kwargs):
+    """Same task as before, now with a stall guard: a job stuck for WORKER_STALL_DUMP_S seconds
+    prints every thread's stack, so the terminal shows where it waits instead of looking frozen."""
+    with stall_guard(f"single_pipeline:{job_id}"):
+        return _run_single_pipeline_job(job_id, *args, **kwargs)
+
+
+def run_pipeline_comparison_job(job_id, *args, **kwargs):
+    with stall_guard(f"comparison:{job_id}"):
+        return _run_pipeline_comparison_job(job_id, *args, **kwargs)
 
 
 def job_failed_callback(job, connection, type, value, traceback) -> None:  # noqa: A002 - RQ's fixed signature

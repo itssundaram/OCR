@@ -43,6 +43,29 @@ const parsePageNumber = (val) => {
   return Number.isFinite(num) && num >= 1 ? Math.floor(num) : null;
 };
 
+// Stream field state -> the field shape the saved result uses, so the panels render it unchanged.
+const liveToFields = (liveFields) => {
+  const out = {};
+  Object.values(liveFields || {}).forEach((f) => {
+    const failed = f.state === 'failed';
+    out[f.name] = {
+      value: failed ? '' : (f.value || ''),
+      confidence: f.confidence || 0,
+      found: !failed && Boolean(f.value),
+      page_number: f.page || 1,
+      source_page: f.page || 1,
+      bbox: f.bbox || null,
+      label: f.label || '',
+      source: f.source || '',
+      state: f.state || '',
+      reason: f.reason || '',
+      match_strategy: 'live',
+      live: true,
+    };
+  });
+  return out;
+};
+
 const FastExtractionResultView = ({
   activeJob,
   onBack,
@@ -81,7 +104,6 @@ const FastExtractionResultView = ({
   const [showOnlyDetected, setShowOnlyDetected] = useState(true);
   const [showReferenceAnchors, setShowReferenceAnchors] = useState(true);
   const [showAllDetections, setShowAllDetections] = useState(true);
-  const [isScanning, setIsScanning] = useState(true);
   const [tableHighlight, setTableHighlight] = useState(null); // {page, bbox} of a table cell shown on the canvas
   const [detectionSearch, setDetectionSearch] = useState('');
 
@@ -101,19 +123,14 @@ const FastExtractionResultView = ({
   useEffect(() => {
     if (!currentJob?.job_id) return;
     const isWorking = currentJob.status === 'PROCESSING' || currentJob.status === 'QUEUED';
-    if (!isWorking) {
-      setIsScanning(false);
-      return;
-    }
+    if (!isWorking) return;
 
-    setIsScanning(true);
     const interval = setInterval(async () => {
       try {
         const res = await processingService.getJob(currentJob.job_id);
         if (res?.data) {
           setCurrentJob(res.data);
           if (res.data.status === 'COMPLETED' || res.data.status === 'WARNING' || res.data.status === 'FAILED') {
-            setIsScanning(false);
             clearInterval(interval);
           }
         }
@@ -136,9 +153,12 @@ const FastExtractionResultView = ({
     }
   }, [currentJob]);
   const refineStoredActive = Boolean(storedRefine && ['pending', 'running'].includes(storedRefine.status));
+  // The stream is open for as long as the job is running (from the moment the page opens, with replay of any
+  // events already sent) and while the background refinement is still re-reading cells.
+  const jobRunning = currentJob?.status === 'PROCESSING' || currentJob?.status === 'QUEUED';
   const live = useJobStream(
     currentJob?.job_id,
-    (isScanning || refineStoredActive) && currentJob?.pipeline_mode === 'fast_ocr'
+    (jobRunning || refineStoredActive) && currentJob?.pipeline_mode === 'fast_ocr'
   );
   const refineView = live.refine.status !== 'idle'
     ? live.refine
@@ -147,6 +167,8 @@ const FastExtractionResultView = ({
     : null;
   const livePatchesRef = useRef([]);
   livePatchesRef.current = live.patches;
+  const liveFieldsRef = useRef({});
+  liveFieldsRef.current = live.fields;
 
   // Measure container dimensions for responsive page fitting
   useEffect(() => {
@@ -170,7 +192,9 @@ const FastExtractionResultView = ({
     if (currentJob) {
       const parsed = currentJob.extracted_json ? parseJSONRecursively(currentJob.extracted_json) : null;
       const f = parsed?.fields || {};
-      setLocalFields(f);
+      // while the job is still running the saved result does not exist yet: show what the stream has so far
+      const running = currentJob.status === 'PROCESSING' || currentJob.status === 'QUEUED';
+      setLocalFields(running ? { ...liveToFields(liveFieldsRef.current), ...f } : f);
       setLocalTables(applyCellPatches(Array.isArray(parsed?.tables) ? parsed.tables : [], livePatchesRef.current));
       const ocrMeta = currentJob.ocr_metadata_json ? parseJSONRecursively(currentJob.ocr_metadata_json) : {};
       const la = ocrMeta?.learned_anchors || parsed?.learned_anchors;
@@ -178,6 +202,13 @@ const FastExtractionResultView = ({
       setIsGeometryLocked(Boolean(la?.is_verified));
     }
   }, [currentJob]);
+
+  // field-by-field results from the stream fill the fields panel while the job is running
+  useEffect(() => {
+    if (!jobRunning || Object.keys(live.fields).length === 0) return;
+    setLocalFields((prev) => ({ ...prev, ...liveToFields(live.fields) }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [live.fields]);
 
   // cells the server re-read in the background arrive one by one; fold them into the grid
   useEffect(() => {
@@ -250,16 +281,7 @@ const FastExtractionResultView = ({
   }).length;
   const verifiedCount = Math.max(0, totalFields - flaggedCount);
 
-  const triggerScanAnimation = () => {
-    setIsScanning(true);
-    setTimeout(() => setIsScanning(false), 2500);
-  };
 
-  useEffect(() => {
-    if (activeJob) {
-      triggerScanAnimation();
-    }
-  }, [activeJob?.job_id]);
 
   const handleAddDetectionToTemplate = async (det) => {
     const defaultName = (det.text || 'field')
@@ -732,7 +754,7 @@ const FastExtractionResultView = ({
             {/* Verification Status Badge */}
             {isWorking ? (
               <span className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-mono animate-pulse">
-                <RefreshCw size={12} className="animate-spin" /> In Progress
+                <RefreshCw size={12} className="animate-spin" /> {currentJob.status === 'QUEUED' && live.status === 'idle' ? 'Queued - waiting for a worker' : 'In Progress'}
               </span>
             ) : flaggedCount > 0 ? (
               <span className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-300">
@@ -965,7 +987,7 @@ const FastExtractionResultView = ({
                   <Document
                     file={`${config.API_BASE_URL}/documents/${currentJob.document_id}/file`}
                     onLoadSuccess={({ numPages }) => setNumPages(numPages)}
-                    loading={<div className="p-10 text-center text-xs text-slate-500">Loading document canvas...</div>}
+                    loading={<div className="bg-white" style={{ width: renderedWidth, height: renderedHeight }} />}
                   >
                     <Page
                       pageNumber={parsePageNumber(currentPage) || 1}
@@ -975,19 +997,6 @@ const FastExtractionResultView = ({
                       onLoadSuccess={onPdfPageLoadSuccess}
                     />
                   </Document>
-
-                  {/* Real-Time Laser Scanning Overlay Animation */}
-                  {isScanning && (
-                    <div className="absolute inset-0 pointer-events-none overflow-hidden z-30">
-                      <div
-                        className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_15px_#22d3ee]"
-                        style={{
-                          animation: 'docScanSweep 2.2s ease-in-out infinite',
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-cyan-500/5 backdrop-blur-[0.5px]" />
-                    </div>
-                  )}
 
                   <LiveFieldsPanel live={live} />
 

@@ -34,7 +34,11 @@ def dispatch_fast_job(job_id: str, force_relearn: bool, background_tasks=None) -
     if redis_conn is not None:
         try:
             from rq import Callback, Queue
-            name = settings.FAST_QUEUE_NAME if _worker_listening(redis_conn, settings.FAST_QUEUE_NAME) else settings.REDIS_QUEUE_NAME
+            fast_ready = _worker_listening(redis_conn, settings.FAST_QUEUE_NAME)
+            name = settings.FAST_QUEUE_NAME if fast_ready else settings.REDIS_QUEUE_NAME
+            if not fast_ready:
+                logger.warning("fast_worker_not_listening", job_id=job_id, queue=name,
+                               hint="start `python run_fast_worker.py`; the default worker is slower to pick this up")
             Queue(name, connection=redis_conn).enqueue(
                 TASK_PATH, job_id, force_relearn,
                 job_id=job_id, job_timeout=settings.FAST_JOB_TIMEOUT_S,

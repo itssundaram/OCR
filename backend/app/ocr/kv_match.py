@@ -13,6 +13,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from app.ocr import label_kb
 from app.ocr.kv_discovery import DiscoveredPair
 
 MIN_SCORE = 0.85  # below this a label is not considered the same field
@@ -73,6 +74,8 @@ def _score(cand: list[str], label: list[str]) -> float:
     short, long_ = (cand, label) if len(cand) <= len(label) else (label, cand)
     if len(short) >= 2 and set(short) <= set(long_):
         best = max(best, 0.86)
+    if best < label_kb.SYNONYM_SCORE and label_kb.same_concept(cand, label):
+        best = label_kb.SYNONYM_SCORE            # "unit" == "from", "Dated" == "Date of issue" (see label_kb)
     return best
 
 

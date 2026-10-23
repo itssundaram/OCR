@@ -136,3 +136,36 @@ def test_glued_cell_text_is_split_at_the_rule():
     from app.fast.tables import _split_word
     assert _split_word("8/MS-23057F", 0, 110, 20) == ("8", "MS-23057F")
     assert _split_word("COMMISSION", 0, 100, 50) is None            # no separator: never cut a word
+
+
+# ── header detection must not depend on the document type ─────────────────────────────
+def test_header_found_with_words_no_list_knows():
+    from app.fast.tableschema import detect_header
+    rows = [["Product", "Colour", "Stock left", "Bin"],
+            ["Widget", "Red", "120", "A-14"],
+            ["Gadget", "Blue", "75", "B-02"],
+            ["Gizmo", "Green", "9", "C-11"]]
+    assert detect_header(rows, set()) == 0
+
+
+def test_first_data_row_of_names_is_not_taken_for_a_header():
+    from app.fast.tableschema import detect_header
+    rows = [["Rajesh Kumar", "Delhi", "Pune"],
+            ["Amit Singh", "Agra", "Goa"],
+            ["Sunita Rao", "Kochi", "Surat"]]
+    assert detect_header(rows, set()) is None
+
+
+def test_ordinary_vocabulary_header_still_found_and_glued_words_do_not_fire():
+    from app.fast.tableschema import detect_header, _header_hits
+    assert detect_header([["S No", "Name", "Qty"], ["1", "Pen", "2"], ["2", "Book", "1"]], set()) == 0
+    assert _header_hits(["update message separate"], set()) == 0       # "date", "age", "rate" inside longer words
+
+
+def test_title_row_above_the_header_is_skipped():
+    from app.fast.tableschema import detect_header
+    rows = [["", "ANNUAL STOCK REGISTER 2025", ""],
+            ["Item", "Opening", "Closing"],
+            ["Nails", "400", "380"],
+            ["Screws", "250", "200"]]
+    assert detect_header(rows, set()) == 1

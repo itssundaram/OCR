@@ -17,6 +17,17 @@ from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
+
+def _tesseract_env() -> dict:
+    """Environment for the tesseract subprocess. Tesseract starts one OpenMP thread per core by default; with
+    several pages/crops read in parallel that oversubscribes the CPU and measured 2.5x SLOWER than one thread
+    each (7.9 s vs 3.1 s for one scanned page on 2 cores). An explicit OMP_THREAD_LIMIT in the environment wins."""
+    import os
+    env = dict(os.environ)
+    env.setdefault("OMP_THREAD_LIMIT", str(max(1, int(getattr(settings, "TESSERACT_OMP_THREADS", 1)))))
+    return env
+
+
 # Default install path for the UB-Mannheim Windows installer
 _DEFAULT_WIN_TESSERACT_CMD = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
@@ -150,7 +161,7 @@ class TesseractOCREngine(OCREngine):
 
     # ── Private helpers ───────────────────────────────────────────────────────
 
-    def _ocr_image(self, img: Image.Image, page_index: int) -> list[OCRLine]:
+    def _ocr_image(self, img: Image.Image, page_index: int, psm: int = 6) -> list[OCRLine]:
         """
         Calls the Tesseract CLI on a single PIL Image using stdin/stdout pipe mode.
 
@@ -174,7 +185,7 @@ class TesseractOCREngine(OCREngine):
             self._cmd,
             "stdin",         # Read image from stdin
             "stdout",        # Write TSV output to stdout (no file created)
-            "--psm", "6",    # Uniform block of text — best for structured docs
+            "--psm", str(int(psm)),   # 6 = uniform block (default, best for structured docs); 7 = one line; 11 = sparse
             "--oem", "3",    # LSTM neural net engine
             "tsv",           # Output format
         ]
@@ -185,6 +196,7 @@ class TesseractOCREngine(OCREngine):
                 input=img_bytes,
                 capture_output=True,
                 timeout=settings.TESSERACT_TIMEOUT,
+                env=_tesseract_env(),
             )
             if result.returncode != 0:
                 logger.warning(

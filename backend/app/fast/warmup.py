@@ -63,11 +63,13 @@ def warm_vlm() -> bool:
         return False
 
 
-def run_startup_checks() -> dict:
-    report = {"tesseract": check_tesseract(), "tatr": check_tatr_weights(), "vlm_warm": warm_vlm()}
+def run_startup_checks(vlm: bool = True) -> dict:
+    """vlm=False skips the (slow) model warm-up so the caller can run it in the background."""
+    report = {"tesseract": check_tesseract(), "tatr": check_tatr_weights(), "vlm_warm": warm_vlm() if vlm else "background"}
     try:
-        import torch
-        report["cuda_available"] = bool(torch.cuda.is_available())
+        import sys
+        torch = sys.modules.get("torch")          # do not import torch here: it costs seconds before the worker registers
+        report["cuda_available"] = bool(torch.cuda.is_available()) if torch is not None else None
     except Exception:
         report["cuda_available"] = None
     logger.info("fast_startup_ok", **report)

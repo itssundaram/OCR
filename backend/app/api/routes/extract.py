@@ -17,6 +17,7 @@ import base64
 import io
 import os
 import shutil
+import time
 import uuid
 from typing import Any
 
@@ -680,8 +681,10 @@ def extract_document_with_pipeline(
             "PIPELINE_NOT_FOUND",
         )
 
+    t_req = time.perf_counter()
     template = _resolve_department_and_template(db, department_slug, template_code)
     doc_id, job_id = _save_uploaded_file_and_create_job(db, file, template, pipeline_mode=pipeline_name)
+    t_saved = time.perf_counter()
 
     if pipeline_name == "fast_ocr":
         # Own runner + queue + live events (app/fast/); every other pipeline
@@ -694,6 +697,8 @@ def extract_document_with_pipeline(
             background_tasks, run_single_pipeline_job,
         )
 
+    logger.info("upload_accepted", job_id=job_id, pipeline=pipeline_name, via=dispatched_via,
+                save_ms=int((t_saved - t_req) * 1000), dispatch_ms=int((time.perf_counter() - t_saved) * 1000))
     base_url = f"/api/v1/{department_slug.lower()}/{template_code.lower()}"
     return APIResponse(data={
         "job_id": job_id,

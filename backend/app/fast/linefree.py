@@ -27,7 +27,7 @@ logger = get_logger(__name__)
 
 MIN_SKEW_DEG = 0.25      # below this the page is treated as straight
 MAX_SKEW_DEG = 6.0       # above this the estimate is not trusted
-OCR_TAG = "tesseract+tbl2"   # OCR-cache engine tag (bumped: input changed)
+OCR_TAG = "tesseract+tbl2+gap1"   # OCR-cache engine tag (bumped: gap-fill read added)
 
 
 @dataclass

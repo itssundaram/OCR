@@ -21,6 +21,9 @@ import { Loader } from '../components/ui/Loader';
 import ExtractionResultView from '../components/ExtractionResultView';
 import FastExtractionResultView from '../components/FastExtractionResultView';
 
+// Pipelines that open the live result view right after upload (fields stream in over SSE)
+const LIVE_PIPELINES = new Set(['fast_ocr', 'learned_anchor']);
+
 const parseJSONRecursively = (data) => {
   let parsed = data;
   while (typeof parsed === 'string') {
@@ -47,7 +50,7 @@ const OcrPage = () => {
   const [departments, setDepartments] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [pipelines, setPipelines] = useState([]);
-  const [loadingInitial, setLoadingInitial] = useState(true);
+  const [, setLoadingInitial] = useState(true);
 
   const [selectedDept, setSelectedDept] = useState('');
   const [selectedTemplateCode, setSelectedTemplateCode] = useState('');
@@ -292,7 +295,20 @@ const OcrPage = () => {
 
       setRecentUploads((prev) => [newUploadItem, ...prev.filter((x) => x.job_id !== newJobId)].slice(0, 10));
       setFile(null);
-      // User stays on the upload form with persistent Recent Uploads Queue tracking
+      if (LIVE_PIPELINES.has(selectedPipeline)) {
+        // Open the result view straight away: it shows the document at once and the fields stream in
+        // as the worker reads them (no waiting screen). The view polls/streams the real job itself.
+        setActiveJob({
+          job_id: newJobId,
+          document_id: res.data.document_id,
+          status: 'QUEUED',
+          pipeline_mode: selectedPipeline,
+          pipeline: selectedPipeline,
+          original_filename: file.name,
+          created_at: new Date().toISOString(),
+        });
+      }
+      // other pipelines: the user stays on the upload form with the Recent Uploads queue tracking progress
     } catch (err) {
       setError(err.message || 'Upload failed');
     } finally {
@@ -328,10 +344,6 @@ const OcrPage = () => {
   };
 
 
-  if (loadingInitial) {
-    return <div className="h-full flex items-center justify-center"><Loader text="Loading..." /></div>;
-  }
-
   if (activeJob) {
     const status = activeJob.status;
     const isFinished = status === 'COMPLETED' || status === 'WARNING';
@@ -340,6 +352,8 @@ const OcrPage = () => {
       : JSON.stringify(activeJob.ocr_metadata_json || {});
 
     const isLearnedAnchor =
+      LIVE_PIPELINES.has(activeJob.pipeline_mode) ||
+      LIVE_PIPELINES.has(activeJob.pipeline) ||
       activeJob.pipeline_mode === 'learned_anchor' ||
       activeJob.pipeline === 'learned_anchor' ||
       selectedPipeline === 'learned_anchor' ||
@@ -348,8 +362,8 @@ const OcrPage = () => {
       metaStr.includes('COLD_LEARNED_CACHE') ||
       metaStr.includes('ANCHOR');
 
-    // If learned_anchor, ALWAYS show FastExtractionResultView immediately
-    // It features live scanning laser sweeps and auto-polls until job completes
+    // fast_ocr / learned_anchor: ALWAYS show the result view immediately (no waiting screen);
+    // it streams fields live and polls until the job completes
     if (isLearnedAnchor) {
       return (
         <div className="flex flex-col h-full w-full p-4 overflow-hidden animate-fade-in-up max-w-[1600px] mx-auto">
@@ -865,7 +879,7 @@ const OcrPage = () => {
                     {uploading ? (
                       <>
                         <Loader size={14} className="animate-spin" />
-                        <span>INITIALIZING OCR PIPELINE...</span>
+                        <span>UPLOADING...</span>
                       </>
                     ) : (
                       <>
