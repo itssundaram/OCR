@@ -180,6 +180,11 @@ class Settings(BaseSettings):
     FAST_VLM_TIMEOUT_S: int = 60
     FAST_VLM_KEEP_ALIVE: str = "30m"
     FAST_VLM_MAX_FIELDS: int = 8            # cap on VLM calls per job
+    FAST_REFINE_ENABLED: bool = True        # re-read flagged table cells in the background after the first result
+    FAST_REFINE_QUEUE_NAME: str = "docint-refine"
+    FAST_REFINE_SLICE_S: int = 20           # one refine job works this long, saves, then re-queues itself (fast jobs interleave)
+    FAST_REFINE_BATCH: int = 8              # cells saved + announced together
+    FAST_REFINE_VLM_MAX: int = 150          # vision-model cell reads per document
     FAST_QUEUE_NAME: str = "docint-fast"    # run_fast_worker.py listens here; falls back to REDIS_QUEUE_NAME
     FAST_JOB_TIMEOUT_S: int = 600           # outer ceiling only; stage limits do the real work
     FAST_ALLOW_BACKGROUND_FALLBACK: bool = False  # False: answer 503 if Redis is down

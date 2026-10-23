@@ -22,7 +22,7 @@ from app.core.config import settings
 from app.core.logging import get_logger
 from app.db.database import SessionLocal
 from app.db.models import ProcessingJob
-from app.fast.events import SCHEMA_VERSION, TERMINAL_TYPES, cancel_key, stream_key
+from app.fast.events import SCHEMA_VERSION, cancel_key, is_terminal, stream_key
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/stream", tags=["Live"])
@@ -116,7 +116,7 @@ async def stream_job(
                         cursor = sid
                         env = json.loads(fields[b"e"])
                         yield _frame(env.get("seq"), env.get("type", "message"), env)
-                        if env.get("type") in TERMINAL_TYPES:
+                        if is_terminal(env):
                             return
         except Exception as exc:
             logger.warning("sse_stream_error", job_id=job_id, error=str(exc))

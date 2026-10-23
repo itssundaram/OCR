@@ -27,6 +27,7 @@ from app.fast.engine import FastEngine, JobCancelled
 from app.fast.events import EventBus
 from app.fast.ocr_cache import default_cache
 from app.fast.reader import PageReader
+from app.fast.refine import dispatch_refine, initial_refine_state
 from app.fast.triage import DocumentSource
 from app.services.asset_service import get_asset_service
 from app.services.extractor import _mark_failed, _record_event
@@ -187,7 +188,11 @@ def run_fast_job(job_id: str, force_relearn: bool = False) -> None:
             tables_out = [{
                 "table_name": f"Table_{t.table_index}", "table_index": t.table_index, "page_number": t.page_number,
                 "headers": t.headers, "rows": t.rows, "cells": t.cells, "bbox": t.bbox, "markdown": t.markdown,
+                "meta": t.meta,
             } for t in tables]
+            refine_state = initial_refine_state(tables_out)
+            if refine_state:
+                ocr_metadata["refine"] = refine_state
             res_row.extracted_json = {**envelope, "tables": tables_out}
             ocr_metadata["speed"] = engine.timings
             ocr_metadata["warnings"] = engine.warnings
@@ -216,7 +221,19 @@ def run_fast_job(job_id: str, force_relearn: bool = False) -> None:
                 "discovered": len([f for f in fields if f.source == "discovered"]),
                 "tables": len(tables),
             }
-            bus.emit("job_completed", status=status, counts=counts, timings_ms={**engine.timings, "total_ms": total_ms})
+            bus.emit("job_completed", status=status, counts=counts, timings_ms={**engine.timings, "total_ms": total_ms},
+                     refine=bool(refine_state))
+            if refine_state and dispatch_refine(job_id) is None:       # nobody can serve it: say so, do not leave it "pending"
+                with SessionLocal() as _db:
+                    _row = _db.query(ProcessingResult).filter_by(job_id=job_id).first()
+                    if _row:
+                        _m = dict(_row.ocr_metadata_json or {})
+                        _m["refine"] = {**refine_state, "status": "skipped"}
+                        _row.ocr_metadata_json = _m
+                        from sqlalchemy.orm.attributes import flag_modified
+                        flag_modified(_row, "ocr_metadata_json")
+                        _db.commit()
+                bus.emit("refine_completed", status="skipped", remaining=refine_state["flagged_at_start"])
             logger.info("fast_job_done", job_id=job_id, total_ms=total_ms, **counts)
             cache.prune()
     except JobCancelled:

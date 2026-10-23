@@ -14,6 +14,7 @@ import time
 from PIL import Image
 
 from app.core.logging import get_logger
+from app.fast.linefree import OCR_TAG, prepare_for_ocr, restore_lines
 from app.fast.ocr_cache import OcrCache, tesseract_version
 from app.fast.triage import DocumentSource
 from app.fast.types import PageData
@@ -35,6 +36,15 @@ class PageReader:
             self._engine.load_model()      # resolves the tesseract binary path
         return self._engine
 
+    def _ocr_clean(self, image: Image.Image, index: int):
+        """One OCR pass on the ruling-line-free (and straightened) page; boxes
+        come back in the original page pixels."""
+        prepared, info = prepare_for_ocr(image)
+        lines = self._ocr()._ocr_image(prepared, index)
+        if info.changed:
+            logger.info("fast_ocr_prepared", page=index + 1, regions=info.regions, skew=info.skew_deg)
+        return restore_lines(lines, info)
+
     def read(self, index: int) -> PageData:
         t0 = time.perf_counter()
         image, native_lines, scale = self.source.load_page(index)
@@ -46,13 +56,13 @@ class PageReader:
         if native_lines is not None:
             lines, src = native_lines, "native"
         else:
-            key = OcrCache.make_key(self.source.sha256, page_no, scale, "tesseract", tesseract_version())
+            key = OcrCache.make_key(self.source.sha256, page_no, scale, OCR_TAG, tesseract_version())
             lines = self.cache.get(key)
             if lines is not None:
                 src = "ocr_cache"
             else:
                 t_ocr = time.perf_counter()
-                lines = self._ocr()._ocr_image(image, index)
+                lines = self._ocr_clean(image, index)
                 ms["ocr"] = int((time.perf_counter() - t_ocr) * 1000)
                 src = "ocr"
                 if lines:
@@ -72,12 +82,12 @@ class PageReader:
         import hashlib
         t0 = time.perf_counter()
         digest = hashlib.sha256(image.convert("RGB").tobytes()).hexdigest()
-        key = OcrCache.make_key(digest, page_no, 1.0, "tesseract", tesseract_version())
+        key = OcrCache.make_key(digest, page_no, 1.0, OCR_TAG, tesseract_version())
         lines = self.cache.get(key)
         src = "ocr_cache"
         warnings: list[str] = []
         if lines is None:
-            lines = self._ocr()._ocr_image(image, page_no - 1)
+            lines = self._ocr_clean(image, page_no - 1)
             src = "ocr"
             if lines:
                 self.cache.put(key, lines)

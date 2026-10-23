@@ -457,6 +457,11 @@ def rerun_job(
     if mode not in ("single_pipeline",) and mode not in list_pipelines():
         raise DocIntError(f"Pipeline '{mode}' is no longer available.", "PIPELINE_NOT_FOUND")
 
+    try:                                   # the old result is being replaced: stop its background refinement
+        from app.fast.refine import cancel_refine
+        cancel_refine(job_id)
+    except Exception:
+        pass
     new_doc_id, new_job_id = str(uuid.uuid4()), str(uuid.uuid4())
     db.add(Document(
         id=new_doc_id,

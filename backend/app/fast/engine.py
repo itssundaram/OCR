@@ -19,6 +19,7 @@ from app.fast.events import EventBus
 from app.fast.fields import FieldExtractor
 from app.fast.structure import build_blocks
 from app.fast.tables import extract_page_tables
+from app.fast.tableschema import finalize_tables
 from app.fast.types import PageData
 from app.pipelines.base import FieldResult, TableResult
 
@@ -109,14 +110,20 @@ class FastEngine:
                 self.warnings.append(f"page {page_no}: tables skipped ({type(exc).__name__})")
                 logger.warning("fast_tables_skipped", page=page_no, error=str(exc) or type(exc).__name__)
                 continue
-            for t in found:
-                t.table_index = len(out) + 1
-                out.append(t)
-                self.bus.emit(
-                    "table_extracted", page=page_no, table_index=t.table_index, headers=t.headers,
-                    rows=t.rows, bbox=t.bbox, method=t.extraction_method, confidence=t.confidence,
-                )
+            out.extend(found)
         self._table_pool.shutdown(wait=False, cancel_futures=True)
+        try:
+            out = finalize_tables(out, self.pages, self.extractor.fields)
+        except Exception as exc:                  # understanding is an upgrade; raw grids still ship
+            logger.warning("fast_table_finalize_failed", error=str(exc), exc_info=True)
+            self.warnings.append("table analysis skipped")
+        for i, t in enumerate(out, start=1):
+            t.table_index = i
+            self.bus.emit(
+                "table_extracted", page=t.page_number, table_index=t.table_index, headers=t.headers,
+                rows=t.rows, bbox=t.bbox, method=t.extraction_method, confidence=t.confidence,
+                quality=(t.meta or {}).get("quality"), pages=(t.meta or {}).get("pages"),
+            )
         self.timings["tables_wait_ms"] = int((time.perf_counter() - t0) * 1000)
         return out
 

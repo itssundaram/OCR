@@ -31,9 +31,10 @@ def main() -> None:
     run_startup_checks()
 
     conn = redis.from_url(settings.REDIS_URL)
-    queue = Queue(settings.FAST_QUEUE_NAME, connection=conn)
-    worker = SimpleWorker([queue], connection=conn)
-    print(f"Starting fast_ocr worker ({platform.system()}) on queue '{settings.FAST_QUEUE_NAME}' ...")
+    # order = priority: a waiting upload is always served before background refinement
+    queues = [Queue(settings.FAST_QUEUE_NAME, connection=conn), Queue(settings.FAST_REFINE_QUEUE_NAME, connection=conn)]
+    worker = SimpleWorker(queues, connection=conn)
+    print(f"Starting fast_ocr worker ({platform.system()}) on queues '{settings.FAST_QUEUE_NAME}', '{settings.FAST_REFINE_QUEUE_NAME}' ...")
     worker.work()
 
 

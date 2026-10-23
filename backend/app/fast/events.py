@@ -22,7 +22,15 @@ from app.core.logging import get_logger
 logger = get_logger(__name__)
 
 SCHEMA_VERSION = 1
-TERMINAL_TYPES = ("job_completed", "job_failed")
+TERMINAL_TYPES = ("job_completed", "job_failed", "refine_completed")
+
+
+def is_terminal(env: dict) -> bool:
+    """job_completed ends the stream unless background refinement is still going to speak."""
+    t = env.get("type")
+    if t == "job_completed":
+        return not (env.get("data") or {}).get("refine")
+    return t in TERMINAL_TYPES
 # These also go to the Oracle event log (Logs page); per-field events do not.
 COARSE_TYPES = {
     "job_started", "page_completed", "fallback_started", "field_failed",
@@ -47,12 +55,12 @@ def _redis():
 
 
 class EventBus:
-    def __init__(self, job_id: str, coarse_callback: Callable[[str, dict], None] | None = None, redis_conn=None):
+    def __init__(self, job_id: str, coarse_callback: Callable[[str, dict], None] | None = None, redis_conn=None, seq_start: int = 0):
         self.job_id = job_id
         self._coarse = coarse_callback
         self._redis = redis_conn if redis_conn is not None else _redis()
         self._lock = threading.Lock()
-        self._seq = 0
+        self._seq = seq_start
         self._warned = False
         self._cancel_checked = 0.0
         self._cancelled = False
@@ -89,6 +97,16 @@ class EventBus:
             if not self._warned:
                 self._warned = True
                 logger.warning("fast_event_publish_failed", error=str(exc))
+
+    def last_seq(self) -> int:
+        """Highest seq already on the stream (a refine job continues numbering after the extraction job)."""
+        if self._redis is None:
+            return 0
+        try:
+            last = self._redis.xrevrange(stream_key(self.job_id), count=1)
+            return int(last[0][0].decode().split("-")[0]) if last else 0
+        except Exception:
+            return 0
 
     def cancel_requested(self) -> bool:
         if self._cancelled:

@@ -39,6 +39,7 @@ class TableResult:
     extraction_method: str = ""
     cells: list[dict] = field(default_factory=list)
     markdown: str = ""
+    meta: dict = field(default_factory=dict)   # title_text, footer_text, quality, pages, columns ... (fast_ocr tables)
 
 @dataclass
 class PipelineResult:

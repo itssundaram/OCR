@@ -74,3 +74,24 @@ class FieldVlm:
         except Exception:
             m = re.search(r'"value"\s*:\s*"([^"]*)"', raw)
             return m.group(1).strip() if m else ""
+
+    def read_cell(self, crop: Image.Image, instruction: str, header: str = "") -> str:
+        """Transcribe ONE table cell crop. Returns "" when nothing is readable."""
+        buf = io.BytesIO()
+        crop.convert("RGB").save(buf, format="PNG")
+        ctx = f' The column is titled "{header}".' if header else ""
+        prompt = (f"{instruction}{ctx} If nothing is readable return an empty string. "
+                  'Reply with JSON only: {"value": "<text>"}')
+        resp = self._get().chat(
+            model=settings.AI_MODEL,
+            messages=[{"role": "user", "content": prompt, "images": [base64.b64encode(buf.getvalue()).decode()]}],
+            format="json",
+            options={"temperature": 0.0, "num_predict": 80, "num_ctx": 2048},
+            keep_alive=settings.FAST_VLM_KEEP_ALIVE,
+        )
+        raw = resp.message.content or ""
+        try:
+            return str(json.loads(raw).get("value") or "").strip()
+        except Exception:
+            m = re.search(r'"value"\s*:\s*"([^"]*)"', raw)
+            return m.group(1).strip() if m else ""

@@ -90,9 +90,21 @@ def apply_cell_edit(table: dict, row: int, col: int, value: str) -> dict:
     if target is None:  # the grid has a hole here (empty cell the reader skipped)
         target = {"row": row, "col": col, "text": "", "bbox": None, "is_header": row == 0}
         cells.append(target)
+    if "raw_text" not in target and target.get("text") != value:
+        target["raw_text"] = target.get("text", "")
     target["text"] = value
     target["confidence"] = 1.0
     target["edited"] = True
+    target["state"] = "accepted"          # a person read it: no flag, no suggestion
+    target["reasons"] = []
+    target["rev"] = int(target.get("rev", 0)) + 1
+    target.pop("suggestion", None)
 
     out["cells"] = cells
-    return rebuild_from_cells(out)
+    out = rebuild_from_cells(out)
+    try:                                   # keep the table summary (accepted / flagged) current
+        from app.fast.tableschema import recount_quality
+        recount_quality(out)
+    except Exception:
+        pass
+    return out

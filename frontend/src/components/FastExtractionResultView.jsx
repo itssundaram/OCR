@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   ArrowLeft, FileText, CheckCircle2, XCircle, Clock, Zap, Cpu,
   Copy, Check, RefreshCw, ZoomIn, ZoomOut, Maximize, Crosshair,
@@ -17,6 +17,7 @@ import { extractService } from '../services/extract';
 import { templatesService } from '../services/templates';
 import { processingService } from '../services/processing';
 import { config } from '../config';
+import { applyCellPatches } from '../utils/tableGrid';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
@@ -81,6 +82,7 @@ const FastExtractionResultView = ({
   const [showReferenceAnchors, setShowReferenceAnchors] = useState(true);
   const [showAllDetections, setShowAllDetections] = useState(true);
   const [isScanning, setIsScanning] = useState(true);
+  const [tableHighlight, setTableHighlight] = useState(null); // {page, bbox} of a table cell shown on the canvas
   const [detectionSearch, setDetectionSearch] = useState('');
 
   // Dynamic zoom & container tracking for seeing full PDF correctly
@@ -124,7 +126,27 @@ const FastExtractionResultView = ({
   }, [currentJob?.job_id, currentJob?.status]);
 
   // fast_ocr only: field-by-field results over SSE while the job runs (polling above is unchanged)
-  const live = useJobStream(currentJob?.job_id, isScanning && currentJob?.pipeline_mode === 'fast_ocr');
+  // The stream stays open after the first result while the server keeps re-reading flagged table cells.
+  const storedRefine = useMemo(() => {
+    try {
+      const m = currentJob?.ocr_metadata_json ? parseJSONRecursively(currentJob.ocr_metadata_json) : null;
+      return m?.refine || null;
+    } catch {
+      return null;
+    }
+  }, [currentJob]);
+  const refineStoredActive = Boolean(storedRefine && ['pending', 'running'].includes(storedRefine.status));
+  const live = useJobStream(
+    currentJob?.job_id,
+    (isScanning || refineStoredActive) && currentJob?.pipeline_mode === 'fast_ocr'
+  );
+  const refineView = live.refine.status !== 'idle'
+    ? live.refine
+    : storedRefine
+    ? { status: storedRefine.status, improved: storedRefine.improved || 0, remaining: storedRefine.remaining_flagged ?? storedRefine.flagged_at_start ?? 0, queued: 0 }
+    : null;
+  const livePatchesRef = useRef([]);
+  livePatchesRef.current = live.patches;
 
   // Measure container dimensions for responsive page fitting
   useEffect(() => {
@@ -149,13 +171,27 @@ const FastExtractionResultView = ({
       const parsed = currentJob.extracted_json ? parseJSONRecursively(currentJob.extracted_json) : null;
       const f = parsed?.fields || {};
       setLocalFields(f);
-      setLocalTables(Array.isArray(parsed?.tables) ? parsed.tables : []);
+      setLocalTables(applyCellPatches(Array.isArray(parsed?.tables) ? parsed.tables : [], livePatchesRef.current));
       const ocrMeta = currentJob.ocr_metadata_json ? parseJSONRecursively(currentJob.ocr_metadata_json) : {};
       const la = ocrMeta?.learned_anchors || parsed?.learned_anchors;
       setLearnedAnchorsState(la || null);
       setIsGeometryLocked(Boolean(la?.is_verified));
     }
   }, [currentJob]);
+
+  // cells the server re-read in the background arrive one by one; fold them into the grid
+  useEffect(() => {
+    if (live.patches.length === 0) return;
+    setLocalTables((prev) => applyCellPatches(prev, live.patches));
+  }, [live.patches]);
+
+  // when refinement ends (or the stream asks for it) load the saved result once so the summary is exact
+  const refineStatus = live.refine.status;
+  useEffect(() => {
+    if (!currentJob?.job_id || !(['done', 'failed', 'cancelled', 'skipped'].includes(refineStatus) || live.needsResync)) return;
+    processingService.getJob(currentJob.job_id).then((res) => { if (res?.data) setCurrentJob(res.data); }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refineStatus, live.needsResync]);
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -531,6 +567,18 @@ const FastExtractionResultView = ({
   const cancelEditing = () => {
     setEditingField(null);
     setEditValue('');
+  };
+
+  const handleLocateCell = ({ page, bbox }) => {
+    const target = parsePageNumber(page) || 1;
+    setCurrentPage(target);
+    setTableHighlight({ page: target, bbox });
+    setTimeout(() => {
+      if (scrollContainerRef.current && bbox) {
+        scrollContainerRef.current.scrollTo({ top: Math.max(0, bbox.y1 * scaleY - 120), behavior: 'smooth' });
+      }
+    }, 200);
+    setTimeout(() => setTableHighlight(null), 8000);
   };
 
   const handleTableUpdated = (tableIndex, updatedTable) => {
@@ -942,6 +990,19 @@ const FastExtractionResultView = ({
                   )}
 
                   <LiveFieldsPanel live={live} />
+
+                  {/* A table cell picked in the review grid */}
+                  {tableHighlight && tableHighlight.bbox && tableHighlight.page === (parsePageNumber(currentPage) || 1) && (
+                    <div
+                      className="absolute border-2 border-fuchsia-500 bg-fuchsia-400/20 rounded pointer-events-none z-40 animate-pulse"
+                      style={{
+                        left: `${tableHighlight.bbox.x1 * scaleX}px`,
+                        top: `${tableHighlight.bbox.y1 * scaleY}px`,
+                        width: `${Math.max(12, (tableHighlight.bbox.x2 - tableHighlight.bbox.x1) * scaleX)}px`,
+                        height: `${Math.max(10, (tableHighlight.bbox.y2 - tableHighlight.bbox.y1) * scaleY)}px`,
+                      }}
+                    />
+                  )}
 
                   {/* 1. Ground Truth Reference Bounding Boxes (Dashed Template Baseline) */}
                   {showReferenceAnchors &&
@@ -1394,6 +1455,9 @@ const FastExtractionResultView = ({
                     jobId={currentJob.job_id}
                     onTableUpdated={handleTableUpdated}
                     onToast={showToast}
+                    refine={live.needsResync && refineView?.status === 'running' ? null : refineView}
+                    onFocusRows={(ti, from, to) => { extractService.sendFocus(currentJob.job_id, ti, from, to).catch(() => {}); }}
+                    onLocateCell={handleLocateCell}
                   />
                 ))
               )}

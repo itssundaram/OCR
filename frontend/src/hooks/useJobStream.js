@@ -17,6 +17,7 @@ export const EVENT_TYPES = [
   'job_started', 'page_started', 'field_started', 'field_extracted', 'field_validated',
   'table_extracted', 'fallback_started', 'field_failed', 'page_completed',
   'job_completed', 'job_failed', 'resync_required',
+  'refine_started', 'cell_refined', 'refine_progress', 'refine_completed',
 ];
 
 export const initialLiveState = {
@@ -27,6 +28,8 @@ export const initialLiveState = {
   fieldsTotal: 0,
   fields: {},                // name -> {name,label,value,confidence,state,provisional,source,page,bbox,reason}
   tables: [],
+  refine: { status: 'idle', improved: 0, remaining: 0, queued: 0 },   // background re-reading after the first result
+  patches: [],               // cell_refined payloads (table_index,row,col,text,state,confidence,reasons,rev)
   error: null,
   needsResync: false,
   events: 0,
@@ -72,7 +75,17 @@ export function applyEvent(state, env) {
     case 'table_extracted':
       return { ...next, tables: [...state.tables, { page: env.page, index: d.table_index, headers: d.headers, rows: d.rows }] };
     case 'job_completed':
-      return { ...next, status: 'completed' };
+      return { ...next, status: 'completed', refine: d.refine ? { ...state.refine, status: 'running' } : state.refine };
+    case 'refine_started':
+      return { ...next, refine: { ...state.refine, status: 'running', remaining: d.flagged ?? state.refine.remaining } };
+    case 'cell_refined': {
+      const patches = state.patches.length > 5000 ? state.patches.slice(-4000) : state.patches;
+      return { ...next, patches: [...patches, d] };
+    }
+    case 'refine_progress':
+      return { ...next, refine: { ...state.refine, status: 'running', improved: d.improved ?? 0, remaining: d.remaining_flagged ?? 0, queued: d.queued ?? 0 } };
+    case 'refine_completed':
+      return { ...next, refine: { ...state.refine, status: d.status || 'done', improved: d.improved ?? state.refine.improved, remaining: d.remaining ?? state.refine.remaining, queued: 0 } };
     case 'job_failed':
       return { ...next, status: 'failed', error: d.error || null };
     case 'resync_required':
@@ -100,7 +113,9 @@ export function useJobStream(jobId, enabled) {
         last = env.seq;
       }
       setState((s) => applyEvent(s, env));
-      if (['job_completed', 'job_failed', 'resync_required'].includes(env.type)) {
+      const endsStream = env.type === 'job_failed' || env.type === 'resync_required' || env.type === 'refine_completed'
+        || (env.type === 'job_completed' && !env.data?.refine);
+      if (endsStream) {
         closed = true;
         es.close();                              // the server ends the stream; do not auto-reconnect
       }

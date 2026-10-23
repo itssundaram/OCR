@@ -111,6 +111,15 @@ export const extractService = {
   rerunJob: (jobId, forceRelearn = false) =>
     api.post(`/extract/jobs/${jobId}/rerun`, { force_relearn: forceRelearn }),
 
+  // Background refinement: tell the server what the reviewer is looking at (it re-reads that first)
+  sendFocus: (jobId, tableIndex, rowFrom, rowTo) =>
+    api.post(`/extract/jobs/${jobId}/focus`, { table_index: tableIndex, row_from: rowFrom, row_to: rowTo }),
+  getRefine: (jobId) => api.get(`/extract/jobs/${jobId}/refine`),
+  cancelRefine: (jobId) => api.post(`/extract/jobs/${jobId}/refine/cancel`),
+  // Close-up PNG of one table cell (cut from the page the extraction used)
+  cellImageUrl: (jobId, tableIndex, row, col, rev = 0) =>
+    `${config.API_BASE_URL}/extract/jobs/${jobId}/tables/${tableIndex}/cells/${row}/${col}/image?v=${rev}`,
+
   // Add, remove, or update template fields
   manageTemplateField: (jobId, action, fieldKey, value = null, bbox = null, pageNumber = 1, saveToTemplate = true) =>
     api.post('/extract/manage-template-field', {

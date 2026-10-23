@@ -72,6 +72,53 @@ def _md(headers: list[str], rows: list[list[str]]) -> str:
     return md
 
 
+_SEP = set("-/.,:;| ")
+
+
+def _split_word(text: str, x1: float, x2: float, b: float) -> tuple[str, str] | None:
+    """A word box that straddles a column rule is two cells glued together
+    ("8/MS-23057F"): cut the text at the character nearest the rule, preferring a
+    separator or a letter/digit change. None when there is no sensible cut."""
+    n = len(text)
+    if n < 3 or x2 <= x1:
+        return None
+    frac = (b - x1) / (x2 - x1)
+    if not (0.12 < frac < 0.88):
+        return None
+    guess = int(round(frac * n))
+    best = None
+    for off in (0, -1, 1, -2, 2):
+        i = guess + off
+        if not (1 <= i <= n - 1):
+            continue
+        a, c = text[i - 1], text[i]
+        if a in _SEP or c in _SEP:
+            best = i if c not in _SEP else i + 1
+            break
+        if a.isdigit() != c.isdigit() and a.isalnum() and c.isalnum():
+            best = i
+            break
+    if best is None or not (1 <= best <= n - 1):
+        return None
+    left, right = text[:best].strip(" -/|"), text[best:].strip(" -/|")
+    return (left, right) if left and right else None
+
+
+def _boundaries(lines: list[float], extent: float, words_spans: list[tuple[float, float]], strip_limit: float | None) -> list[float]:
+    """Row/column boundaries from the detected rules. With enough rules only
+    they are used (text outside the first/last rule is title or margin, not
+    table); an open edge is closed at the region edge only when a strip that
+    fits one cell holds words."""
+    lines = _merge_close(sorted(lines), 5)
+    b = list(lines)
+    if strip_limit is not None and b:
+        if 0 < b[0] <= strip_limit and any(0 <= (a + c) / 2 < b[0] for a, c in words_spans):
+            b = [0.0] + b
+        if 0 < extent - b[-1] <= strip_limit and any((a + c) / 2 > b[-1] for a, c in words_spans):
+            b = b + [extent]
+    return b
+
+
 def _grid_table(page: PageData, region: tuple[int, int, int, int], index: int) -> TableResult | None:
     x1, y1, x2, y2 = region
     rw, rh = x2 - x1, y2 - y1
@@ -91,31 +138,56 @@ def _grid_table(page: PageData, region: tuple[int, int, int, int], index: int) -
         return None
     med_h = median(max(1.0, w.bbox.y2 - w.bbox.y1) for w in words)
 
-    # outer edges count as boundaries even when the frame is open on a side
-    row_b = sorted(set([0.0, float(rh)] + ys))
-    row_b = _merge_close(row_b, 5)
-    if len(xs) >= 2:
+    outside: list = []
+    if len(ys) >= 3:
+        gaps = [b - a for a, b in zip(ys, ys[1:])]
+        row_b = _boundaries(ys, float(rh), [(w.bbox.y1 - y1, w.bbox.y2 - y1) for w in words], 2.2 * median(gaps))
+    else:
+        row_b = _merge_close(sorted(set([0.0, float(rh)] + ys)), 5)
+    if len(xs) >= 3:
+        col_b = _merge_close(sorted(xs), 5)               # rules only: margins hold no cells
+    elif len(xs) == 2:
         col_b = _merge_close(sorted(set([0.0, float(rw)] + xs)), 5)
     else:
         col_b = _columns_from_spans([(w.bbox.x1 - x1, w.bbox.x2 - x1) for w in words], 0.0, float(rw), med_h)
     n_rows, n_cols = len(row_b) - 1, len(col_b) - 1
-    if n_rows < 2 or n_cols < 2 or n_rows > 200 or n_cols > 40:
+    if n_rows < 2 or n_cols < 2 or n_rows > 300 or n_cols > 40:
         return None
 
-    cell_words: dict[tuple[int, int], list] = {}
+    # (text, x1, y1, x2, y2, conf) pieces, so a straddling word can become two
+    pieces: list[tuple[str, float, float, float, float, float | None]] = []
     for w in words:
-        cx = (w.bbox.x1 + w.bbox.x2) / 2 - x1
-        cy = (w.bbox.y1 + w.bbox.y2) / 2 - y1
+        b = w.bbox
+        done = False
+        for xb in col_b[1:-1]:
+            if b.x1 - x1 < xb < b.x2 - x1:
+                cut = _split_word(w.text, b.x1 - x1, b.x2 - x1, xb)
+                if cut:
+                    fr = (xb - (b.x1 - x1)) / max(1.0, b.x2 - b.x1)
+                    mid = b.x1 + fr * (b.x2 - b.x1)
+                    pieces.append((cut[0], b.x1, b.y1, mid, b.y2, None))      # glued word: confidence unknown per part
+                    pieces.append((cut[1], mid, b.y1, b.x2, b.y2, None))
+                    done = True
+                    break
+        if not done:
+            pieces.append((w.text, b.x1, b.y1, b.x2, b.y2, w.confidence))
+
+    cell_words: dict[tuple[int, int], list] = {}
+    for text, bx1, by1, bx2, by2, conf in pieces:
+        cx, cy = (bx1 + bx2) / 2 - x1, (by1 + by2) / 2 - y1
+        if cy < row_b[0] or cy > row_b[-1] or cx < col_b[0] or cx > col_b[-1]:
+            outside.append((by1, bx1, text))
+            continue
         r = min(n_rows - 1, max(0, bisect.bisect_right(row_b, cy) - 1))
         c = min(n_cols - 1, max(0, bisect.bisect_right(col_b, cx) - 1))
-        cell_words.setdefault((r, c), []).append(w)
+        cell_words.setdefault((r, c), []).append((bx1, by1, bx2, by2, text, conf))
 
     grid = [[""] * n_cols for _ in range(n_rows)]
-    confs: dict[tuple[int, int], float] = {}
+    confs: dict[tuple[int, int], float | None] = {}
     for (r, c), ws in cell_words.items():
-        lines = words_to_lines([(w.bbox.x1, w.bbox.y1, w.bbox.x2, w.bbox.y2, w.text) for w in ws])
+        lines = words_to_lines([(a, b, cc, d, t) for a, b, cc, d, t, _ in ws])
         grid[r][c] = " ".join(ln.text for ln in lines)
-        cs = [w.confidence for w in ws if w.confidence is not None]
+        cs = [cf for *_, cf in ws if cf is not None]
         confs[(r, c)] = round(sum(cs) / len(cs), 3) if cs else None
 
     keep_rows = [r for r in range(n_rows) if any(grid[r])]
@@ -132,10 +204,12 @@ def _grid_table(page: PageData, region: tuple[int, int, int, int], index: int) -
                          "x2": int(x1 + col_b[c + 1]), "y2": int(y1 + row_b[r + 1])},
                 "is_header": ri == 0,
                 "confidence": confs.get((r, c)),
+                "page": page.page_number,
             })
     table_rows = [[grid[r][c] for c in keep_cols] for r in keep_rows]
     headers, body = table_rows[0], table_rows[1:]
     native = page.source == "native"
+    outside.sort()
     return TableResult(
         table_index=index, page_number=page.page_number,
         headers=headers, rows=body,
@@ -143,6 +217,8 @@ def _grid_table(page: PageData, region: tuple[int, int, int, int], index: int) -
         bbox={"x1": x1, "y1": y1, "x2": x2, "y2": y2},
         cells=cells, markdown=_md(headers, body),
         extraction_method="grid_lines",
+        meta={"col_edges": [round(x1 + col_b[c]) for c in keep_cols] + [round(x1 + col_b[keep_cols[-1] + 1])],
+              "outside_text": " ".join(t for *_, t in outside)[:500]},
     )
 
 
