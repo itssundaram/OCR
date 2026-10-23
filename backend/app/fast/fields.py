@@ -30,7 +30,7 @@ from app.fast.vlm import FieldVlm, supported_by_ocr
 from app.ocr.base import OCRLine
 from app.ocr import label_kb
 from app.ocr.kv_discovery import DiscoveredPair, assign_unique_keys, discover_key_values
-from app.ocr.kv_match import _candidates, _score, _tokens, match_fields
+from app.ocr.kv_match import _candidates, _score, _side_hint, _tokens, _value_ok, match_fields
 from app.anchors import resolve_anchor, words_from_lines
 from app.anchors.apply import anchor_is_trusted
 from app.pipelines.base import FieldResult
@@ -58,6 +58,21 @@ def _union(words) -> dict | None:
             "x2": max(w.bbox.x2 for w in ws), "y2": max(w.bbox.y2 for w in ws)}
 
 
+_LABEL_CONTINUERS = {"of", "to", "for", "from", "in", "on", "by", "and", "no", "no.", "number", "type", "name"}
+
+
+def _overlaps(a: dict | None, b: dict | None, frac: float = 0.5) -> bool:
+    """True when the two boxes share more than `frac` of the smaller one's area."""
+    if not a or not b:
+        return False
+    ix = min(a["x2"], b["x2"]) - max(a["x1"], b["x1"])
+    iy = min(a["y2"], b["y2"]) - max(a["y1"], b["y1"])
+    if ix <= 0 or iy <= 0:
+        return False
+    small = min((a["x2"] - a["x1"]) * (a["y2"] - a["y1"]), (b["x2"] - b["x1"]) * (b["y2"] - b["y1"]))
+    return small > 0 and ix * iy / small > frac
+
+
 def _avg_conf(words) -> float:
     cs = [w.confidence for w in words if w.confidence is not None]
     return sum(cs) / len(cs) if cs else 0.0
@@ -78,6 +93,7 @@ class FieldExtractor:
         self._vlm = vlm
         self.meta: dict[str, FieldMeta] = {}
         self.timings: dict[str, int] = {}
+        self._claimed: list[tuple[int, dict]] = []     # (page, value box) already given to a field
 
     # ── per page (called as each page is read) ────────────────────────────────
     def add_page(self, page: PageData) -> None:
@@ -99,10 +115,77 @@ class FieldExtractor:
         self.timings["kv_ms"] = self.timings.get("kv_ms", 0) + int((time.perf_counter() - t0) * 1000)
 
     # ── label proximity (labels printed without a colon) ───────────────────────
-    def _proximity(self, fdef: dict):
+    def _label_tokens_all(self) -> list[list[str]]:
+        """Every template field's label spellings (and their synonyms): words that start ANOTHER field's value."""
+        cached = getattr(self, "_all_label_tokens", None)
+        if cached is None:
+            cached = []
+            for f in self.fields:
+                for c in _candidates(f):
+                    cached.append(c)
+                    cached.extend(label_kb.synonyms_of(c))
+            self._all_label_tokens = cached
+        return cached
+
+    def _cut_value(self, words: list, label_h: float) -> list:
+        """The value is what sits right after its label on the SAME stretch of the row: it ends at a wide gap
+        (the next column) or where another field's label begins. Stops "Dated : 2 Jun 2025   Dated : ..." and
+        "IV No : 20/4/MT/02   RV No : ..." from becoming one long value (and one long box)."""
+        out: list = []
+        limit = max(3.2 * label_h, 45.0)
+        others = self._label_tokens_all()
+        for n, w in enumerate(words):
+            if out and w.bbox and out[-1].bbox and w.bbox.x1 - out[-1].bbox.x2 > limit:
+                break
+            if out:
+                raw = w.text.strip()
+                if raw.endswith(":") and len(raw) > 2 and raw[0].isalpha():
+                    break                                           # "Name:" starts the next field
+                nxt = words[n + 1].text.strip() if n + 1 < len(words) else ""
+                if nxt in (":", "：") and raw[:1].isalpha():
+                    break
+                if raw[:1].isupper() and any(
+                    len("".join(o)) >= 3 and len(o) <= 3
+                    and _score(o, [t for x in words[n:n + len(o)] for t in _tokens(x.text)]) >= 0.9
+                    for o in others
+                ):
+                    break                                           # another field's label begins ("Unit", "RV No")
+            out.append(w)
+        return out
+
+    def _continue_value(self, page: PageData, ln: OCRLine, value_words: list, label_box: dict) -> list:
+        """A value that runs to the right edge of the page wraps onto the next line ("Auth : ... dt 30 Jan 2025 and
+        23 Inf DOU" / "disposal order No ..."): take that next line too, unless it is another field's row."""
+        if not value_words or not page.width:
+            return value_words
+        vbox = _union(value_words)
+        if not vbox or vbox["x2"] < 0.78 * page.width or (ln.words and value_words[-1] is not ln.words[-1]):
+            return value_words                       # not a full-width line, or the row went on past a cut: no wrap
+        lh = max(8.0, label_box["y2"] - label_box["y1"])
+        best = None
+        for other in page.lines:
+            if other is ln or other.bbox is None:
+                continue
+            gap = other.bbox.y1 - ln.bbox.y2
+            if gap < -0.3 * lh or gap > 1.1 * lh:
+                continue
+            if not (label_box["x1"] - lh <= other.bbox.x1 <= vbox["x1"] + 2 * lh):
+                continue
+            text = " ".join(w.text for w in other.words)
+            if any(w.text.endswith(":") or w.text in (":", "\uff1a") for w in other.words) or re.match(r"^\W*\d+\W*$", text):
+                continue
+            if best is None or gap < best[0]:
+                best = (gap, other)
+        if best is None:
+            return value_words
+        extra = self._cut_value([w for w in best[1].words if any(ch.isalnum() for ch in w.text)], lh)
+        return list(value_words) + extra
+
+    def _proximity(self, fdef: dict, pages=None):
         """Find the field's label without needing a colon. Returns
-        (page, label_box, value_words) for the best-scoring label occurrence
-        (exact beats typo-tolerant; a hit that has a value beats one without)."""
+        (page, label_box, value_words) for the best label occurrence: exact beats typo-tolerant; a label that
+        opens its stretch of the row or is followed by ":" / "-" beats the same words inside a sentence; a hit
+        that has a value beats one without."""
         cands = _candidates(fdef)
         if not cands:
             return None
@@ -115,7 +198,8 @@ class FieldExtractor:
                     known.add(tuple(syn))
                     weighted.append((syn, 0.93))
         best, best_key = None, None
-        for page in self.pages.values():
+        hint = _side_hint(fdef)
+        for page in (pages if pages is not None else self.pages.values()):
             for ln in page.lines:
                 words = ln.words
                 for cand, weight in weighted:
@@ -129,12 +213,58 @@ class FieldExtractor:
                             if score < 0.9:
                                 continue
                             label_box = _union(seg)
-                            value_words = [w for w in words[i + k:] if w.text.strip(" :-–—=>;")]
-                            key = (score * weight, bool(value_words), -page.page_number, -label_box["y1"])
+                            lh = max(8.0, label_box["y2"] - label_box["y1"])
+                            gap = max(2.2 * lh, 30.0)
+                            opens = i == 0 or (words[i - 1].bbox is not None and label_box["x1"] - words[i - 1].bbox.x2 > gap) \
+                                or (i == 1 and not any(ch.isalpha() for ch in words[0].text))      # "1. | Veh BA No"
+                            sep = (i + k < len(words) and words[i + k].text.strip() in (":", "-", "=", "\u2013", "\u2014", ">", ";", "\uff1a")) \
+                                or seg[-1].text.rstrip().endswith(":")
+                            tail = [w for w in words[i + k:] if any(ch.isalnum() for ch in w.text)]
+                            value_words = self._continue_value(page, ln, self._cut_value(tail, lh), label_box)
+                            vbox = _union(value_words)
+                            if vbox and any(pn == page.page_number and _overlaps(vbox, cb) for pn, cb in self._claimed):
+                                continue                      # that value already belongs to another field
+                            side = -label_box["x1"] if hint == "left" else label_box["x1"] if hint == "right" else 0
+                            nxt = words[i + k].text.strip().lower() if i + k < len(words) else ""
+                            longer = nxt in _LABEL_CONTINUERS                 # "Date of Final Insp": a longer label, not "Date"
+                            plausible = bool(value_words) and _value_ok(fdef, " ".join(w.text for w in value_words))
+                            key = (round(score * weight, 2), not longer, plausible, side, int(opens) + int(sep), bool(value_words),
+                                   round(_avg_conf(value_words) * 5) / 5, -page.page_number, -label_box["y1"])
                             if best_key is None or key > best_key:
                                 best, best_key = (page, label_box, value_words), key
 
         return best
+
+    def _occurrences(self, fdef: dict, primary: FieldResult) -> list[dict]:
+        """The same field read on the OTHER pages (a voucher printed twice, a photo of its copy): shown on those
+        pages in the viewer and offered as an alternative, never merged into the primary value."""
+        if len(self.pages) < 2 or not primary.value:
+            return []
+        name, out = fdef["name"], []
+        claimed, self._claimed = self._claimed, []            # each page is searched on its own
+        try:
+            for n, page in sorted(self.pages.items()):
+                if n == primary.page_number:
+                    continue
+                pairs = [p for p in self.pairs if p.page_number == n]
+                m = match_fields([fdef], pairs).get(name)
+                if m:
+                    value, conf, bbox, src = m.pair.value, m.pair.confidence, m.pair.bbox, "kv_pair"
+                else:
+                    hit = self._proximity(fdef, pages=[page])
+                    if not hit or not hit[2]:
+                        continue
+                    value = " ".join(w.text for w in hit[2])
+                    conf, bbox, src = round(_avg_conf(hit[2]) * 0.9, 3), _union(hit[2]), "label_proximity"
+                if sum(ch.isalnum() for ch in value) < 2 or not _value_ok(fdef, value):
+                    continue
+                out.append({"page_number": n, "value": value, "confidence": round(float(conf), 3),
+                            "bbox": bbox, "source": src})
+        except Exception as exc:
+            logger.warning("fast_occurrences_failed", field=name, error=str(exc)[:160])
+        finally:
+            self._claimed = claimed
+        return out
 
     def _reread_value(self, page: PageData, label_box: dict):
         """The label was found but nothing was read next to it. Re-read just that spot, as one line, with ruling
@@ -265,6 +395,20 @@ class FieldExtractor:
             return None
         return rd if (rd is not None and rd.valid and rd.confidence >= 0.35) else None
 
+    def _vet_anchor(self, fdef: dict, rd, m):
+        """A confirmed box is trusted first, but not blindly: a box that swallowed a whole block of the page, or
+        whose printed label is nowhere near where it was confirmed while the label search finds something else,
+        is read from the label instead. Returns (reading or None, note for the reviewer)."""
+        extra = getattr(rd, "extra", None) or {}
+        if int(extra.get("lines") or 1) > 6:
+            return None, "anchor_box_too_large"
+        if extra.get("has_label") and not extra.get("landmark") and m is not None:
+            from difflib import SequenceMatcher
+            norm = lambda t: re.sub(r"[^a-z0-9]", "", (t or "").lower())
+            if SequenceMatcher(None, norm(rd.value), norm(m.pair.value)).ratio() < 0.5:
+                return None, "anchor_label_not_found"
+        return rd, ""
+
     # ── all pages are in ──────────────────────────────────────────────────────────
     def _ensure_vlm_tools(self) -> None:
         """Create the VLM client and the OCR engine once, in the calling thread (the parallel VLM workers share them)."""
@@ -367,6 +511,8 @@ class FieldExtractor:
         vlm_cap = settings.FAST_VLM_MAX_FIELDS if settings.FAST_VLM_FALLBACK_ENABLED else 0
         slots: list[dict] = []
         pending: list[dict] = []
+        # values the key:value step already gave to a field are not offered again to label proximity
+        self._claimed = [(m.pair.page_number, m.pair.bbox) for m in matches.values() if m.pair.bbox]
 
         # 1. every field the cheap steps can settle is settled and streamed first
         for fdef in self.fields:
@@ -379,6 +525,9 @@ class FieldExtractor:
             label_hit = None
 
             rd = self._read_anchor(name)
+            anchor_note = ""
+            if rd is not None:
+                rd, anchor_note = self._vet_anchor(fdef, rd, m)
             if rd is not None:
                 fr = FieldResult(
                     field_name=name, value=rd.value, confidence=rd.confidence,
@@ -423,8 +572,12 @@ class FieldExtractor:
                         )
                         meta.source = "label_proximity"
 
+            if fr is not None and fr.bbox:
+                self._claimed.append((fr.page_number, fr.bbox))
             a = assess(fdef, fr.value, fr.confidence) if fr else None
             slot = {"name": name, "fdef": fdef, "fr": fr, "meta": meta, "a": a, "hit": None}
+            if anchor_note:
+                slot["skip"] = anchor_note
             slots.append(slot)
 
             # VLM only when a label was located but there is no usable value
@@ -443,6 +596,10 @@ class FieldExtractor:
         if pending:
             self._vlm_phase(pending, vlm_cap)
         results: list[FieldResult] = [s["result"] for s in slots if "result" in s]
+        for slot in slots:
+            fr = slot.get("result")
+            if fr is not None and fr.value:
+                fr.occurrences = self._occurrences(slot["fdef"], fr)
 
         # discovered pairs that no template field used
         if settings.KV_DISCOVERY_ENABLED:

@@ -36,6 +36,8 @@ const KeyValuePanel = ({
   onReOcr,
   reOcrLoading,
   onRemove,
+  onShowOccurrence,
+  onUseOccurrence,
   rowRefs,
 }) => {
   const [query, setQuery] = useState('');
@@ -159,6 +161,31 @@ const KeyValuePanel = ({
             </span>
           ) : (
             <span className="text-xs italic text-slate-400">not found</span>
+          )}
+          {!isEditing && Array.isArray(d.occurrences) && d.occurrences.length > 0 && (
+            <div className="mt-1 space-y-0.5" onClick={(e) => e.stopPropagation()}>
+              {d.occurrences.map((o, i) => (
+                <div key={i} className="flex items-center gap-1.5 text-[10px] text-slate-500">
+                  <button
+                    onClick={() => onShowOccurrence && onShowOccurrence(key, o)}
+                    className="shrink-0 px-1 rounded border border-amber-200 bg-amber-50 text-amber-800 font-mono font-bold hover:bg-amber-100 cursor-pointer"
+                    title={`Show this reading on page ${o.page_number}`}
+                  >
+                    p{o.page_number}
+                  </button>
+                  <span className="font-mono truncate" title={String(o.value)}>{String(o.value)}</span>
+                  {onUseOccurrence && (
+                    <button
+                      onClick={() => onUseOccurrence(key, o)}
+                      className="shrink-0 px-1 rounded border border-slate-200 bg-white text-slate-600 hover:text-blue-700 hover:border-blue-300 cursor-pointer"
+                      title="Use this reading as the field value"
+                    >
+                      use
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
         </div>
 

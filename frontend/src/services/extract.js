@@ -89,12 +89,13 @@ export const extractService = {
     }),
 
   // Manual field value update
-  updateField: (jobId, fieldKey, value, bbox = null) =>
+  updateField: (jobId, fieldKey, value, bbox = null, extra = {}) =>
     api.post('/extract/update-field', {
       job_id: jobId,
       field_key: fieldKey,
       value,
       bbox,
+      ...extra, // page_number / occurrences when the value was taken from another page
     }),
 
   // Save one corrected table cell back into the job result

@@ -31,6 +31,8 @@ _CANON = {
 
 
 _SIDE_WORDS = {"left", "right", "side", "hand", "of", "the", "page"}
+# a trailing qualifier on a field name ("unit_from", "address_to"): the printed label is usually just "Unit" / "Address"
+_DIRECTION_WORDS = {"from": "left", "to": "right"}
 
 
 @dataclass
@@ -91,6 +93,12 @@ def _candidates(fdef: dict) -> list[list[str]]:
         if toks and key not in seen:
             seen.add(key)
             out.append(toks)
+        # "unit_from" is printed as plain "Unit" on the form: the name without its from/to qualifier is a candidate too
+        if len(toks) >= 2 and toks[-1] in _DIRECTION_WORDS:
+            base = tuple(toks[:-1])
+            if base not in seen:
+                seen.add(base)
+                out.append(list(base))
     return out
 
 
@@ -100,6 +108,10 @@ def _side_hint(fdef: dict) -> str:
         return "left"
     if "right" in text:
         return "right"
+    for name in (fdef.get("name"), fdef.get("label"), fdef.get("display_name")):
+        toks = _tokens(str(name)) if name else []
+        if len(toks) >= 2 and toks[-1] in _DIRECTION_WORDS:
+            return _DIRECTION_WORDS[toks[-1]]
     return ""
 
 
@@ -136,7 +148,8 @@ def match_fields(template_fields: list[dict], pairs: list[DiscoveredPair]) -> di
         hint = _side_hint(fields[fi])
         x = bb.get("x1", 0)
         pos = -x if hint == "right" else x if hint == "left" else 0
-        return (-s, pos, pairs[pi].page_number, bb.get("y1", 0), bb.get("x1", 0))
+        # equal label score: a clearly better read wins over an earlier page (the same form can repeat on page 2)
+        return (-s, pos, -int(pairs[pi].confidence * 5), pairs[pi].page_number, bb.get("y1", 0), bb.get("x1", 0))
 
     for s, fi, pi in sorted(scored, key=order):
         name = fields[fi]["name"]

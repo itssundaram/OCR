@@ -280,6 +280,7 @@ def resolve_anchor(
     # landmark alignment
     dx = dy = 0.0
     aligned = False
+    landmark = False
     label = (anchor.get("label_text") or "").strip()
     if label:
         lrel = anchor.get("label_rel_bbox")
@@ -290,6 +291,7 @@ def resolve_anchor(
             ecx, ecy = box["x1"] - 60.0, (box["y1"] + box["y2"]) / 2.0
         found = _locate_label(words, label, ecx, ecy, page_w, page_h)
         if found is not None:
+            landmark = True                       # the printed label really is where the anchor expects it
             fcx, fcy = _center(found)
             dx, dy = fcx - ecx, fcy - ecy
             # only trust a believable shift (<= 8% of the page)
@@ -390,5 +392,5 @@ def resolve_anchor(
         dy=round(dy, 1),
         n_words=len(used),
         reason=reason,
-        extra={"shape_similarity": round(sim, 3)},
+        extra={"shape_similarity": round(sim, 3), "lines": len(lines), "landmark": landmark, "has_label": bool(label)},
     )

@@ -54,7 +54,7 @@ class PageReader:
             except Exception as exc:
                 logger.warning("fast_gap_fill_failed", page=index + 1, error=str(exc))
         if info.changed:
-            logger.info("fast_ocr_prepared", page=index + 1, regions=info.regions, skew=info.skew_deg)
+            logger.info("fast_ocr_prepared", page=index + 1, regions=info.regions, skew=info.skew_deg, flattened=info.flattened)
         return restore_lines(lines, info)
 
     def read(self, index: int) -> PageData:

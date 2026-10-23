@@ -172,6 +172,7 @@ def _run_fast_job(job_id: str, force_relearn: bool = False) -> None:
                     row["fallback_method"] = "needs_review"
                 db.add(FieldExtraction(**{k: v for k, v in row.items() if not k.startswith("_")}))
 
+            occurrences = {f.field_name: f.occurrences for f in fields if getattr(f, "occurrences", None)}
             fields_out = {}
             for r in rows:
                 p_num = r.get("_page_number") or 1
@@ -182,6 +183,7 @@ def _run_fast_job(job_id: str, force_relearn: bool = False) -> None:
                     "page_id": r.get("page_id"), "bbox": r.get("bbox_json"),
                     "label": r.get("_label") or "", "source": r.get("_source") or "",
                     "state": m.state if m else "", "checks": m.checks if m else [], "reason": m.reason if m else "",
+                    "occurrences": occurrences.get(r["field_name"], []),
                 }
             envelope = {
                 "success": True,

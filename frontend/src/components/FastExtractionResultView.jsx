@@ -530,7 +530,8 @@ const FastExtractionResultView = ({
 
     setReOcrLoading((prev) => ({ ...prev, [key]: true }));
     try {
-      const res = await extractService.reOcrField(currentJob.job_id, key, fieldData.bbox);
+      const fieldPage = parsePageNumber(fieldData.page_number) || parsePageNumber(fieldData.source_page) || parsePageNumber(currentPage) || 1;
+      const res = await extractService.reOcrField(currentJob.job_id, key, fieldData.bbox, fieldPage);
       if (res?.data) {
         const { value, confidence, bbox, image_data } = res.data;
         setLocalFields((prev) => ({
@@ -555,6 +556,54 @@ const FastExtractionResultView = ({
       showToast(`Re-OCR failed: ${err.message}`, 'error');
     } finally {
       setReOcrLoading((prev) => ({ ...prev, [key]: false }));
+    }
+  };
+
+  // ── The same field read on other pages ─────────────────────────────────
+  const handleShowOccurrence = (key, occ) => {
+    const target = parsePageNumber(occ?.page_number) || 1;
+    setSelectedField(key);
+    setCurrentPage(target);
+    setTimeout(() => {
+      if (scrollContainerRef.current && occ?.bbox) {
+        scrollContainerRef.current.scrollTo({ top: Math.max(0, occ.bbox.y1 * scaleY - 120), behavior: 'smooth' });
+      }
+    }, 150);
+  };
+
+  const handleUseOccurrence = async (key, occ) => {
+    const cur = localFields[key];
+    if (!cur || !occ) return;
+    const curPage = parsePageNumber(cur.page_number) || parsePageNumber(cur.source_page) || 1;
+    // the reading being replaced stays available as an alternative
+    const others = (cur.occurrences || []).filter((o) => o !== occ);
+    if (cur.value) {
+      others.push({ page_number: curPage, value: cur.value, confidence: cur.confidence, bbox: cur.bbox, source: cur.source || 'previous' });
+    }
+    try {
+      await extractService.updateField(currentJob.job_id, key, occ.value, occ.bbox, {
+        page_number: occ.page_number,
+        occurrences: others,
+      });
+      setLocalFields((prev) => ({
+        ...prev,
+        [key]: {
+          ...prev[key],
+          value: occ.value,
+          bbox: occ.bbox,
+          page_number: occ.page_number,
+          source_page: occ.page_number,
+          confidence: 1.0,
+          found: true,
+          manually_edited: true,
+          is_verified: true,
+          occurrences: others,
+        },
+      }));
+      setCurrentPage(parsePageNumber(occ.page_number) || 1);
+      showToast(`"${key.replace(/_/g, ' ')}" now uses the page ${occ.page_number} reading`);
+    } catch (err) {
+      showToast(`Failed to switch reading: ${err.message}`, 'error');
     }
   };
 
@@ -620,6 +669,8 @@ const FastExtractionResultView = ({
       const fieldsToLock = {};
       Object.entries(localFields).forEach(([k, d]) => {
         if (d?.source === 'discovered') return; // job-only pairs are not template anchors
+        // an empty or failed field has no confirmed value: its box would teach the template a wrong place
+        if (!String(d?.value ?? '').trim()) return;
         if (d?.bbox && d.bbox.x1 !== undefined) {
           fieldsToLock[k] = {
             bbox: d.bbox,
@@ -1092,6 +1143,34 @@ const FastExtractionResultView = ({
                         );
                       })}
 
+                  {/* 2b. The same fields read on THIS page when their main reading is on another page */}
+                  {Object.entries(localFields).flatMap(([key, data]) =>
+                    (data?.occurrences || [])
+                      .filter((o) => o?.bbox && o.bbox.x1 !== undefined && (parsePageNumber(o.page_number) || 1) === (parsePageNumber(currentPage) || 1))
+                      .map((o, i) => (
+                        <div
+                          key={`occ_${key}_${i}`}
+                          className={`absolute border-2 border-dashed rounded pointer-events-auto cursor-pointer z-10 ${
+                            selectedField === key || hoveredField === key ? 'border-amber-600 bg-amber-400/25' : 'border-amber-500/80 bg-amber-300/10'
+                          }`}
+                          style={{
+                            left: `${o.bbox.x1 * scaleX}px`,
+                            top: `${o.bbox.y1 * scaleY}px`,
+                            width: `${Math.max(16, (o.bbox.x2 - o.bbox.x1) * scaleX)}px`,
+                            height: `${Math.max(12, (o.bbox.y2 - o.bbox.y1) * scaleY)}px`,
+                          }}
+                          onClick={(e) => { e.stopPropagation(); setSelectedField(key); }}
+                          onMouseEnter={() => setHoveredField(key)}
+                          onMouseLeave={() => setHoveredField(null)}
+                          title={`${key.replace(/_/g, ' ')} (also read on this page): ${o.value}`}
+                        >
+                          <span className="absolute -top-3.5 left-0 text-[8px] font-mono font-bold px-1 rounded bg-amber-100 text-amber-800 border border-amber-200 pointer-events-none whitespace-nowrap">
+                            {key.replace(/_/g, ' ')} · p{o.page_number}
+                          </span>
+                        </div>
+                      ))
+                  )}
+
                   {/* 3. Interactive Bounding Box Overlays for Actual Detected Values */}
                   {Object.entries(localFields).map(([key, data]) => {
                     if (!data?.bbox || data.bbox.x1 === undefined) return null;
@@ -1341,6 +1420,8 @@ const FastExtractionResultView = ({
               onReOcr={handleReOcr}
               reOcrLoading={reOcrLoading}
               onRemove={handleRemoveField}
+              onShowOccurrence={handleShowOccurrence}
+              onUseOccurrence={handleUseOccurrence}
               rowRefs={fieldRefs}
             />
           )}

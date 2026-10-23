@@ -26,6 +26,7 @@ class FieldResult:
     raw_text: str = ""
     label: str = ""                   # human label as printed on the page (discovered pairs)
     source: str = ""                  # "" = template field, "discovered" = key:value scan
+    occurrences: list = field(default_factory=list)   # the same field read on OTHER pages: [{page_number, value, confidence, bbox, source}]
 
 @dataclass
 class TableResult:

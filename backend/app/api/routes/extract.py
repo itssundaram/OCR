@@ -73,6 +73,8 @@ class UpdateFieldValueRequest(BaseModel):
     field_key: str
     value: str
     bbox: dict[str, Any] | None = None
+    page_number: int | None = None                       # set when the value now comes from another page
+    occurrences: list[dict[str, Any]] | None = None      # the field's other-page readings after that swap
 
 
 def _load_job_page_image(db: Session, job: ProcessingJob, page_number: int = 1) -> Image.Image:
@@ -228,6 +230,11 @@ def update_field_value(req: UpdateFieldValueRequest, db: Session = Depends(get_d
         field_entry["is_verified"] = True
         if req.bbox:
             field_entry["bbox"] = req.bbox
+        if req.page_number:
+            field_entry["page_number"] = req.page_number
+            field_entry["source_page"] = req.page_number
+        if req.occurrences is not None:
+            field_entry["occurrences"] = req.occurrences
         fields[req.field_key] = field_entry
         ej["fields"] = fields
         result.extracted_json = ej
@@ -238,11 +245,19 @@ def update_field_value(req: UpdateFieldValueRequest, db: Session = Depends(get_d
         FieldExtraction.field_name == req.field_key,
     )
     fe = db.execute(fe_stmt).scalars().first()
+    page_id = None
+    if req.page_number:
+        pg = db.execute(select(DocumentPage).where(
+            DocumentPage.document_id == job.document_id, DocumentPage.page_number == req.page_number,
+        )).scalars().first()
+        page_id = pg.id if pg else None
     if fe:
         fe.field_value = req.value
         fe.confidence = 1.0
         if req.bbox:
             fe.bbox_json = req.bbox
+        if page_id:
+            fe.page_id = page_id
     else:
         new_fe = FieldExtraction(
             job_id=req.job_id,

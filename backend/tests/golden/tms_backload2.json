@@ -1,0 +1,20 @@
+{
+  "doc": "TMS FORMAT/BACKLOAD2.pdf",
+  "note": "Values read by eye from the scanned voucher (page 1 = original, page 2 = phone photo of its copy). Edit when a value is wrong.",
+  "fields": [
+    {"name": "iv_no",       "page": 1, "value": "20/4/MT/02"},
+    {"name": "iv_no",       "page": 2, "value": "20/4/MT/02"},
+    {"name": "unit_from",   "page": 1, "value": "2 KUMAON"},
+    {"name": "unit_from",   "page": 2, "value": "2 KUMAON"},
+    {"name": "unit_to",     "page": 1, "value": "VMSD Chheoki, OD Prayagraj"},
+    {"name": "unit_to",     "page": 2, "value": "VMSD Chheoki, OD Prayagraj"},
+    {"name": "date",        "page": 1, "value": "Jul 2025"},
+    {"name": "date",        "page": 2, "value": "02 Jun 2025"},
+    {"name": "auth",        "page": 1, "value": "Final Insp report (Veh) IAF (EME) E -03 (Revised) dt 30 May 2025 and 23 Inf DOU disposal order No 230604/Disp/CL-V/C&A dt 23 Jun 2025."},
+    {"name": "auth",        "page": 2, "value": "Final Insp report (Veh) IAF (EME) E -03 (Revised) dt 30 Jan 2025 and 23 Inf DOU disposal order No 230604/Disp/CL-V/281/C&A/364 dt 27 Feb 2025."},
+    {"name": "ba_no",       "page": 1, "value": "12D 190734L"},
+    {"name": "ba_no",       "page": 2, "value": "14B 113715W"},
+    {"name": "type_of_veh", "page": 1, "value": "Ly 5/7.5 Ton ALS"},
+    {"name": "type_of_veh", "page": 2, "value": "Maruti Gypsy 413W MPFI"}
+  ]
+}
