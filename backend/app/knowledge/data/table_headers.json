@@ -1,0 +1,324 @@
+{
+ "_note": "Table column headers of the TMS / MMS / PSG forms. A header read from a scan is mapped to its canonical label when it matches a variant (typos tolerated). `split_terms` are short abbreviations that OCR often fuses into one header cell.",
+ "split_terms": [
+  "doc",
+  "dos",
+  "dor",
+  "dob",
+  "tos"
+ ],
+ "headers": [
+  {
+   "id": "sno",
+   "label": "S No",
+   "kind": "serial",
+   "variants": [
+    "s no",
+    "sno",
+    "sl no",
+    "ser",
+    "sr no",
+    "s.no",
+    "s no.",
+    "ser no",
+    "serial no",
+    "serial number",
+    "s/no"
+   ]
+  },
+  {
+   "id": "pers_no",
+   "label": "Pers No",
+   "kind": "id",
+   "variants": [
+    "pers no",
+    "persno",
+    "personal no",
+    "personal number",
+    "per no"
+   ]
+  },
+  {
+   "id": "rank_name",
+   "label": "Rank & Name",
+   "kind": "",
+   "variants": [
+    "rank and name",
+    "rank & name",
+    "rank name",
+    "name of offr",
+    "name of officer",
+    "rank and name of offr"
+   ]
+  },
+  {
+   "id": "pers_rank_name",
+   "label": "Pers No Rank & Name",
+   "kind": "",
+   "variants": [
+    "pers no rank and name",
+    "pers no rank & name",
+    "persno rank name",
+    "pers no rank name"
+   ]
+  },
+  {
+   "id": "doc",
+   "label": "DOC",
+   "kind": "date",
+   "variants": [
+    "doc",
+    "date of commission",
+    "date of commissioning"
+   ]
+  },
+  {
+   "id": "dos",
+   "label": "DOS",
+   "kind": "date",
+   "variants": [
+    "dos",
+    "date of seniority"
+   ]
+  },
+  {
+   "id": "dor",
+   "label": "DOR",
+   "kind": "date",
+   "variants": [
+    "dor",
+    "date of retirement"
+   ]
+  },
+  {
+   "id": "dob",
+   "label": "DOB",
+   "kind": "date",
+   "variants": [
+    "dob",
+    "date of birth",
+    "birth date"
+   ]
+  },
+  {
+   "id": "tos",
+   "label": "TOS",
+   "kind": "date",
+   "variants": [
+    "tos",
+    "taken on strength",
+    "date of tos"
+   ]
+  },
+  {
+   "id": "unit",
+   "label": "Unit",
+   "kind": "",
+   "variants": [
+    "unit"
+   ]
+  },
+  {
+   "id": "unit_sus",
+   "label": "Unit & SUS No",
+   "kind": "",
+   "variants": [
+    "unit and sus no",
+    "unit & sus no",
+    "unit sus no"
+   ]
+  },
+  {
+   "id": "sus_no",
+   "label": "SUS No",
+   "kind": "id",
+   "variants": [
+    "sus no",
+    "sus"
+   ]
+  },
+  {
+   "id": "arms",
+   "label": "Arms",
+   "kind": "",
+   "variants": [
+    "arms",
+    "arm",
+    "arm service",
+    "arms services"
+   ]
+  },
+  {
+   "id": "gender",
+   "label": "Gender",
+   "kind": "",
+   "variants": [
+    "gender",
+    "sex"
+   ]
+  },
+  {
+   "id": "cat_part_no",
+   "label": "Cat/Part No",
+   "kind": "id",
+   "variants": [
+    "cat part no",
+    "catpart no",
+    "cat no",
+    "part no",
+    "material no",
+    "material number"
+   ]
+  },
+  {
+   "id": "nomenclature",
+   "label": "Nomenclature",
+   "kind": "",
+   "variants": [
+    "nomenclature",
+    "material description",
+    "description of items",
+    "item description",
+    "description of item"
+   ]
+  },
+  {
+   "id": "regd_nos",
+   "label": "Regd Nos",
+   "kind": "id",
+   "variants": [
+    "regd nos",
+    "regn nos",
+    "regd no",
+    "regn no",
+    "registration nos"
+   ]
+  },
+  {
+   "id": "au",
+   "label": "AU",
+   "kind": "",
+   "variants": [
+    "au",
+    "a u",
+    "a/u",
+    "unit of issue",
+    "aiu",
+    "alu",
+    "au a/u"
+   ]
+  },
+  {
+   "id": "qty",
+   "label": "Qty",
+   "kind": "number",
+   "variants": [
+    "qty",
+    "quantity"
+   ]
+  },
+  {
+   "id": "uh_qty",
+   "label": "UH Qty",
+   "kind": "number",
+   "variants": [
+    "uh qty",
+    "uh qyt",
+    "u h qty",
+    "uh quantity"
+   ]
+  },
+  {
+   "id": "demand_qty",
+   "label": "Demand Qty",
+   "kind": "number",
+   "variants": [
+    "demand qty",
+    "demand quantity"
+   ]
+  },
+  {
+   "id": "remarks",
+   "label": "Remarks",
+   "kind": "",
+   "variants": [
+    "remarks",
+    "remark"
+   ]
+  },
+  {
+   "id": "veh_ba_no",
+   "label": "Veh BA No",
+   "kind": "id",
+   "variants": [
+    "veh ba no",
+    "veh ba",
+    "vehicle ba no",
+    "ba no"
+   ]
+  },
+  {
+   "id": "engine_no",
+   "label": "Engine No",
+   "kind": "id",
+   "variants": [
+    "engine no",
+    "eng no"
+   ]
+  },
+  {
+   "id": "chassis_no",
+   "label": "Chassis No",
+   "kind": "id",
+   "variants": [
+    "chassis no",
+    "chasis no"
+   ]
+  },
+  {
+   "id": "make_vintage",
+   "label": "Chassis / Make & Vintage",
+   "kind": "",
+   "variants": [
+    "chassis make and vintage",
+    "make and vintage",
+    "make & vintage"
+   ]
+  },
+  {
+   "id": "mileage",
+   "label": "Mileage / Hrs",
+   "kind": "",
+   "variants": [
+    "mileage",
+    "mileage hrs",
+    "mileage kms"
+   ]
+  },
+  {
+   "id": "section_no",
+   "label": "Section Number",
+   "kind": "id",
+   "variants": [
+    "section number",
+    "section no"
+   ]
+  },
+  {
+   "id": "description",
+   "label": "Description",
+   "kind": "",
+   "variants": [
+    "description"
+   ]
+  },
+  {
+   "id": "depot",
+   "label": "Depot",
+   "kind": "",
+   "variants": [
+    "depot"
+   ]
+  }
+ ]
+}

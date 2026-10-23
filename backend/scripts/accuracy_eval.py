@@ -74,6 +74,7 @@ def main() -> int:
     ap.add_argument("--cache-dir", default=None, help="OCR cache (default: a fresh temp dir, so every run reads the pages)")
     ap.add_argument("--legacy-prep", action="store_true", help="switch off text-based straightening and lighting flattening")
     ap.add_argument("--vlm", action="store_true", help="let the vision model repair doubtful fields (needs Ollama)")
+    ap.add_argument("--by-family", action="store_true", help="always print the per-family summary (first folder of the doc path)")
     ap.add_argument("--json", default=None, help="write the full report here")
     args = ap.parse_args()
 
@@ -110,13 +111,26 @@ def main() -> int:
     mean_sim = sum(r["similarity"] for r in rows) / max(1, n)
     print(f"\nreadings {n}: found {found} ({found / max(1, n):.0%}), correct {correct} ({correct / max(1, n):.0%}), mean text similarity {mean_sim:.2f}"
           f"{'  [legacy page preparation]' if args.legacy_prep else ''}")
+    fam = defaultdict(lambda: [0, 0, 0, 0.0])          # family -> readings, found, correct, similarity sum
+    for r in rows:
+        f = fam[r["doc"].split("/")[0]]
+        f[0] += 1
+        f[1] += int(bool(r["got"]))
+        f[2] += int(r["correct"])
+        f[3] += r["similarity"]
+    if len(fam) > 1 or args.by_family:
+        print("per family:")
+        for name, (cnt, fnd, ok, sim) in sorted(fam.items()):
+            print(f"  {name:12} readings={cnt:<4} found={fnd / cnt:.0%}  correct={ok / cnt:.0%}  mean similarity={sim / cnt:.2f}")
     print("calibration (confidence band -> share correct):")
     for i in range(5):
         tot, ok = buckets[i]
         if tot:
             print(f"  {i * 20:>3}-{i * 20 + 20:<3}%  n={tot:<3} correct={ok / tot:.0%}")
     if args.json:
-        Path(args.json).write_text(json.dumps({"rows": rows, "found": found, "correct": correct, "n": n}, indent=2), encoding="utf-8")
+        Path(args.json).write_text(json.dumps({"rows": rows, "found": found, "correct": correct, "n": n,
+                                               "by_family": {k: {"readings": v[0], "found": v[1], "correct": v[2]} for k, v in fam.items()}},
+                                              indent=2), encoding="utf-8")
     return 0
 
 

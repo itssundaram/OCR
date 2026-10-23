@@ -200,6 +200,7 @@ def _run_fast_job(job_id: str, force_relearn: bool = False) -> None:
                 "doc_page_width": pages[0].width if pages else None,
                 "doc_page_height": pages[0].height if pages else None,
                 "page_sources": {str(p.page_number): p.source for p in pages},
+                "page_types": {str(k): v for k, v in sorted(engine.extractor.page_types.items())},
                 "blocks": engine.blocks, "warnings": engine.warnings,
                 "anchor_matched": False, "anchor_learned": None, "learned_anchors": (template.template_json or {}).get("learned_anchors"),
             }

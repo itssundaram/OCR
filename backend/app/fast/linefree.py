@@ -27,7 +27,7 @@ logger = get_logger(__name__)
 
 MIN_SKEW_DEG = 0.25      # below this the page is treated as straight
 MAX_SKEW_DEG = 6.0       # above this the estimate is not trusted
-OCR_TAG = "tesseract+tbl2+gap1+sk2+fl1"   # OCR-cache engine tag (bumped: text-based straightening of every page)
+OCR_TAG = "tesseract+tbl2+gap1+sk2+fl1+or1"   # OCR-cache engine tag (bumped: sideways pages are also read turned)
 FLATTEN_BELOW = 215       # median page background (0-255) under which shading is divided out before OCR
 TEXT_SKEW_MIN_DEG = 1.0   # Tesseract copes with a degree of tilt; rotating (resampling) only pays off beyond that
 TEXT_SKEW_MAX_DEG = 10.0

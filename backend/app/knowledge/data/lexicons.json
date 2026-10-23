@@ -1,0 +1,35 @@
+{
+ "_note": "Closed vocabularies used to split and normalise table rows (PSG officer lists).",
+ "ranks": [
+  "Lt Gen",
+  "Maj Gen",
+  "Lt Col",
+  "Brig",
+  "Col",
+  "Maj",
+  "Capt",
+  "Lt",
+  "Gen",
+  "Subedar Major",
+  "Sub Maj",
+  "Nb Sub",
+  "Sub",
+  "Hav",
+  "Nk",
+  "L Nk",
+  "Sep",
+  "Gnr",
+  "Spr",
+  "Sig",
+  "Rfn",
+  "Dvr",
+  "Lt Cdr",
+  "Cdr"
+ ],
+ "genders": {
+  "male": "Male",
+  "m": "Male",
+  "female": "Female",
+  "f": "Female"
+ }
+}

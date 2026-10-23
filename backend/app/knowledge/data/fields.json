@@ -1,0 +1,528 @@
+{
+ "_note": "Canonical fields of the TMS / MMS / PSG forms. `names` = what a template field may be called (matched after lower-casing and turning punctuation into underscores); `labels` = how the form prints it (added to the field's aliases); `side` = which half of a two-column voucher the field lives in; `strict_labels` = printed labels that appear in BOTH columns, so only the field's own half may use them; `pattern` = soft value check (a miss sends the value to review, it never drops it). Source: the department field lists in OCR_DOCS/Reference Documents For OCR plus the sample documents. `share` = fields that may read the same printed pair (Consignor feeds From/Depot, Consignor and the issuing Unit). `needs_digit` = a value with no digit at all is never this field (a table header word read as its value). `min_digits` = fewest digits a date value has (\"5/6/26\" has 3).",
+ "fields": [
+  {
+   "id": "unit_from",
+   "side": "left",
+   "strict_labels": [
+    "unit"
+   ],
+   "names": [
+    "unit_from",
+    "from_unit",
+    "unit_left",
+    "unit_left_side",
+    "unit_left_side_of_the_page",
+    "unit_left_side_of_page",
+    "left_unit",
+    "parent_unit",
+    "unit_issuer",
+    "issuing_unit"
+   ],
+   "labels": [
+    "Unit",
+    "Parent Unit",
+    "Issuing Unit",
+    "Consignor"
+   ],
+   "exact_labels": true,
+   "share": "issuer"
+  },
+  {
+   "id": "unit_to",
+   "side": "right",
+   "strict_labels": [
+    "unit"
+   ],
+   "names": [
+    "unit_to",
+    "to_unit",
+    "unit_right",
+    "unit_right_side",
+    "unit_right_side_of_the_page",
+    "unit_right_side_of_page",
+    "right_unit",
+    "receiving_unit",
+    "unit_receiver"
+   ],
+   "labels": [
+    "Unit",
+    "Issued To",
+    "Consign To",
+    "Consigned To",
+    "Consignee",
+    "Receiving Unit"
+   ],
+   "exact_labels": true,
+   "share": "recipient"
+  },
+  {
+   "id": "from_depot",
+   "names": [
+    "from",
+    "from_depot",
+    "depot",
+    "depot_from",
+    "issued_from"
+   ],
+   "labels": [
+    "From",
+    "Depot",
+    "Consignor",
+    "Issued From"
+   ],
+   "share": "issuer"
+  },
+  {
+   "id": "consignor",
+   "names": [
+    "consignor"
+   ],
+   "labels": [
+    "Consignor"
+   ],
+   "share": "issuer"
+  },
+  {
+   "id": "consignee",
+   "names": [
+    "consignee",
+    "consign_to"
+   ],
+   "labels": [
+    "Consignee",
+    "Consign To",
+    "Consigned To"
+   ],
+   "share": "recipient"
+  },
+  {
+   "id": "iv_no",
+   "pattern": "\\d",
+   "names": [
+    "iv_no",
+    "iv_number",
+    "issue_voucher_no",
+    "issue_voucher_number",
+    "issue_voucher",
+    "voucher_no"
+   ],
+   "labels": [
+    "IV No",
+    "I V No",
+    "Issue Voucher No",
+    "Voucher No"
+   ],
+   "needs_digit": true
+  },
+  {
+   "id": "rv_no",
+   "pattern": "\\d",
+   "names": [
+    "rv_no",
+    "rv_number",
+    "receipt_voucher_no",
+    "receipt_voucher_number",
+    "receipt_voucher"
+   ],
+   "labels": [
+    "RV No",
+    "R V No",
+    "Receipt Voucher No",
+    "DRR No"
+   ],
+   "needs_digit": true
+  },
+  {
+   "id": "date",
+   "kind": "date",
+   "names": [
+    "date",
+    "dated",
+    "date_of_issue",
+    "issue_date"
+   ],
+   "labels": [
+    "Date",
+    "Dated",
+    "Date of Issue"
+   ],
+   "needs_digit": true,
+   "min_digits": 3
+  },
+  {
+   "id": "rv_date",
+   "kind": "date",
+   "names": [
+    "rv_date",
+    "rv_dated",
+    "date_of_rv",
+    "receipt_date"
+   ],
+   "labels": [
+    "RV Date",
+    "RV Dated",
+    "Date of RV",
+    "Dated",
+    "Date"
+   ],
+   "needs_digit": true,
+   "min_digits": 3
+  },
+  {
+   "id": "auth",
+   "names": [
+    "auth",
+    "authority"
+   ],
+   "labels": [
+    "Auth",
+    "Authority"
+   ]
+  },
+  {
+   "id": "ba_no",
+   "pattern": "\\d{2}\\s?[A-Za-z]\\s?[-]?\\s?\\d{5,7}\\s?[A-Za-z]",
+   "names": [
+    "ba_no",
+    "ba_number",
+    "veh_ba_no",
+    "vehicle_ba_no",
+    "ba",
+    "b_a_no",
+    "b_a_number"
+   ],
+   "labels": [
+    "BA No",
+    "Veh BA No",
+    "B A Number",
+    "BA Number",
+    "B.A. No",
+    "Vehicle BA No"
+   ],
+   "needs_digit": true
+  },
+  {
+   "id": "engine_no",
+   "pattern": "[A-Za-z0-9]{6,}",
+   "names": [
+    "engine_no",
+    "eng_no",
+    "engine_number",
+    "engine"
+   ],
+   "labels": [
+    "Engine No",
+    "Eng No",
+    "Engine Number"
+   ]
+  },
+  {
+   "id": "chassis_no",
+   "names": [
+    "chassis_no",
+    "chasis_no",
+    "chassis_number",
+    "chasis_number",
+    "chassis",
+    "chasis"
+   ],
+   "labels": [
+    "Chassis No",
+    "Chasis No",
+    "Chassis Number",
+    "Chasis Number",
+    "Frame No"
+   ]
+  },
+  {
+   "id": "hull_no",
+   "names": [
+    "hull_no",
+    "hull_number"
+   ],
+   "labels": [
+    "Hull No",
+    "Hull Number"
+   ]
+  },
+  {
+   "id": "type_of_veh",
+   "names": [
+    "type_of_veh",
+    "type_of_vehicle",
+    "veh_type",
+    "vehicle_type"
+   ],
+   "labels": [
+    "Type of Veh",
+    "Type of Vehicle",
+    "Veh Type",
+    "Model and type"
+   ]
+  },
+  {
+   "id": "type_of_str",
+   "names": [
+    "type_of_str",
+    "type_of_store",
+    "str_type",
+    "store_type"
+   ],
+   "labels": [
+    "Type of STR",
+    "Type of Store",
+    "Type of Stores"
+   ]
+  },
+  {
+   "id": "sus_no",
+   "pattern": "\\d{5,}",
+   "names": [
+    "sus_no",
+    "sus_number",
+    "sus"
+   ],
+   "labels": [
+    "SUS No",
+    "SUS Number"
+   ],
+   "needs_digit": true
+  },
+  {
+   "id": "transaction_type",
+   "names": [
+    "transaction_type",
+    "type_of_transaction"
+   ],
+   "labels": [
+    "Transaction Type",
+    "Type of Transaction"
+   ]
+  },
+  {
+   "id": "deposition_cat",
+   "names": [
+    "deposition_cat",
+    "deposition_category",
+    "deposit_cat",
+    "deposition_catg"
+   ],
+   "labels": [
+    "Deposition Cat",
+    "Deposition Category",
+    "Depositing Cat"
+   ]
+  },
+  {
+   "id": "pers_no",
+   "pattern": "\\d{4,}",
+   "names": [
+    "pers_no",
+    "personal_no",
+    "personal_number",
+    "per_no",
+    "pers_number"
+   ],
+   "labels": [
+    "Pers No",
+    "Personal No",
+    "Personal Number",
+    "Per No"
+   ],
+   "needs_digit": true
+  },
+  {
+   "id": "doc",
+   "kind": "date",
+   "names": [
+    "doc",
+    "date_of_commission",
+    "date_of_commissioning"
+   ],
+   "labels": [
+    "DOC",
+    "Date of Commission",
+    "Date of Commissioning"
+   ],
+   "needs_digit": true,
+   "min_digits": 3
+  },
+  {
+   "id": "dos",
+   "kind": "date",
+   "names": [
+    "dos",
+    "date_of_seniority"
+   ],
+   "labels": [
+    "DOS",
+    "Date of Seniority"
+   ],
+   "needs_digit": true,
+   "min_digits": 3
+  },
+  {
+   "id": "dor",
+   "kind": "date",
+   "names": [
+    "dor",
+    "date_of_retirement"
+   ],
+   "labels": [
+    "DOR",
+    "Date of Retirement"
+   ],
+   "needs_digit": true,
+   "min_digits": 3
+  },
+  {
+   "id": "dob",
+   "kind": "date",
+   "names": [
+    "dob",
+    "date_of_birth"
+   ],
+   "labels": [
+    "DOB",
+    "Date of Birth"
+   ],
+   "needs_digit": true,
+   "min_digits": 3
+  },
+  {
+   "id": "arms",
+   "names": [
+    "arms",
+    "arm",
+    "arms_services",
+    "arm_service"
+   ],
+   "labels": [
+    "Arms",
+    "Arm",
+    "Arm/Service"
+   ]
+  },
+  {
+   "id": "gender",
+   "pattern": "(?i)\\b(male|female|m|f)\\b",
+   "names": [
+    "gender",
+    "sex"
+   ],
+   "labels": [
+    "Gender",
+    "Sex"
+   ]
+  },
+  {
+   "id": "we_no",
+   "names": [
+    "we_no",
+    "war_establishment_no",
+    "we_number"
+   ],
+   "labels": [
+    "WE No",
+    "War Establishment No"
+   ],
+   "exact_labels": true,
+   "needs_digit": true
+  },
+  {
+   "id": "effective_from",
+   "names": [
+    "effective_from",
+    "effective_date"
+   ],
+   "labels": [
+    "Effective From",
+    "With Effect From"
+   ],
+   "exact_labels": true,
+   "kind": "date",
+   "needs_digit": true,
+   "min_digits": 3
+  },
+  {
+   "id": "effective_to",
+   "names": [
+    "effective_to",
+    "valid_till"
+   ],
+   "labels": [
+    "Valid Till"
+   ],
+   "exact_labels": true,
+   "kind": "date",
+   "needs_digit": true,
+   "min_digits": 3
+  },
+  {
+   "id": "strength_officers",
+   "names": [
+    "officers",
+    "strength_officers",
+    "officers_strength"
+   ],
+   "labels": [
+    "Officers",
+    "Offrs"
+   ],
+   "exact_labels": true,
+   "needs_digit": true
+  },
+  {
+   "id": "strength_jcos",
+   "names": [
+    "jcos",
+    "strength_jcos"
+   ],
+   "labels": [
+    "JCOs"
+   ],
+   "exact_labels": true,
+   "needs_digit": true
+  },
+  {
+   "id": "strength_ors",
+   "names": [
+    "ors",
+    "strength_ors"
+   ],
+   "labels": [
+    "ORs",
+    "OR"
+   ],
+   "exact_labels": true,
+   "needs_digit": true
+  },
+  {
+   "id": "strength_total",
+   "names": [
+    "total_strength",
+    "strength_total"
+   ],
+   "labels": [
+    "Total Strength"
+   ],
+   "exact_labels": true,
+   "needs_digit": true
+  },
+  {
+   "id": "strength_vehs",
+   "names": [
+    "vehs",
+    "vehicles",
+    "strength_vehs"
+   ],
+   "labels": [
+    "Vehs",
+    "Vehicles"
+   ],
+   "exact_labels": true,
+   "needs_digit": true
+  }
+ ]
+}

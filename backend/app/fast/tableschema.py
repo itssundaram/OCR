@@ -23,6 +23,7 @@ from dataclasses import dataclass, field
 from difflib import SequenceMatcher, get_close_matches
 
 from app.fast.validate import _NUMBER, parse_date
+from app.knowledge.kb import normalize_headers, table_records
 from app.pipelines.base import TableResult
 
 # ── vocabulary ────────────────────────────────────────────────────────────────
@@ -183,7 +184,7 @@ def _clean_tail(s: str) -> str:
     return " ".join(toks)
 
 
-def infer_column(index: int, name: str, values: list[str]) -> dict:
+def infer_column(index: int, name: str, values: list[str], hint_kind: str = "") -> dict:
     vals = [v for v in (strip_edges(v) for v in values) if v]
     spec: dict = {"index": index, "name": name, "kind": "text", "enum": [], "shape": None, "year_median": None}
     if not vals:
@@ -198,7 +199,7 @@ def infer_column(index: int, name: str, values: list[str]) -> dict:
     if _SERIAL_HDR.match(hdr.strip()) or (ints / n >= 0.6 and index == 0):
         spec["kind"] = "serial"
         return spec
-    if _DATE_HDR.search(hdr) or date_ok / n >= 0.5:
+    if _DATE_HDR.search(hdr) or hint_kind == "date" or date_ok / n >= 0.5:
         spec["kind"] = "date"
         years = sorted(d.year for d in dates if d)
         if years:
@@ -555,8 +556,19 @@ def _analyse(m: dict, index: int, pages: dict) -> TableResult:
         txt = _norm_ws(strip_edges(best["text"])) if best else ""
         headers.append(txt or f"Column {c + 1}")
 
+    try:                                           # TMS / MMS / PSG header vocabulary (app/knowledge): canonical ids + fused-header repair
+        known = normalize_headers(headers)
+    except Exception:
+        known = [{"text": h, "id": "", "kind": "", "raw": h} for h in headers]
+    headers = [k["text"] for k in known]
+
     body = m["body"]
-    specs = [infer_column(c, headers[c], [(r[c]["text"] if r[c] else "") for r in body]) for c in range(n_cols)]
+    specs = [infer_column(c, headers[c], [(r[c]["text"] if r[c] else "") for r in body], known[c]["kind"]) for c in range(n_cols)]
+    for sp, k in zip(specs, known):
+        if k["id"]:
+            sp["canonical"] = k["id"]
+            if k["text"] != k["raw"]:
+                sp["printed"] = k["raw"]
 
     for sp in specs:                              # a column the printed-text reader cannot read at all
         confs = sorted((r[sp["index"]].get("confidence") or 0.0) for r in body if r[sp["index"]] and r[sp["index"]]["text"].strip())
@@ -623,9 +635,13 @@ def _analyse(m: dict, index: int, pages: dict) -> TableResult:
             serial_vals.append(int(sv[0]) if sv and not broke and len(sv[0]) <= 4 else None)
 
     quality = _quality(m, specs, counts, rows_text, serial_vals, headers, pages)
+    try:
+        records = table_records(known, rows_text)
+    except Exception:
+        records = []
     meta = {
         "pages": m["pages"], "title_text": " ".join(x for x in m["title"] if sum(ch.isalpha() for ch in x) / max(1, len(x)) >= 0.6 and len(x) >= 8)[:300], "footer_text": " ".join(m["footer"])[:300],
-        "quality": quality, "columns": specs, "col_edges": t.meta.get("col_edges"),
+        "quality": quality, "columns": specs, "col_edges": t.meta.get("col_edges"), **({"records": records} if records else {}),
         "header_confidence": round(sum((c or {}).get("confidence") or 0 for c in header_cells) / max(1, n_cols), 3),
     }
     flagged = sum(c["flagged"] for c in counts)

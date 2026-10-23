@@ -27,6 +27,8 @@ from app.fast.events import EventBus
 from app.fast.types import PageData
 from app.fast.validate import assess
 from app.fast.vlm import FieldVlm, supported_by_ocr
+from app.fast.copyvote import pick_best_copy
+from app.knowledge.kb import classify_page, enrich_fields, value_is_header, zone_ok
 from app.ocr.base import OCRLine
 from app.ocr import label_kb
 from app.ocr.kv_discovery import DiscoveredPair, assign_unique_keys, discover_key_values
@@ -82,8 +84,10 @@ class FieldExtractor:
     def __init__(self, template_fields: list[dict], bus: EventBus, ocr_engine=None, vlm: FieldVlm | None = None,
                  anchors: dict | None = None):
         self.anchors = anchors if isinstance(anchors, dict) else None
-        self.fields = [f for f in (template_fields or [])
-                       if f.get("name") and str(f.get("type") or "").lower() != "table"]
+        self.fields = enrich_fields([f for f in (template_fields or [])
+                                     if f.get("name") and str(f.get("type") or "").lower() != "table"])
+        self._widths: dict[int, int] = {}
+        self.page_types: dict[int, dict] = {}
         self.bus = bus
         self.pairs: list[DiscoveredPair] = []
         self.pages: dict[int, PageData] = {}
@@ -99,11 +103,18 @@ class FieldExtractor:
     def add_page(self, page: PageData) -> None:
         t0 = time.perf_counter()
         self.pages[page.page_number] = page
+        self._widths[page.page_number] = page.width
+        try:
+            ty, score, _ = classify_page(" ".join(ln.text for ln in page.lines))
+            self.page_types[page.page_number] = {"type": ty, "score": score}
+            logger.info("fast_page_type", page=page.page_number, doc_type=ty or "unknown", score=score)
+        except Exception as exc:                          # classification is informational; never fail a page
+            logger.warning("fast_page_type_failed", page=page.page_number, error=str(exc)[:160])
         if settings.KV_DISCOVERY_ENABLED or self.fields:
             for pair in discover_key_values([page.lines]):
                 pair.page_number = page.page_number
                 self.pairs.append(pair)
-        for name, m in match_fields(self.fields, self.pairs).items():
+        for name, m in match_fields(self.fields, self.pairs, self._widths).items():
             if self._announced.get(name) != id(m.pair):
                 self._announced[name] = id(m.pair)
                 self._announced_vals[name] = m.pair.value
@@ -192,7 +203,7 @@ class FieldExtractor:
         # other names for the same thing ("From" for a field called unit) are tried too, ranked below exact names
         weighted = [(c, 1.0) for c in cands]
         known = {tuple(c) for c in cands}
-        for c in cands:
+        for c in ([] if fdef.get("exact_labels") else cands):      # exact_labels: only the field's own printed labels
             for syn in label_kb.synonyms_of(c):
                 if tuple(syn) not in known:
                     known.add(tuple(syn))
@@ -209,10 +220,12 @@ class FieldExtractor:
                             seg = words[i:i + k]
                             if any(w.bbox is None for w in seg):
                                 continue
-                            score = _score(cand, [t for w in seg for t in _tokens(w.text)])
+                            score = _score(cand, [t for w in seg for t in _tokens(w.text)], not fdef.get("exact_labels"))
                             if score < 0.9:
                                 continue
                             label_box = _union(seg)
+                            if not zone_ok(fdef, cand, label_box["x1"] / page.width if page.width else None):
+                                continue                      # "Unit" printed in the other column belongs to the other field
                             lh = max(8.0, label_box["y2"] - label_box["y1"])
                             gap = max(2.2 * lh, 30.0)
                             opens = i == 0 or (words[i - 1].bbox is not None and label_box["x1"] - words[i - 1].bbox.x2 > gap) \
@@ -221,7 +234,13 @@ class FieldExtractor:
                                 or seg[-1].text.rstrip().endswith(":")
                             tail = [w for w in words[i + k:] if any(ch.isalnum() for ch in w.text)]
                             value_words = self._continue_value(page, ln, self._cut_value(tail, lh), label_box)
+                            if value_words and value_is_header(" ".join(w.text for w in value_words)):
+                                value_words = []                    # the next column header, not a value
+                            if value_words and not _value_ok(fdef, " ".join(w.text for w in value_words)):
+                                value_words = []                    # no digit in a date / number field: a neighbouring header word
                             vbox = _union(value_words)
+                            if vbox and page.width and not zone_ok(fdef, cand, None, vbox["x1"] / page.width):
+                                value_words, vbox = [], None        # that text is in the other column: the label is here, its value is not readable
                             if vbox and any(pn == page.page_number and _overlaps(vbox, cb) for pn, cb in self._claimed):
                                 continue                      # that value already belongs to another field
                             side = -label_box["x1"] if hint == "left" else label_box["x1"] if hint == "right" else 0
@@ -265,6 +284,29 @@ class FieldExtractor:
         finally:
             self._claimed = claimed
         return out
+
+    def _vote_copies(self, slot: dict, fr: FieldResult) -> None:
+        """The same field read on another copy of the voucher may be the better reading: keep that one as the value
+        and the first as an alternative (see app/fast/copyvote.py). Never runs for a single page."""
+        if not fr.occurrences or not settings.FAST_COPY_VOTE_ENABLED:
+            return
+        try:
+            primary = {"value": fr.value, "confidence": fr.confidence, "page_number": fr.page_number,
+                       "bbox": fr.bbox, "source": fr.extraction_method}
+            i = pick_best_copy(slot["fdef"], primary, fr.occurrences)
+            if i == 0:
+                return
+            win = fr.occurrences[i - 1]
+            rest = [o for n, o in enumerate(fr.occurrences, start=1) if n != i] + [primary]
+            fr.value, fr.confidence, fr.page_number, fr.bbox = win["value"], win["confidence"], win["page_number"], win.get("bbox")
+            fr.extraction_method = win.get("source") or fr.extraction_method
+            fr.occurrences = rest
+            a = assess(slot["fdef"], fr.value, fr.confidence)
+            meta = slot["meta"]
+            meta.state, meta.checks, meta.reason = a.status, a.checks, a.reason or "copy_vote"
+            logger.info("fast_copy_vote", field=fr.field_name, page=fr.page_number)
+        except Exception as exc:
+            logger.warning("fast_copy_vote_failed", field=slot.get("name"), error=str(exc)[:160])
 
     def _reread_value(self, page: PageData, label_box: dict):
         """The label was found but nothing was read next to it. Re-read just that spot, as one line, with ruling
@@ -507,7 +549,7 @@ class FieldExtractor:
     # ── all pages are in ──────────────────────────────────────────────────────────
     def finalize(self) -> list[FieldResult]:
         t0 = time.perf_counter()
-        matches = match_fields(self.fields, self.pairs)
+        matches = match_fields(self.fields, self.pairs, self._widths)
         vlm_cap = settings.FAST_VLM_MAX_FIELDS if settings.FAST_VLM_FALLBACK_ENABLED else 0
         slots: list[dict] = []
         pending: list[dict] = []
@@ -553,8 +595,14 @@ class FieldExtractor:
                         except Exception as exc:
                             logger.warning("fast_label_reread_failed", field=name, error=str(exc)[:160])
                             rr = None
+                        if rr is not None and (not _value_ok(fdef, rr[0]) or value_is_header(rr[0])):
+                            rr = None                   # a header word / fragment, not a value for a date or number field
                         if rr is None:                  # value printed UNDER its label (only if that line is not another label)
                             vwords = self._value_line_below(page, label_box)
+                            if vwords:
+                                below = " ".join(w.text for w in vwords)
+                                if not _value_ok(fdef, below) or value_is_header(below):
+                                    vwords = []         # the next row's header text, not this field's value
                             label_hit = (page, label_box, vwords)
                         if rr:
                             text, conf, bb = rr
@@ -600,6 +648,7 @@ class FieldExtractor:
             fr = slot.get("result")
             if fr is not None and fr.value:
                 fr.occurrences = self._occurrences(slot["fdef"], fr)
+                self._vote_copies(slot, fr)
 
         # discovered pairs that no template field used
         if settings.KV_DISCOVERY_ENABLED:

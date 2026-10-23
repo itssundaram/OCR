@@ -10,6 +10,8 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import { Badge } from './ui/Badge';
 import KeyValuePanel from './KeyValuePanel';
 import TableGrid from './TableGrid';
+import TableRecords from './TableRecords';
+import PageTypeStrip from './PageTypeStrip';
 import LiveFieldsPanel from './LiveFieldsPanel';
 import { useJobStream } from '../hooks/useJobStream';
 import { evidenceService } from '../services/evidence';
@@ -1528,6 +1530,7 @@ const FastExtractionResultView = ({
           {/* Tables tab: editable grids */}
           {activeTab === 'tables' && (
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50/50">
+              <PageTypeStrip pageTypes={ocrMetadata?.page_types} />
               {extractedTables.length === 0 ? (
                 <div className="p-12 text-center bg-white border border-slate-200 rounded-xl shadow-xs">
                   <TableIcon size={32} className="mx-auto text-slate-300 mb-2" />
@@ -1538,17 +1541,19 @@ const FastExtractionResultView = ({
                 </div>
               ) : (
                 extractedTables.map((tbl, tIdx) => (
-                  <TableGrid
-                    key={tbl.table_index ?? tIdx}
-                    table={tbl}
-                    tableNumber={tIdx + 1}
-                    jobId={currentJob.job_id}
-                    onTableUpdated={handleTableUpdated}
-                    onToast={showToast}
-                    refine={live.needsResync && refineView?.status === 'running' ? null : refineView}
-                    onFocusRows={(ti, from, to) => { extractService.sendFocus(currentJob.job_id, ti, from, to).catch(() => {}); }}
-                    onLocateCell={handleLocateCell}
-                  />
+                  <div key={tbl.table_index ?? tIdx} className="space-y-2">
+                    <TableGrid
+                      table={tbl}
+                      tableNumber={tIdx + 1}
+                      jobId={currentJob.job_id}
+                      onTableUpdated={handleTableUpdated}
+                      onToast={showToast}
+                      refine={live.needsResync && refineView?.status === 'running' ? null : refineView}
+                      onFocusRows={(ti, from, to) => { extractService.sendFocus(currentJob.job_id, ti, from, to).catch(() => {}); }}
+                      onLocateCell={handleLocateCell}
+                    />
+                    <TableRecords table={tbl} />
+                  </div>
                 ))
               )}
             </div>

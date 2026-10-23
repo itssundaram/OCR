@@ -1,0 +1,713 @@
+{
+ "_note": "Landmark phrases per document type (weights: how telling the phrase is). A phrase counts when all its words are on the page. Types are informational in v1 and gate nothing.",
+ "types": [
+  {
+   "id": "tms_backload_voucher",
+   "family": "TMS",
+   "landmarks": [
+    [
+     "receipt issue expense voucher",
+     3
+    ],
+    [
+     "back loading",
+     2
+    ],
+    [
+     "iv no",
+     1
+    ],
+    [
+     "rv no",
+     1
+    ],
+    [
+     "stn",
+     1
+    ],
+    [
+     "dated",
+     0.5
+    ],
+    [
+     "auth",
+     1
+    ],
+    [
+     "type of veh",
+     1.5
+    ],
+    [
+     "veh ba no",
+     2
+    ],
+    [
+     "engine no",
+     1
+    ],
+    [
+     "chassis no",
+     1
+    ],
+    [
+     "date of final insp",
+     2
+    ],
+    [
+     "vintage",
+     1.5
+    ],
+    [
+     "veh log book",
+     1.5
+    ],
+    [
+     "issued to",
+     1
+    ]
+   ]
+  },
+  {
+   "id": "tms_engine_chassis_report",
+   "family": "TMS",
+   "landmarks": [
+    [
+     "technical inspection report",
+     3
+    ],
+    [
+     "holding unit",
+     2
+    ],
+    [
+     "date of inspection",
+     2
+    ],
+    [
+     "distance hours run",
+     1.5
+    ],
+    [
+     "road test",
+     2
+    ],
+    [
+     "engine no",
+     1
+    ],
+    [
+     "chassis no",
+     1
+    ],
+    [
+     "ba no",
+     1
+    ],
+    [
+     "documentation",
+     1
+    ],
+    [
+     "lubrication",
+     1.5
+    ],
+    [
+     "cleanliness",
+     1.5
+    ],
+    [
+     "rotary pump no",
+     1.5
+    ],
+    [
+     "name of inspector",
+     1
+    ]
+   ]
+  },
+  {
+   "id": "tms_issue_voucher",
+   "family": "TMS",
+   "landmarks": [
+    [
+     "issue voucher",
+     2.5
+    ],
+    [
+     "consignor",
+     3
+    ],
+    [
+     "consignee",
+     3
+    ],
+    [
+     "voucher no",
+     1.5
+    ],
+    [
+     "date of issue",
+     1.5
+    ],
+    [
+     "authority",
+     1
+    ],
+    [
+     "tools not issued",
+     1.5
+    ],
+    [
+     "hull no",
+     2
+    ],
+    [
+     "mob no",
+     0.5
+    ]
+   ]
+  },
+  {
+   "id": "tms_transfer_order",
+   "family": "TMS",
+   "landmarks": [
+    [
+     "transfer order",
+     3
+    ],
+    [
+     "fip no",
+     3
+    ],
+    [
+     "type of veh",
+     1.5
+    ],
+    [
+     "eng no",
+     1
+    ],
+    [
+     "veh cl",
+     2
+    ],
+    [
+     "auth",
+     1
+    ],
+    [
+     "stn",
+     0.5
+    ],
+    [
+     "iv no",
+     1
+    ],
+    [
+     "rv no",
+     1
+    ]
+   ]
+  },
+  {
+   "id": "tms_receipt_issue_expense_voucher",
+   "family": "TMS",
+   "landmarks": [
+    [
+     "receipt issue expense voucher",
+     3
+    ],
+    [
+     "iv no",
+     1.5
+    ],
+    [
+     "rv no",
+     1.5
+    ],
+    [
+     "unit",
+     1
+    ],
+    [
+     "stn",
+     1
+    ],
+    [
+     "dated",
+     0.5
+    ],
+    [
+     "auth",
+     1
+    ],
+    [
+     "issued by deposited by received by",
+     2.5
+    ],
+    [
+     "item",
+     0.5
+    ],
+    [
+     "deposit",
+     1.5
+    ],
+    [
+     "depot",
+     1
+    ]
+   ]
+  },
+  {
+   "id": "mms_collection_rv",
+   "family": "MMS",
+   "landmarks": [
+    [
+     "obd creation date",
+     3
+    ],
+    [
+     "outbound delivery",
+     3
+    ],
+    [
+     "str no",
+     2
+    ],
+    [
+     "tracking number",
+     2
+    ],
+    [
+     "str date",
+     2
+    ],
+    [
+     "sto no",
+     2
+    ],
+    [
+     "priority",
+     1
+    ],
+    [
+     "type of str",
+     2
+    ],
+    [
+     "authority",
+     1
+    ],
+    [
+     "sus no",
+     1.5
+    ]
+   ]
+  },
+  {
+   "id": "mms_deposit_voucher",
+   "family": "MMS",
+   "landmarks": [
+    [
+     "depositing",
+     2.5
+    ],
+    [
+     "iv no",
+     1
+    ],
+    [
+     "rv no",
+     1
+    ],
+    [
+     "unit",
+     0.5
+    ],
+    [
+     "issued to",
+     1.5
+    ],
+    [
+     "auth",
+     1
+    ],
+    [
+     "disposal order",
+     1.5
+    ],
+    [
+     "cr nos",
+     1
+    ],
+    [
+     "regn nos",
+     1.5
+    ],
+    [
+     "nomenclature",
+     1.5
+    ],
+    [
+     "in compliance with",
+     1.5
+    ]
+   ]
+  },
+  {
+   "id": "mms_handover_voucher",
+   "family": "MMS",
+   "landmarks": [
+    [
+     "articles enumerated below",
+     3
+    ],
+    [
+     "on relief",
+     2
+    ],
+    [
+     "iv no",
+     1
+    ],
+    [
+     "rv no",
+     1
+    ],
+    [
+     "unit",
+     0.5
+    ],
+    [
+     "dated",
+     0.5
+    ],
+    [
+     "issued to",
+     1.5
+    ],
+    [
+     "handing over",
+     2
+    ],
+    [
+     "handed over",
+     2
+    ],
+    [
+     "nomenclature",
+     1
+    ]
+   ]
+  },
+  {
+   "id": "psg_manpower_update_table",
+   "family": "PSG",
+   "landmarks": [
+    [
+     "pers no",
+     3
+    ],
+    [
+     "doc",
+     2
+    ],
+    [
+     "dos",
+     2
+    ],
+    [
+     "dor",
+     2
+    ],
+    [
+     "dob",
+     2
+    ],
+    [
+     "sus no",
+     1.5
+    ],
+    [
+     "arms",
+     1.5
+    ],
+    [
+     "gender",
+     2
+    ],
+    [
+     "tos",
+     2
+    ],
+    [
+     "unit",
+     1
+    ]
+   ]
+  },
+  {
+   "id": "psg_course_commission_letter",
+   "family": "PSG",
+   "landmarks": [
+    [
+     "commission in the army",
+     3
+    ],
+    [
+     "in the rank of lieutenant",
+     3
+    ],
+    [
+     "ocs",
+     2
+    ],
+    [
+     "course",
+     1.5
+    ],
+    [
+     "asterisk",
+     2
+    ],
+    [
+     "provisional",
+     2
+    ],
+    [
+     "name and date of birth",
+     2
+    ],
+    [
+     "restricted",
+     0.5
+    ],
+    [
+     "military secretary",
+     1
+    ],
+    [
+     "appendices",
+     1.5
+    ]
+   ]
+  },
+  {
+   "id": "psg_officer_posting_letter",
+   "family": "PSG",
+   "landmarks": [
+    [
+     "ration strength",
+     3
+    ],
+    [
+     "reporting for duty",
+     3
+    ],
+    [
+     "post commissioning leave",
+     3
+    ],
+    [
+     "assumption of appointment",
+     2
+    ],
+    [
+     "tors",
+     2
+    ],
+    [
+     "in the rank of",
+     1
+    ],
+    [
+     "internship",
+     1
+    ],
+    [
+     "military secretary",
+     1
+    ],
+    [
+     "restricted",
+     0.5
+    ]
+   ]
+  },
+  {
+   "id": "psg_appointment_order",
+   "family": "PSG",
+   "landmarks": [
+    [
+     "approval of competent auth",
+     3
+    ],
+    [
+     "temporary",
+     1
+    ],
+    [
+     "acting rank",
+     2
+    ],
+    [
+     "ms 8b",
+     1.5
+    ],
+    [
+     "terms and conditions",
+     1
+    ]
+   ]
+  },
+  {
+   "id": "psg_officer_list_appendix",
+   "family": "PSG",
+   "landmarks": [
+    [
+     "rank and name",
+     2
+    ],
+    [
+     "personal no",
+     2
+    ],
+    [
+     "date of birth",
+     1.5
+    ],
+    [
+     "appendix",
+     1.5
+    ],
+    [
+     "s no",
+     1
+    ],
+    [
+     "unit",
+     1
+    ],
+    [
+     "name of offr",
+     2
+    ]
+   ]
+  },
+  {
+   "id": "psg_officer_data_form",
+   "family": "PSG",
+   "landmarks": [
+    [
+     "name of father",
+     3
+    ],
+    [
+     "name of unit",
+     3
+    ],
+    [
+     "name",
+     0.5
+    ],
+    [
+     "date of birth",
+     1
+    ],
+    [
+     "personal no",
+     1
+    ],
+    [
+     "date of commission",
+     1.5
+    ]
+   ]
+  },
+  {
+   "id": "cue_adoption_letter",
+   "family": "CUE",
+   "landmarks": [
+    [
+     "adoption of revised we",
+     3
+    ],
+    [
+     "integrated headquarters of mod",
+     2
+    ],
+    [
+     "general staff",
+     1
+    ],
+    [
+     "headquarters",
+     0.5
+    ],
+    [
+     "dte gen",
+     1
+    ],
+    [
+     "sd 6",
+     1
+    ],
+    [
+     "encls",
+     0.5
+    ],
+    [
+     "copy to",
+     0.5
+    ]
+   ]
+  },
+  {
+   "id": "cue_war_establishment",
+   "family": "CUE",
+   "landmarks": [
+    [
+     "war establishment",
+     3
+    ],
+    [
+     "we no",
+     2.5
+    ],
+    [
+     "effective from",
+     2
+    ],
+    [
+     "this supersedes",
+     2
+    ],
+    [
+     "appendix",
+     1
+    ],
+    [
+     "officers",
+     1
+    ],
+    [
+     "jcos",
+     1.5
+    ],
+    [
+     "ors",
+     0.5
+    ],
+    [
+     "details",
+     0.5
+    ],
+    [
+     "restricted",
+     0.5
+    ]
+   ]
+  }
+ ]
+}

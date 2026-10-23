@@ -168,6 +168,13 @@ class Settings(BaseSettings):
     # Whole-page second read of ink the main pass skipped (app/fast/gapfill.py). MEASURED: adds ~7 s per scanned page
     # on a 2-core box for a handful of words, so it is OFF by default. What is on by default is the cheap, targeted
     # version: when a template field's label is found but no value was read next to it, only THAT spot is re-read.
+    # Sideways scanned pages (text running vertically): also read the page turned 90/270 and keep the turn only when it
+    # yields clearly more confident words (app/fast/orientation.py). Costs one extra OCR pass on ~1 page in 10.
+    FAST_ORIENTATION_ENABLED: bool = True
+    # TMS / MMS / PSG knowledge layer (app/knowledge): field vocabulary, left/right voucher columns, soft value checks,
+    # page types, table header repair + records. Off = the general behaviour only.
+    KNOWLEDGE_ENABLED: bool = True
+    FAST_COPY_VOTE_ENABLED: bool = True      # keep the best reading of a field across copies of the same voucher
     FAST_GAP_FILL_ENABLED: bool = False
     FAST_GAP_FILL_BUDGET_S: float = 3.0     # per page, when enabled
     FAST_LABEL_REREAD_ENABLED: bool = True  # re-read the spot next to a found label that came back empty

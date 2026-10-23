@@ -9,6 +9,7 @@ milliseconds and needs no OCR model. Only pages without a usable text layer
 from __future__ import annotations
 
 import hashlib
+import re
 from pathlib import Path
 
 import fitz  # PyMuPDF
@@ -16,6 +17,7 @@ from PIL import Image
 
 from app.core.config import settings
 from app.core.exceptions import ProcessingError
+from app.core.logging import get_logger
 from app.ocr.base import BoundingBox, OCRLine, OCRWord
 
 NATIVE_CONFIDENCE = 0.99
@@ -121,6 +123,44 @@ def words_to_lines(words: list[tuple[float, float, float, float, str]], conf: fl
     return lines
 
 
+logger = get_logger(__name__)
+
+# Hindi typed in a legacy "font hack" (Kruti Dev & co) is stored as Latin-looking letters ("lsuk lfpo" for the Hindi
+# for "Army Secretary"). The text layer is therefore pure noise for key:value matching, so words set in those
+# fonts are dropped from the native text. The font name is the reliable marker; the letters themselves look like
+# ordinary words.
+_LEGACY_FONT_RE = re.compile(r"kruti|devlys|dev\s?lys|chanakya|walkman|shivaji|agra\s?hindi|aps[-_ ]?dv|kiran", re.I)
+
+
+def legacy_font_rects(page) -> list:
+    """Bounding boxes (page coordinates) of text spans set in a legacy Hindi font. Cheap when the page has none."""
+    try:
+        if not any(_LEGACY_FONT_RE.search(str(f[3])) for f in page.get_fonts()):
+            return []
+        rects = []
+        for block in page.get_text("dict").get("blocks", []):
+            for ln in block.get("lines", []):
+                for sp in ln.get("spans", []):
+                    if _LEGACY_FONT_RE.search(str(sp.get("font", ""))):
+                        rects.append(fitz.Rect(sp["bbox"]))
+        return rects
+    except Exception as exc:                                # never fail a page over this
+        logger.warning("legacy_font_scan_failed", error=str(exc)[:160])
+        return []
+
+
+def drop_legacy_words(raw: list, rects: list) -> list:
+    """Remove words whose centre lies inside a legacy-font span."""
+    if not rects:
+        return raw
+    keep = []
+    for w in raw:
+        cx, cy = (w[0] + w[2]) / 2, (w[1] + w[3]) / 2
+        if not any(r.x0 <= cx <= r.x1 and r.y0 <= cy <= r.y1 for r in rects):
+            keep.append(w)
+    return keep
+
+
 class DocumentSource:
     """One uploaded file. `load_page` opens the file itself, so pages can be
     loaded from several threads (PyMuPDF documents are not thread-safe)."""
@@ -164,6 +204,12 @@ class DocumentSource:
             page = doc.load_page(index)
             raw = page.get_text("words")
             native = is_digital_page(page, raw)
+            if native:
+                legacy = legacy_font_rects(page)
+                if legacy:
+                    before = len(raw)
+                    raw = drop_legacy_words(raw, legacy)
+                    logger.info("fast_native_legacy_font_dropped", page=index + 1, words=before - len(raw))
             scale = float(settings.OCR_DPI_NATIVE if native else settings.OCR_DPI_SCANNED)
             pix = page.get_pixmap(matrix=fitz.Matrix(scale, scale), colorspace=fitz.csRGB, alpha=False)
             image = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
