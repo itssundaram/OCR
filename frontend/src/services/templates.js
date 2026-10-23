@@ -38,11 +38,20 @@ export const templatesService = {
     return await api.delete(`/templates/${templateId}`);
   },
 
-  lockAnchors: async (templateId, fields, pageWidth = 1654, pageHeight = 2338) => {
+  // jobId lets the server learn each field's printed label + value shape from that job's OCR words.
+  lockAnchors: async (templateId, fields, pageWidth = 1654, pageHeight = 2338, jobId = null, expectedVersion = null) => {
     return await api.post(`/templates/${templateId}/lock-anchors`, {
       fields,
       page_width: pageWidth,
       page_height: pageHeight,
+      job_id: jobId,
+      expected_version: expectedVersion,
+    });
+  },
+
+  rollbackAnchors: async (templateId, toVersion = null) => {
+    return await api.post(`/templates/${templateId}/rollback-anchors`, null, {
+      params: toVersion ? { to_version: toVersion } : undefined,
     });
   },
 

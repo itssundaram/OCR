@@ -107,6 +107,10 @@ export const extractService = {
       value,
     }),
 
+  // Process the same document again with the template as it is now (saved anchors included)
+  rerunJob: (jobId, forceRelearn = false) =>
+    api.post(`/extract/jobs/${jobId}/rerun`, { force_relearn: forceRelearn }),
+
   // Add, remove, or update template fields
   manageTemplateField: (jobId, action, fieldKey, value = null, bbox = null, pageNumber = 1, saveToTemplate = true) =>
     api.post('/extract/manage-template-field', {

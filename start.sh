@@ -30,10 +30,16 @@ cd backend && python scripts/check_models.py || true; cd ..
 
 echo "[5/6] Starting FastAPI backend + Worker..."
 cd backend
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload &
+# --reload only for development (DOCINT_DEV=1): it restarts the API on any file change.
+if [ "${DOCINT_DEV:-0}" = "1" ]; then RELOAD="--reload"; else RELOAD=""; fi
+# API worker count comes from the detected CPU (1 per 4 cores, max 4); override with DOCINT_API_WORKERS.
+if [ -z "$RELOAD" ]; then API_WORKERS_ARG="--workers $(python -m app.system.explain --get api_workers --no-services 2>/dev/null | tail -1 | grep -E '^[0-9]+$' || echo 1)"; else API_WORKERS_ARG=""; fi
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8001 $RELOAD $API_WORKERS_ARG &
 API_PID=$!
-python -m app.workers.main &
+python run_worker.py &
 WORKER_PID=$!
+python run_fast_worker.py &
+FAST_WORKER_PID=$!
 cd ..; sleep 4
 
 echo "[6/6] Starting Frontend (Port 5173)..."
@@ -48,5 +54,5 @@ echo "  Frontend: http://localhost:5173"
 echo "============================================================"
 echo "Press Ctrl+C to stop all services."
 
-trap "kill $API_PID $WORKER_PID $FRONTEND_PID 2>/dev/null; docker compose stop redis" EXIT
+trap "kill $API_PID $WORKER_PID $FAST_WORKER_PID $FRONTEND_PID 2>/dev/null; docker compose stop redis" EXIT
 wait

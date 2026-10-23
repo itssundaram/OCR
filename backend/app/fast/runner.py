@@ -98,7 +98,8 @@ def run_fast_job(job_id: str, force_relearn: bool = False) -> None:
 
             source = DocumentSource(doc.file_path, doc.file_type)
             reader = PageReader(source, cache)
-            engine = FastEngine(tfields, bus, want_tables=want_tables)
+            engine = FastEngine(tfields, bus, want_tables=want_tables,
+                                anchors=(None if force_relearn else (template.template_json or {}).get("learned_anchors")))
             bus.emit("job_started", pages_total=source.page_count, template=template.code,
                      fields_total=len([f for f in tfields if str(f.get("type") or "").lower() != "table"]),
                      tables_expected=want_tables)

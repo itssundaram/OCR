@@ -30,10 +30,10 @@ class JobCancelled(Exception):
 
 
 class FastEngine:
-    def __init__(self, template_fields: list[dict], bus: EventBus, want_tables: bool = True):
+    def __init__(self, template_fields: list[dict], bus: EventBus, want_tables: bool = True, anchors: dict | None = None):
         self.bus = bus
         self.want_tables = want_tables
-        self.extractor = FieldExtractor(template_fields, bus)
+        self.extractor = FieldExtractor(template_fields, bus, anchors=anchors)
         self.pages: dict[int, PageData] = {}
         self.blocks: dict[int, list[dict]] = {}
         self._table_futs: dict[int, tuple[Future, float]] = {}

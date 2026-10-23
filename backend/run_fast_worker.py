@@ -24,6 +24,8 @@ logger = get_logger(__name__)
 
 
 def main() -> None:
+    from app.system.runtime import configure_process
+    configure_process("fast_worker")
     from app.db.database import engine  # noqa: F401  (opens the DB pool once)
     from app.fast.warmup import run_startup_checks
     run_startup_checks()

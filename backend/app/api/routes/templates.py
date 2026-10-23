@@ -7,9 +7,13 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import select, update
+from sqlalchemy.orm.attributes import flag_modified
 
 from app.db.database import get_db
-from app.db.models import Template, Department, ProcessingJob, Document
+from app.db.models import Template, Department, ProcessingJob, Document, ProcessingResult
+from app.anchors import (
+    AnchorConflict, merge_anchor_fields, rollback as rollback_anchors, words_from_detections,
+)
 from app.schemas.common import APIResponse
 from app.schemas.templates import TemplateCreate, TemplateUpdate, TemplateResponse
 from app.core.exceptions import DocIntError
@@ -26,15 +30,39 @@ class LockAnchorsRequest(BaseModel):
     fields: dict[str, Any]
     page_width: int | None = 1654
     page_height: int | None = 2338
+    # Optional: the job these boxes were confirmed on. When given, the printed
+    # label next to each box and the confirmed value's shape are learned from
+    # that job's OCR words so the anchor can be read back on the next run.
+    job_id: str | None = None
+    # Optional optimistic-lock: version of the anchors the caller last saw.
+    expected_version: int | None = None
+
+
+def job_words_by_page(db: Session, job_id: str | None) -> list[list[dict]] | None:
+    """Per-page OCR words stored with a finished job (None if unavailable)."""
+    if not job_id:
+        return None
+    try:
+        res = db.execute(
+            select(ProcessingResult).where(ProcessingResult.job_id == job_id)
+        ).scalars().first()
+        meta = dict(getattr(res, "ocr_metadata_json", None) or {})
+        dets = meta.get("all_detections") or []
+        return words_from_detections(dets) if dets else None
+    except Exception as exc:  # enrichment is best-effort, never block a save
+        logger.warning("job_words_load_failed", job_id=job_id, error=str(exc))
+        return None
 
 
 @router.post("/{template_id}/lock-anchors", response_model=APIResponse[dict])
 def lock_template_anchors(template_id: int, req: LockAnchorsRequest, db: Session = Depends(get_db)):
     """
-    Commit human-verified ground-truth bounding boxes to template learned_anchors.
-    Sets is_verified: true to lock the template and permanently prevent automated
-    cold-path drifts from overwriting ground-truth geometry.
-    Can be called again anytime to update existing ground truth.
+    Commit human-verified ground-truth boxes to the template's learned_anchors.
+
+    Fields are MERGED into what is already stored (fields not in this request are
+    kept), each is enriched with page number / page-relative box / printed label /
+    value shape, and the anchor set gets a new version. Sets is_verified: true so
+    automatic cold-path guesses never overwrite it. Can be called again anytime.
     """
     repo = TemplateRepository(db)
     template = repo.get_by_id(template_id)
@@ -42,22 +70,52 @@ def lock_template_anchors(template_id: int, req: LockAnchorsRequest, db: Session
         raise DocIntError(f"Template {template_id} not found.", "TEMPLATE_NOT_FOUND")
 
     tj = dict(template.template_json or {})
-    learned_anchors = {
-        "fields": req.fields,
-        "page_width": req.page_width or 1654,
-        "page_height": req.page_height or 2338,
-        "is_verified": True,
-        "verified_at": datetime.now(timezone.utc).isoformat(),
-    }
+    try:
+        learned_anchors, report = merge_anchor_fields(
+            tj.get("learned_anchors"),
+            req.fields,
+            page_w=req.page_width or 1654,
+            page_h=req.page_height or 2338,
+            verified=True,
+            words_by_page=job_words_by_page(db, req.job_id),
+            expected_version=req.expected_version,
+            source="user_lock",
+        )
+    except AnchorConflict as exc:
+        raise DocIntError(
+            f"Anchors were changed by someone else (now v{exc.current}); reload and try again.",
+            "ANCHOR_VERSION_CONFLICT",
+        )
     tj["learned_anchors"] = learned_anchors
     template = repo.update(template_id, {"template_json": tj})
 
-    logger.info("template_anchors_locked", template_id=template_id, field_count=len(req.fields))
+    logger.info("template_anchors_locked", template_id=template_id, version=report["version"],
+                added=len(report["added"]), updated=len(report["updated"]), kept=len(report["kept"]))
     return APIResponse(data={
         "message": "Template ground-truth anchors locked successfully.",
         "template_id": template_id,
-        "learned_anchors": learned_anchors,
+        "learned_anchors": {k: v for k, v in learned_anchors.items() if k != "history"},
+        "report": report,
     })
+
+
+@router.post("/{template_id}/rollback-anchors", response_model=APIResponse[dict])
+def rollback_template_anchors(template_id: int, to_version: int | None = None, db: Session = Depends(get_db)):
+    """Restore an earlier version of the anchors (default: the one just before the latest save)."""
+    repo = TemplateRepository(db)
+    template = repo.get_by_id(template_id)
+    if not template:
+        raise DocIntError(f"Template {template_id} not found.", "TEMPLATE_NOT_FOUND")
+    tj = dict(template.template_json or {})
+    try:
+        la = rollback_anchors(tj.get("learned_anchors"), to_version)
+    except ValueError as exc:
+        raise DocIntError(str(exc), "ANCHOR_ROLLBACK_UNAVAILABLE")
+    tj["learned_anchors"] = la
+    repo.update(template_id, {"template_json": tj})
+    logger.info("template_anchors_rolled_back", template_id=template_id, version=la["version"])
+    return APIResponse(data={"template_id": template_id, "version": la["version"],
+                             "field_count": len(la.get("fields", {}))})
 
 
 @router.post("/{template_id}/unlock-anchors", response_model=APIResponse[dict])

@@ -4,11 +4,12 @@ Assembles all sub-routers under /api/v1 prefix.
 """
 from fastapi import APIRouter
 
-from app.api.routes import dashboard, department_urls, departments, documents, events, evidence, extract, health, pipelines, processing, stream, templates
+from app.api.routes import dashboard, department_urls, departments, documents, events, evidence, extract, health, pipelines, processing, stream, system, templates
 
 api_router = APIRouter(prefix="/api/v1")
 
 api_router.include_router(health.router)
+api_router.include_router(system.router)
 api_router.include_router(departments.router)
 api_router.include_router(templates.router)
 api_router.include_router(documents.router)

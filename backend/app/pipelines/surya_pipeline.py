@@ -10,6 +10,7 @@ from PIL import Image
 
 from app.pipelines.base import OCRPipeline, PipelineCapabilities, PipelineResult, FieldResult, TableResult
 from app.pipelines.registry import register_pipeline
+from app.anchors.apply import read_verified_anchor
 from app.ocr.preprocessing import preprocess_page
 from app.ocr.surya_ocr_engine import SuryaOCREngine
 from app.ocr.surya_layout_engine import SuryaLayoutEngine
@@ -222,8 +223,20 @@ class SuryaPipeline(OCRPipeline):
                         if crop_image and crop_image.height > crop_image.width * 1.5:
                             crop_image = crop_image.rotate(270, expand=True)
 
-            # Ground truth anchor integration
+            # Human-verified box: read the value FROM the box (it wins over the LLM's guess).
             learned_anchors = (schema or {}).get("learned_anchors", {})
+            anchor_method = None
+            _rd = read_verified_anchor(learned_anchors, field_name, ocr_lines_by_page, preprocessed_pages)
+            if _rd is not None:
+                if field_val and str(field_val).strip() != _rd.value:
+                    logger.info("anchor_overrides_llm_value", field=field_name, llm=str(field_val)[:40], anchor=_rd.value[:40])
+                field_val, bbox, best_p_idx, anchor_method = _rd.value, _rd.bbox, _rd.page_number - 1, "anchor_verified"
+                total_conf += _rd.confidence - conf
+                conf = _rd.confidence
+                _pg = preprocessed_pages[best_p_idx]
+                crop_image = _pg.crop((max(0, int(bbox["x1"]) - 8), max(0, int(bbox["y1"]) - 8),
+                                       min(_pg.width, int(bbox["x2"]) + 8), min(_pg.height, int(bbox["y2"]) + 8)))
+            # Ground truth anchor integration (box only - older anchors / unreadable boxes)
             anchor_fields = learned_anchors.get("fields", {}) if isinstance(learned_anchors, dict) else {}
             if not bbox and field_name in anchor_fields:
                 la_data = anchor_fields[field_name]
@@ -251,7 +264,7 @@ class SuryaPipeline(OCRPipeline):
                 page_number=best_p_idx + 1 if bbox else 1,
                 bbox=bbox,
                 crop_image=crop_image,
-                extraction_method="surya+llm",
+                extraction_method=anchor_method or "surya+llm",
                 fallback_method="llm"
             ))
             

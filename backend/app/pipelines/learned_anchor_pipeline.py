@@ -23,6 +23,7 @@ from concurrent.futures import ThreadPoolExecutor
 from difflib import SequenceMatcher
 from typing import Any
 from PIL import Image, ImageOps
+from sqlalchemy.orm.attributes import flag_modified
 
 import pytesseract
 
@@ -43,6 +44,7 @@ from app.ocr.tesseract import TesseractOCREngine
 from app.ocr.kv_discovery import assign_unique_keys, discover_key_values, slugify_label
 from app.ocr.kv_match import match_fields
 from app.ai.orchestrator import ai_orchestrator
+from app.anchors import resolve_anchor, words_from_lines
 
 logger = get_logger(__name__)
 
@@ -180,17 +182,21 @@ class LearnedAnchorPipeline(OCRPipeline):
         return results
 
     # ── key : value discovery ("pairs first") ──────────────────────────────────
-    def _kv_scan(self, pages: list[Image.Image]) -> dict | None:
+    def _kv_scan(self, pages: list[Image.Image], need_words: bool = False) -> dict | None:
         """One full-page OCR pass + pair discovery. Returns
-        {"ocr_res", "lines", "pairs"} or None when disabled / failed."""
-        if not settings.KV_DISCOVERY_ENABLED:
+        {"ocr_res", "lines", "pairs"} or None when disabled / failed.
+
+        need_words=True keeps the pass even when pair discovery is switched off:
+        stored anchors are read from these words, so the page is OCR-ed exactly
+        once whichever path ends up answering."""
+        if not settings.KV_DISCOVERY_ENABLED and not need_words:
             return None
         try:
             t0 = time.perf_counter()
             ocr_res = self._get_ocr_engine().process_images(pages)
             t1 = time.perf_counter()
             lines = [p.lines for p in ocr_res.pages]
-            pairs = discover_key_values(lines)
+            pairs = discover_key_values(lines) if settings.KV_DISCOVERY_ENABLED else []
             logger.info(
                 "learned_anchor_kv_scan",
                 pages=len(pages),
@@ -365,6 +371,175 @@ class LearnedAnchorPipeline(OCRPipeline):
         except Exception as exc:
             logger.warning("learned_anchor_kv_discovery_failed", error=str(exc), exc_info=True)
 
+    # ── verified anchors first ─────────────────────────────────────────────────
+    @staticmethod
+    def _anchor_trusted(la: dict, anchor: dict | None) -> bool:
+        """A human-confirmed box: the whole set is locked, or this field was saved by a user."""
+        return bool(la.get("is_verified")) or str((anchor or {}).get("source") or "").startswith("user")
+
+    @staticmethod
+    def _detections_from_words(words_by_page: list[list[dict]]) -> list[dict]:
+        dets: list[dict] = []
+        for p_idx, ws in enumerate(words_by_page):
+            for w in ws:
+                dets.append({
+                    "id": f"det_p{p_idx + 1}_{len(dets)}",
+                    "text": w["text"],
+                    "bbox": {"x1": w["x1"], "y1": w["y1"], "x2": w["x2"], "y2": w["y2"]},
+                    "confidence": round(float(w.get("conf") or 0.0), 3),
+                    "page_number": p_idx + 1,
+                })
+        return dets
+
+    def _read_via_label(self, name: str, aliases: list[str], words_by_page: list[list[dict]],
+                        sizes: list[tuple[int, int]], spec: dict | None):
+        """Label search on EVERY page (not just page 1), reading the words right of the label."""
+        best = None
+        for p_idx, words in enumerate(words_by_page):
+            if not words:
+                continue
+            w, h = sizes[min(p_idx, len(sizes) - 1)]
+            m = self._find_field_bbox_by_label(name, aliases, words, w, h, spec)
+            if m and (best is None or m["score"] > best[0]["score"]):
+                best = (m, p_idx, w, h)
+        if best is None:
+            return None
+        m, p_idx, w, h = best
+        vb = m["val_bbox"]
+        rd = resolve_anchor(
+            {"bbox": vb, "page_number": p_idx + 1, "page_width": w, "page_height": h},
+            words_by_page, sizes, spec=spec,
+        )
+        if rd is None and m.get("direct_value"):
+            return {"value": m["direct_value"], "confidence": 0.9, "bbox": vb, "page_number": p_idx + 1, "valid": True}
+        if rd is None or not rd.valid:
+            return None
+        return {"value": rd.value, "confidence": min(rd.confidence, 0.92), "bbox": rd.bbox,
+                "page_number": rd.page_number, "valid": True}
+
+    def _anchor_first_result(self, kv: dict | None, pages: list[Image.Image], template_fields: list[dict],
+                             la: dict, event_callback=None) -> PipelineResult | None:
+        """Answer from human-verified anchors using the words already read.
+
+        Per field: verified box (landmark-aligned) -> label search on every page ->
+        discovered key:value pair -> a low-confidence reading of the stored box.
+        Returns None (caller falls through to the older paths) when no verified box
+        could be read or fewer than 30% of the template's fields were resolved.
+        """
+        if not kv or not la or not la.get("fields"):
+            return None
+        anchored: dict = la["fields"]
+        if not any(self._anchor_trusted(la, a) for a in anchored.values()):
+            return None
+        wanted = self._wanted_fields(template_fields) or [{"name": n} for n in anchored]
+        if not wanted:
+            return None
+
+        t0 = time.perf_counter()
+        if event_callback:
+            event_callback("ANCHOR_VERIFIED_STARTED", {"anchors": len(anchored)})
+        words_by_page = [words_from_lines(lines) for lines in kv["lines"]]
+        while len(words_by_page) < len(pages):
+            words_by_page.append([])
+        sizes = [(p.width, p.height) for p in pages]
+        orig = (la.get("page_width"), la.get("page_height"))
+        matches = match_fields(wanted, kv["pairs"]) if kv.get("pairs") else {}
+
+        # Pass 0: fields whose own printed label was found tell us how far this scan is shifted;
+        # fields whose label was not found (OCR split it, etc.) reuse the median shift.
+        shifts: list[tuple[float, float]] = []
+        for fdef in wanted:
+            a0 = anchored.get(fdef["name"])
+            if a0 and self._anchor_trusted(la, a0):
+                r0 = resolve_anchor(a0, words_by_page, sizes, orig_size=orig,
+                                    spec=self.FIELD_SPECS.get(self._normalize_key(fdef["name"])))
+                if r0 is not None and r0.valid and r0.aligned:
+                    shifts.append((r0.dx, r0.dy))
+        page_shift = None
+        if shifts:
+            xs, ys = sorted(s[0] for s in shifts), sorted(s[1] for s in shifts)
+            page_shift = (xs[len(xs) // 2], ys[len(ys) // 2])
+
+        fields_out: list[FieldResult] = []
+        trace: dict[str, dict] = {}
+        n_resolved = n_verified = 0
+        for fdef in wanted:
+            name = fdef["name"]
+            anchor = anchored.get(name)
+            trusted = bool(anchor) and self._anchor_trusted(la, anchor)
+            spec = self.FIELD_SPECS.get(self._normalize_key(name))
+            aliases = list(fdef.get("aliases", [])) + list((spec or {}).get("patterns", []))
+
+            rd = (resolve_anchor(anchor, words_by_page, sizes, orig_size=orig, spec=spec, shift=page_shift)
+                  if anchor else None)
+            anchor_ok = rd is not None and rd.valid and rd.confidence >= 0.35
+            chosen = None  # (value, conf, bbox, page, method)
+
+            if trusted and anchor_ok:
+                chosen = (rd.value, rd.confidence, rd.bbox, rd.page_number, "anchor_verified")
+                n_verified += 1
+            if chosen is None:
+                lab = self._read_via_label(name, aliases, words_by_page, sizes, spec)
+                if lab:
+                    chosen = (lab["value"], lab["confidence"], lab["bbox"], lab["page_number"], "label_search")
+            if chosen is None and anchor_ok:  # untrusted stored box ranks below label search
+                chosen = (rd.value, rd.confidence, rd.bbox, rd.page_number, "anchor_stored")
+            if chosen is None and name in matches:
+                mp = matches[name].pair
+                chosen = (mp.value, mp.confidence, mp.bbox, mp.page_number, "kv_match")
+            if chosen is None and rd is not None and rd.value:
+                chosen = (rd.value, rd.confidence, rd.bbox, rd.page_number, "anchor_low_confidence")
+
+            trace[name] = {
+                "method": chosen[4] if chosen else "not_found",
+                "aligned": bool(rd and rd.aligned),
+                "dx": rd.dx if rd else 0.0, "dy": rd.dy if rd else 0.0,
+                "anchor_valid": bool(rd and rd.valid),
+                "reason": rd.reason if rd else ("no_anchor" if not anchor else "nothing_in_box"),
+            }
+            if chosen is None:
+                fields_out.append(FieldResult(field_name=name, value="", confidence=0.0, page_number=1,
+                                              bbox=None, crop_image=None, extraction_method="not_found"))
+                continue
+            value, conf, bbox, pg, method = chosen
+            if method != "anchor_low_confidence":
+                n_resolved += 1
+            crop = None
+            if bbox and 1 <= pg <= len(pages):
+                crop = self._safe_crop(pages[pg - 1], bbox["x1"] - 6, bbox["y1"] - 6, bbox["x2"] + 6, bbox["y2"] + 6)
+            fields_out.append(FieldResult(field_name=name, value=value, confidence=round(float(conf), 3),
+                                          page_number=pg, bbox=bbox, crop_image=crop, extraction_method=method))
+
+        if n_verified == 0 or n_resolved < max(1, len(wanted) * 0.3):
+            logger.info("anchor_first_insufficient", verified=n_verified, resolved=n_resolved, wanted=len(wanted))
+            return None
+
+        overall = sum(f.confidence for f in fields_out) / len(fields_out) if fields_out else 0.0
+        dets = self._detections_from_words(words_by_page)
+        ms = int((time.perf_counter() - t0) * 1000)
+        logger.info("anchor_first_hit", verified=n_verified, resolved=n_resolved, wanted=len(wanted), ms=ms)
+        if event_callback:
+            event_callback("ANCHOR_VERIFIED_DONE", {"verified": n_verified, "resolved": n_resolved})
+        return PipelineResult(
+            pipeline_name=self.name,
+            status="completed",
+            fields=fields_out,
+            overall_confidence=round(overall, 4),
+            all_detections=dets,
+            metadata={
+                "mode": "ANCHOR_VERIFIED",
+                "speed": "single_ocr_pass",
+                "anchor_matched": True,
+                "anchor_learned": False,
+                "anchor_trace": trace,
+                "learned_anchors": {k: v for k, v in la.items() if k != "history"},
+                "all_detections": dets,
+                "doc_page_width": pages[0].width if pages else 0,
+                "doc_page_height": pages[0].height if pages else 0,
+                "ocr_metadata": kv["ocr_res"].model_dump(),
+            },
+        )
+
     def extract_fields(
         self,
         pages: list[Image.Image],
@@ -384,17 +559,7 @@ class LearnedAnchorPipeline(OCRPipeline):
     ) -> PipelineResult:
         t_start = time.perf_counter()
 
-        # Step 0: "pairs first" - read the page once, find every "Label: value" pair
-        # and, if they cover the template, answer from them without anchors or a VLM.
-        kv = self._kv_scan(pages)
-        if kv is not None and settings.KV_FIRST_ENABLED and not force_relearn:
-            kv_result = self._kv_first_result(kv, template_fields, pages)
-            if kv_result is not None:
-                kv_result.processing_time_ms = int((time.perf_counter() - t_start) * 1000)
-                logger.info("learned_anchor_kv_first_hit", job_id=job_id, ms=kv_result.processing_time_ms)
-                return kv_result
-
-        # Step 1: Check if learned anchors exist in schema or template
+        # Stored anchors are loaded FIRST: a human-verified box must beat "pairs first".
         learned_anchors = None
         if schema and isinstance(schema, dict):
             learned_anchors = schema.get("learned_anchors")
@@ -408,6 +573,30 @@ class LearnedAnchorPipeline(OCRPipeline):
             except Exception as e:
                 logger.warning("failed_fetching_template_for_anchors", error=str(e))
 
+        # One full-page OCR pass serves every path below (anchors, pairs, cold path).
+        kv = self._kv_scan(pages, need_words=bool(learned_anchors and learned_anchors.get("fields")))
+
+        # Step 0: verified anchors - read the confirmed boxes from the words we already have.
+        if kv is not None and not force_relearn and isinstance(learned_anchors, dict):
+            try:
+                av = self._anchor_first_result(kv, pages, template_fields, learned_anchors, event_callback)
+                if av is not None:
+                    self._attach_discovered_pairs(av, kv, template_fields)
+                    av.processing_time_ms = int((time.perf_counter() - t_start) * 1000)
+                    return av
+            except Exception as exc:
+                logger.warning("anchor_first_failed_falling_back", error=str(exc), exc_info=True)
+
+        # Step 0b: "pairs first" - find every "Label: value" pair and, if they cover the
+        # template, answer from them without anchors or a VLM.
+        if kv is not None and settings.KV_FIRST_ENABLED and not force_relearn:
+            kv_result = self._kv_first_result(kv, template_fields, pages)
+            if kv_result is not None:
+                kv_result.processing_time_ms = int((time.perf_counter() - t_start) * 1000)
+                logger.info("learned_anchor_kv_first_hit", job_id=job_id, ms=kv_result.processing_time_ms)
+                return kv_result
+
+        # Step 1: stored anchors (loaded above) - validity check
         # Check if learned_anchors has valid field definitions
         has_valid_anchors = (
             learned_anchors
@@ -429,6 +618,7 @@ class LearnedAnchorPipeline(OCRPipeline):
                     job_id=job_id,
                     template_id=template_id,
                     event_callback=event_callback,
+                    kv=kv,
                 )
                 if warm_result is not None:
                     self._attach_discovered_pairs(warm_result, kv, template_fields)
@@ -570,8 +760,30 @@ class LearnedAnchorPipeline(OCRPipeline):
                     if existing_la and existing_la.get("is_verified"):
                         logger.info("learned_anchors_persist_skipped_already_verified", template_id=template_id)
                         return
-                    tj["learned_anchors"] = learned_anchors
+                    # Merge, never replace: boxes a human saved (source "user*") survive an
+                    # automatic relearn; only machine-learned boxes are refreshed.
+                    from app.anchors import merge_anchor_fields
+                    base = dict(existing_la or {})
+                    base["fields"] = {
+                        n: f for n, f in (existing_la or {}).get("fields", {}).items()
+                        if str((f or {}).get("source") or "").startswith("user")
+                    }
+                    incoming = {
+                        n: f for n, f in (learned_anchors.get("fields") or {}).items()
+                        if n not in base["fields"]
+                    }
+                    merged, _rep = merge_anchor_fields(
+                        base, incoming,
+                        page_w=learned_anchors.get("page_width") or 1654,
+                        page_h=learned_anchors.get("page_height") or 2338,
+                        verified=None, source="auto",
+                    )
+                    for k in ("anchor_text", "anchor_bbox", "learned_at", "sample_job_id"):
+                        if k in learned_anchors:
+                            merged[k] = learned_anchors[k]
+                    tj["learned_anchors"] = merged
                     tmpl.template_json = tj
+                    flag_modified(tmpl, "template_json")
                     db.commit()
                     logger.info("learned_anchors_auto_persisted", template_id=template_id, field_count=len(learned_anchors.get("fields", {})))
         except Exception as exc:
@@ -708,6 +920,7 @@ class LearnedAnchorPipeline(OCRPipeline):
         job_id: str,
         template_id: int | None = None,
         event_callback=None,
+        kv: dict | None = None,
     ) -> PipelineResult | None:
         """Dynamic label-anchored micro-OCR with strict value isolation and bounding box snapping."""
         if event_callback:
@@ -724,42 +937,46 @@ class LearnedAnchorPipeline(OCRPipeline):
         dx, dy = 0, 0
         anchor_matched = False
 
-        # Fast Preprocessing on all pages for label detection and universal detections
+        # Words for label detection: reuse the page-wide OCR pass when the caller has one
+        # (no second full-page OCR); otherwise read the pages here.
         words_by_page = []
         all_detections = []
-        for p_idx, page in enumerate(pages):
-            prep_page = self._preprocess_image(page)
-            p_words = []
-            try:
-                t_data = pytesseract.image_to_data(prep_page, output_type=pytesseract.Output.DICT)
-                for idx in range(len(t_data.get("text", []))):
-                    w_txt = t_data["text"][idx].strip()
-                    if w_txt:
-                        box = {
-                            "x1": t_data["left"][idx],
-                            "y1": t_data["top"][idx],
-                            "x2": t_data["left"][idx] + t_data["width"][idx],
-                            "y2": t_data["top"][idx] + t_data["height"][idx],
-                        }
-                        c_val = float(t_data["conf"][idx]) / 100.0 if float(t_data["conf"][idx]) > 0 else 0.8
-                        p_words.append({
-                            "text": w_txt,
-                            "x1": box["x1"],
-                            "y1": box["y1"],
-                            "x2": box["x2"],
-                            "y2": box["y2"],
-                            "conf": c_val,
-                        })
-                        all_detections.append({
-                            "id": f"det_p{p_idx+1}_{idx}",
-                            "text": w_txt,
-                            "bbox": box,
-                            "confidence": round(c_val, 3),
-                            "page_number": p_idx + 1,
-                        })
-            except Exception as e:
-                logger.warning("warm_words_extraction_failed", page=p_idx, error=str(e))
-            words_by_page.append(p_words)
+        if kv is not None:
+            words_by_page = [words_from_lines(lines) for lines in kv["lines"]]
+            while len(words_by_page) < len(pages):
+                words_by_page.append([])
+            all_detections = self._detections_from_words(words_by_page)
+        else:
+            for p_idx, page in enumerate(pages):
+                prep_page = self._preprocess_image(page)
+                p_words = []
+                try:
+                    t_data = pytesseract.image_to_data(prep_page, output_type=pytesseract.Output.DICT)
+                    for idx in range(len(t_data.get("text", []))):
+                        w_txt = t_data["text"][idx].strip()
+                        if w_txt:
+                            box = {
+                                "x1": t_data["left"][idx],
+                                "y1": t_data["top"][idx],
+                                "x2": t_data["left"][idx] + t_data["width"][idx],
+                                "y2": t_data["top"][idx] + t_data["height"][idx],
+                            }
+                            c_val = float(t_data["conf"][idx]) / 100.0 if float(t_data["conf"][idx]) > 0 else 0.8
+                            p_words.append({
+                                "text": w_txt,
+                                "x1": box["x1"], "y1": box["y1"], "x2": box["x2"], "y2": box["y2"],
+                                "conf": c_val,
+                            })
+                            all_detections.append({
+                                "id": f"det_p{p_idx+1}_{idx}",
+                                "text": w_txt,
+                                "bbox": box,
+                                "confidence": round(c_val, 3),
+                                "page_number": p_idx + 1,
+                            })
+                except Exception as e:
+                    logger.warning("warm_words_extraction_failed", page=p_idx, error=str(e))
+                words_by_page.append(p_words)
 
         p0_words = words_by_page[0] if words_by_page else []
 

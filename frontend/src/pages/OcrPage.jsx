@@ -300,6 +300,21 @@ const OcrPage = () => {
     }
   };
 
+  // Process the same document again with the template's current (saved) anchors.
+  const handleRerun = async () => {
+    if (!activeJob?.job_id) return;
+    setError(null);
+    try {
+      const res = await extractService.rerunJob(activeJob.job_id);
+      const newJobId = res.data.job_id;
+      setPipelineSteps([]);
+      const fresh = await processingService.getJob(newJobId);
+      setActiveJob(fresh.data);
+    } catch (err) {
+      setError('Re-run failed: ' + (err.message || err));
+    }
+  };
+
   const reset = () => {
     setActiveJob(null);
     setFile(null);
@@ -343,7 +358,7 @@ const OcrPage = () => {
             onBack={reset}
             setZoomedImage={setZoomedImage}
             pipelineSteps={pipelineSteps}
-            onRerun={reset}
+            onRerun={handleRerun}
           />
         </div>
       );

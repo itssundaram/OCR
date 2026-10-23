@@ -72,10 +72,18 @@ async def lifespan(app: FastAPI):
     else:
         logger.warning("database_unavailable", detail=result.get("message"))
 
+    from app.system.runtime import configure_process
+    configure_process("api")
+
     from app.core.startup import preload_models
     preload_models()
 
+    import asyncio
+    from app.workers.reaper import reaper_loop
+    reaper_task = asyncio.create_task(reaper_loop())
+
     yield
+    reaper_task.cancel()
     logger.info("docint_shutdown")
 
 

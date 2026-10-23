@@ -79,3 +79,31 @@ def test_cancel_stops_the_job(tmp_path):
     eng = FastEngine([{"name": "name"}], bus)
     with pytest.raises(JobCancelled):
         eng.run_pages(1, PageReader(src, OcrCache(tmp_path / "c", True)).read)
+
+
+def test_verified_anchor_is_read_by_fast_engine(tmp_path):
+    """fast_ocr must honour a saved box too (it used to ignore anchors entirely)."""
+    from app.anchors import merge_anchor_fields
+    src = DocumentSource(make_digital_pdf(str(tmp_path / "d.pdf")), "application/pdf")
+    bus = EventBus("job-a", redis_conn=None)
+    bus._redis = None
+    plain = FastEngine([{"name": "ref_no"}], bus)
+    plain.run_pages(src.page_count, PageReader(src, OcrCache(tmp_path / "c", True)).read)
+    ref = {f.field_name: f for f in plain.finalize_fields()}["ref_no"]
+    assert ref.value == "IV/2041" and ref.bbox
+
+    # the user "re-boxes" the NAME value as ref_no: next run must read that box
+    name_fr = None
+    bus2 = EventBus("job-b", redis_conn=None); bus2._redis = None
+    e2 = FastEngine([{"name": "name"}], bus2)
+    e2.run_pages(src.page_count, PageReader(src, OcrCache(tmp_path / "c", True)).read)
+    name_fr = {f.field_name: f for f in e2.finalize_fields()}["name"]
+    pg = e2.pages[1]
+    la, _ = merge_anchor_fields({}, {"ref_no": {"bbox": name_fr.bbox, "page_number": 1}},
+                                page_w=pg.width, page_h=pg.height, verified=True)
+    bus3 = EventBus("job-c", redis_conn=None); bus3._redis = None
+    e3 = FastEngine([{"name": "ref_no"}], bus3, anchors=la)
+    e3.run_pages(src.page_count, PageReader(src, OcrCache(tmp_path / "c", True)).read)
+    got = {f.field_name: f for f in e3.finalize_fields()}["ref_no"]
+    assert got.extraction_method == "anchor_verified"
+    assert got.value == "Rajesh Kumar"

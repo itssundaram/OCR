@@ -553,12 +553,14 @@ const FastExtractionResultView = ({
         if (d?.bbox && d.bbox.x1 !== undefined) {
           fieldsToLock[k] = {
             bbox: d.bbox,
+            page_number: parsePageNumber(d.source_page) || parsePageNumber(d.page_number) || 1,
+            value: d.value ?? null,
             expected_label: k.replace(/_/g, ' '),
           };
         }
       });
 
-      await templatesService.lockAnchors(targetTemplateId, fieldsToLock, docImgWidth, docImgHeight);
+      await templatesService.lockAnchors(targetTemplateId, fieldsToLock, docImgWidth, docImgHeight, currentJob.job_id);
       setIsGeometryLocked(true);
       setLearnedAnchorsState({
         fields: fieldsToLock,

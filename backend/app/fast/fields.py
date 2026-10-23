@@ -27,6 +27,8 @@ from app.fast.vlm import FieldVlm, supported_by_ocr
 from app.ocr.base import OCRLine
 from app.ocr.kv_discovery import DiscoveredPair, assign_unique_keys, discover_key_values
 from app.ocr.kv_match import _candidates, _score, _tokens, match_fields
+from app.anchors import resolve_anchor, words_from_lines
+from app.anchors.apply import anchor_is_trusted
 from app.pipelines.base import FieldResult
 
 logger = get_logger(__name__)
@@ -58,7 +60,9 @@ def _avg_conf(words) -> float:
 
 
 class FieldExtractor:
-    def __init__(self, template_fields: list[dict], bus: EventBus, ocr_engine=None, vlm: FieldVlm | None = None):
+    def __init__(self, template_fields: list[dict], bus: EventBus, ocr_engine=None, vlm: FieldVlm | None = None,
+                 anchors: dict | None = None):
+        self.anchors = anchors if isinstance(anchors, dict) else None
         self.fields = [f for f in (template_fields or [])
                        if f.get("name") and str(f.get("type") or "").lower() != "table"]
         self.bus = bus
@@ -164,6 +168,23 @@ class FieldExtractor:
         crop_text = " ".join(ln.text for ln in self._ocr_engine._ocr_image(crop, 0))
         return value, supported_by_ocr(value, crop_text), box
 
+    # ── human-verified anchors ────────────────────────────────────────────────
+    def _read_anchor(self, name: str):
+        """Value inside the field's confirmed box, read from the words already on the page."""
+        la = self.anchors
+        anchor = ((la or {}).get("fields") or {}).get(name)
+        if not anchor or not anchor_is_trusted(la, anchor) or not self.pages:
+            return None
+        try:
+            nums = sorted(self.pages)
+            words = [words_from_lines(self.pages[n].lines) for n in range(1, max(nums) + 1) if n in self.pages]
+            sizes = [(self.pages[n].width, self.pages[n].height) for n in range(1, max(nums) + 1) if n in self.pages]
+            rd = resolve_anchor(anchor, words, sizes, orig_size=(la.get("page_width"), la.get("page_height")))
+        except Exception as exc:
+            logger.warning("fast_anchor_read_failed", field=name, error=str(exc))
+            return None
+        return rd if (rd is not None and rd.valid and rd.confidence >= 0.35) else None
+
     # ── all pages are in ──────────────────────────────────────────────────────────
     def finalize(self) -> list[FieldResult]:
         t0 = time.perf_counter()
@@ -180,7 +201,15 @@ class FieldExtractor:
             meta = FieldMeta()
             label_hit = None
 
-            if m:
+            rd = self._read_anchor(name)
+            if rd is not None:
+                fr = FieldResult(
+                    field_name=name, value=rd.value, confidence=rd.confidence,
+                    page_number=rd.page_number, bbox=rd.bbox,
+                    extraction_method="anchor_verified", label=str(fdef.get("label") or name),
+                )
+                meta.source = "anchor_verified"
+            elif m:
                 fr = FieldResult(
                     field_name=name, value=m.pair.value, confidence=m.pair.confidence,
                     page_number=m.pair.page_number, bbox=m.pair.bbox,

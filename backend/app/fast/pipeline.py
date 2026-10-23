@@ -57,7 +57,9 @@ class FastOCRPipeline(OCRPipeline):
 
         t0 = time.perf_counter()
         bus = EventBus(job_id, coarse_callback=event_callback)
-        engine = FastEngine(template_fields, bus, want_tables=True)
+        la = (kwargs.get("schema") or {}).get("learned_anchors") if isinstance(kwargs.get("schema"), dict) else None
+        engine = FastEngine(template_fields, bus, want_tables=True,
+                            anchors=None if kwargs.get("force_relearn") else la)
         reader = PageReader(None, default_cache())
         bus.emit("job_started", pages_total=len(pages), mode="images")
         engine.run_pages(len(pages), lambda i: reader.from_image(pages[i], i + 1))

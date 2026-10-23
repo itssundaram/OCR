@@ -25,6 +25,9 @@ def _initialize_worker_process() -> None:
     # ── 1. DB Engine singleton ─────────────────────────────────────────────
     # Importing `engine` triggers _build_engine() exactly once in this process.
     # All forked job children inherit the already-connected pool.
+    from app.system.runtime import configure_process
+    configure_process("worker")   # detect GPU/CPU/RAM and apply settings nobody set explicitly
+
     logger.info("worker_initializing_db_engine")
     from app.db.database import engine  # noqa: F401 — side-effect import
     logger.info("worker_db_engine_ready")

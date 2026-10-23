@@ -379,23 +379,32 @@ def manage_template_field(req: ManageTemplateFieldsRequest, db: Session = Depend
                 is_final=1,
             ))
 
-    # 3. Persist to Template.template_json (learned_anchors)
+    # 3. Persist to Template.template_json (learned_anchors) - same merge-safe,
+    #    versioned store that lock-anchors uses.
     if req.save_to_template and template:
+        from app.anchors import merge_anchor_fields, remove_anchor_field
+        from app.api.routes.templates import job_words_by_page
+
         tj = dict(template.template_json or {})
-        la = dict(tj.get("learned_anchors", {}))
-        la_fields = dict(la.get("fields", {}))
-
+        la_prev = dict(tj.get("learned_anchors") or {})
         if req.action == "remove":
-            if req.field_key in la_fields:
-                del la_fields[req.field_key]
+            la = remove_anchor_field(la_prev, req.field_key)
+        elif req.bbox and req.bbox.get("x1") is not None:
+            doc_meta = {}
+            if result is not None:
+                doc_meta = dict(result.ocr_metadata_json or {})
+            la, _report = merge_anchor_fields(
+                la_prev,
+                {req.field_key: {"bbox": req.bbox, "page_number": req.page_number, "value": req.value}},
+                page_w=doc_meta.get("doc_page_width") or la_prev.get("page_width") or 1654,
+                page_h=doc_meta.get("doc_page_height") or la_prev.get("page_height") or 2338,
+                verified=None,  # a single-field edit does not change the lock state
+                words_by_page=job_words_by_page(db, req.job_id),
+                source="user_field",
+            )
         else:
-            la_fields[req.field_key] = {
-                "bbox": req.bbox,
-                "page_number": req.page_number,
-                "value": req.value,
-            }
+            la = la_prev  # no geometry -> nothing to learn
 
-        la["fields"] = la_fields
         tj["learned_anchors"] = la
         template.template_json = tj
         flag_modified(template, "template_json")
@@ -411,6 +420,88 @@ def manage_template_field(req: ManageTemplateFieldsRequest, db: Session = Depend
         "template_updated": bool(req.save_to_template and template),
     })
 
+
+
+class RerunJobRequest(BaseModel):
+    force_relearn: bool = False
+
+
+@router.post("/extract/jobs/{job_id}/rerun", status_code=202)
+def rerun_job(
+    job_id: str,
+    background_tasks: BackgroundTasks,
+    req: RerunJobRequest | None = None,
+    db: Session = Depends(get_db),
+):
+    """
+    Process the SAME document again with the template as it is NOW (saved/locked
+    anchors included), using the same pipeline as the original job. Creates a new
+    job + document row that point at the already-stored file, so nothing is
+    uploaded again and the original result stays untouched for comparison.
+    """
+    req = req or RerunJobRequest()
+    old = db.get(ProcessingJob, job_id)
+    if not old:
+        raise DocIntError(f"Processing job {job_id} not found.", "JOB_NOT_FOUND")
+    doc = db.get(Document, old.document_id) if old.document_id else None
+    if not doc or not doc.file_path or not os.path.exists(doc.file_path):
+        raise DocIntError("The original file is no longer available; upload it again.", "FILE_NOT_FOUND")
+    template = db.get(Template, old.template_id) if old.template_id else None
+    if not template:
+        raise DocIntError("The template for this job no longer exists.", "TEMPLATE_NOT_FOUND")
+
+    mode = old.pipeline_mode or "single_pipeline"
+    if mode == "orchestration":
+        raise DocIntError("Comparison (multi-pipeline) jobs cannot be re-run from here; upload again to compare.",
+                          "RERUN_UNSUPPORTED")
+    if mode not in ("single_pipeline",) and mode not in list_pipelines():
+        raise DocIntError(f"Pipeline '{mode}' is no longer available.", "PIPELINE_NOT_FOUND")
+
+    new_doc_id, new_job_id = str(uuid.uuid4()), str(uuid.uuid4())
+    db.add(Document(
+        id=new_doc_id,
+        original_filename=doc.original_filename,
+        stored_filename=doc.stored_filename,
+        file_path=doc.file_path,
+        file_type=doc.file_type,
+        file_size_bytes=doc.file_size_bytes,
+        template_id=template.id,
+        status="QUEUED",
+    ))
+    db.add(ProcessingJob(
+        id=new_job_id,
+        document_id=new_doc_id,
+        template_id=template.id,
+        template_version=template.version,
+        status="QUEUED",
+        pipeline_mode=mode,
+    ))
+    db.commit()
+
+    if mode == "fast_ocr":
+        from app.fast.dispatch import dispatch_fast_job
+        dispatched_via = dispatch_fast_job(new_job_id, req.force_relearn, background_tasks)
+    elif mode == "single_pipeline":
+        dispatched_via = _dispatch_job(
+            "app.workers.tasks.process_document_job", new_job_id, (), background_tasks, process_document_job,
+        )
+    else:
+        dispatched_via = _dispatch_job(
+            "app.workers.tasks.run_single_pipeline_job", new_job_id, (mode, req.force_relearn),
+            background_tasks, run_single_pipeline_job,
+        )
+
+    logger.info("job_rerun_queued", old_job_id=job_id, new_job_id=new_job_id, pipeline=mode,
+                force_relearn=req.force_relearn)
+    return APIResponse(data={
+        "job_id": new_job_id,
+        "document_id": new_doc_id,
+        "previous_job_id": job_id,
+        "status": "QUEUED",
+        "pipeline": mode,
+        "dispatched_via": dispatched_via,
+        **({"events_url": f"/api/v1/stream/jobs/{new_job_id}"} if mode == "fast_ocr" else {}),
+    })
 
 
 def _resolve_department_and_template(db: Session, department_slug: str, template_code: str) -> Template:

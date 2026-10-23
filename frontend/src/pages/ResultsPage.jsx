@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge';
 import { Loader } from '../components/ui/Loader';
 import api from '../services/api';
+import { extractService } from '../services/extract';
 import ExtractionResultView from '../components/ExtractionResultView';
 import FastExtractionResultView from '../components/FastExtractionResultView';
 
@@ -47,6 +48,27 @@ const ResultsPage = () => {
       console.error(err);
     } finally {
       setLoadingDetails(false);
+    }
+  };
+
+  // Re-run the same document with the template as it is now, then open the new job.
+  const rerunSelected = async () => {
+    if (!selectedJob?.job_id) return;
+    try {
+      const res = await extractService.rerunJob(selectedJob.job_id);
+      const newJob = { ...selectedJob, job_id: res.data.job_id, status: 'QUEUED' };
+      setSelectedJob(newJob);
+      setLoadingDetails(true);
+      // wait (up to ~5 min) for the new job to finish, then show it
+      for (let i = 0; i < 200; i += 1) {
+        const cur = await processingService.getJob(newJob.job_id);
+        if (!['QUEUED', 'PROCESSING'].includes(cur.data?.status)) break;
+        await new Promise((r) => setTimeout(r, 1500));
+      }
+      await viewJob(newJob);
+      loadJobs();
+    } catch (err) {
+      setError('Re-run failed: ' + (err.message || err));
     }
   };
 
@@ -183,7 +205,7 @@ const ResultsPage = () => {
                         activeJob={jobDetails}
                         onBack={() => { setSelectedJob(null); setJobDetails(null); }}
                         pipelineSteps={[]}
-                        onRerun={() => viewJob(selectedJob)}
+                        onRerun={rerunSelected}
                       />
                     </div>
                   );
