@@ -13,9 +13,10 @@ from app.anchors.apply import read_verified_anchor
 from app.ocr.preprocessing import preprocess_page
 from app.ocr.tesseract import TesseractOCREngine
 from app.ocr.ppstructure_layout_engine import PPStructureLayoutEngine
+from app.ocr.surya_layout_engine import LayoutRegion
 from app.ocr.img2table_engine import extract_tables_from_image
 from app.ai.orchestrator import ai_orchestrator
-from app.ocr.base import OCRPage, OCRResult, OCRLine
+from app.ocr.base import BoundingBox, OCRPage, OCRResult, OCRLine
 from app.core.config import settings
 from app.core.logging import get_logger
 
@@ -42,6 +43,27 @@ class TesseractPipeline(OCRPipeline):
         from app.core.model_registry import get_tesseract_engine
         self.tesseract = get_tesseract_engine()
         self.layout_engine = PPStructureLayoutEngine()
+
+    def _detect_regions(self, img: Image.Image, warnings: list[str]) -> list[LayoutRegion]:
+        """Layout regions for one page. The layout model is Surya underneath
+        (PPStructureLayoutEngine delegates to it), so on a machine where Surya
+        or its weights are unavailable detection raises. That must not take the
+        whole pipeline down: fall back to treating the page as ONE text region,
+        so Tesseract still reads it (without region-level layout) and the
+        reason is recorded as a warning on the result."""
+        try:
+            return self.layout_engine.detect_layout(img)
+        except Exception as exc:
+            msg = f"layout detection unavailable ({type(exc).__name__}: {str(exc)[:160]}); read the page as one region"
+            if msg not in warnings:
+                warnings.append(msg)
+                logger.warning("tesseract_layout_unavailable_using_full_page", error=str(exc)[:300])
+            return [LayoutRegion(
+                region_type="Text",
+                bbox=BoundingBox(x1=0, y1=0, x2=img.width, y2=img.height),
+                confidence=0.0,
+                cropped_image=img,
+            )]
 
     def extract_fields(
         self,
@@ -70,10 +92,11 @@ class TesseractPipeline(OCRPipeline):
             event_callback("PREPROCESS_DONE")
             event_callback("LAYOUT_STARTED")
             
+        layout_warnings: list[str] = []
         regions_by_page = []
         region_count = 0
         for p_idx, img in enumerate(preprocessed_pages):
-            regions = self.layout_engine.detect_layout(img)
+            regions = self._detect_regions(img, layout_warnings)
             regions_by_page.append(regions)
             region_count += len(regions)
             
@@ -264,6 +287,7 @@ class TesseractPipeline(OCRPipeline):
                 "ocr_metadata": ocr_result.model_dump(),
                 "learned_anchors": learned_anchors if learned_anchors else None,
                 "anchor_matched": bool(learned_anchors),
+                **({"warnings": layout_warnings} if layout_warnings else {}),
             },
         )
 
@@ -271,13 +295,18 @@ class TesseractPipeline(OCRPipeline):
         # Implementation of table extraction
         tables = []
         for i, img in enumerate(pages):
-            regions = self.layout_engine.detect_layout(img)
-            table_regions = [r for r in regions if r.region_type == "Table"]
-            for r in table_regions:
+            try:
+                regions = self.layout_engine.detect_layout(img)
+                table_images = [r.cropped_image for r in regions if r.region_type == "Table"]
+            except Exception as exc:
+                # No layout model: let img2table find the tables on the whole page.
+                logger.warning("tesseract_table_layout_unavailable_using_full_page", error=str(exc)[:300])
+                table_images = [img]
+            for crop in table_images:
                 buf = io.BytesIO()
-                r.cropped_image.save(buf, format="PNG")
+                crop.save(buf, format="PNG")
                 page_tables = extract_tables_from_image(buf.getvalue())
-                
+
                 for t in page_tables:
                     tables.append(TableResult(
                         table_index=len(tables) + 1,

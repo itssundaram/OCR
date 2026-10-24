@@ -558,6 +558,7 @@ class LearnedAnchorPipeline(OCRPipeline):
         template_id: int | None = None,
         event_callback=None,
         force_relearn: bool = False,
+        read_only: bool = False,
         **kwargs,
     ) -> PipelineResult:
         t_start = time.perf_counter()
@@ -639,12 +640,16 @@ class LearnedAnchorPipeline(OCRPipeline):
         #   - anchors existed but warm path failed -> automatic fallback; still
         #     extract this document correctly, but don't silently clobber a
         #     pattern that may simply not have matched THIS one odd document.
-        allow_persist = (not has_valid_anchors) or force_relearn
+        #   - read_only (orchestration comparison run) -> never persist: the run is
+        #     being compared, not reviewed; the learned anchors still come back in
+        #     the result metadata, and a single-pipeline run can persist them.
+        allow_persist = ((not has_valid_anchors) or force_relearn) and not read_only
         logger.info(
             "learned_anchor_executing_cold_path",
             template_id=template_id,
             allow_persist=allow_persist,
             force_relearn=force_relearn,
+            read_only=read_only,
             had_existing_anchors=bool(has_valid_anchors),
         )
         cold_result = self._execute_cold_learned_path(
@@ -1609,7 +1614,7 @@ class LearnedAnchorPipeline(OCRPipeline):
             logger.info(
                 "learned_anchor_persist_skipped_fallback_run",
                 template_id=template_id,
-                reason="existing_anchors_preserved_after_automatic_fallback",
+                reason="read_only_run_or_existing_anchors_preserved_after_automatic_fallback",
             )
 
         overall_conf = total_conf / len(fields_out) if fields_out else 0.0

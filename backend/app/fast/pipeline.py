@@ -35,6 +35,7 @@ class FastOCRPipeline(OCRPipeline):
             supports_handwriting=False,
             supports_vision=settings.FAST_VLM_FALLBACK_ENABLED,
             requires_gpu=False,
+            tables_with_fields=True,
             model_name="pymupdf+tesseract+opencv",
         )
 

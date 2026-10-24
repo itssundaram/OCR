@@ -6,8 +6,13 @@ same job for the legacy ExtractionResult shape.
 
 No database involved: FieldResult/PipelineResult are plain dataclasses.
 """
+from unittest.mock import MagicMock
+
 from app.pipelines.base import FieldResult, PipelineResult
-from app.services.orchestrator import build_field_extraction_rows_from_pipeline_result
+from app.services.orchestrator import _db_row, build_field_extraction_rows_from_pipeline_result
+
+
+DB = MagicMock()   # only touched when a field carries a crop image (none here)
 
 
 def _result(fields: dict[str, tuple[str, float]]) -> PipelineResult:
@@ -24,7 +29,7 @@ def _result(fields: dict[str, tuple[str, float]]) -> PipelineResult:
 def test_builds_one_row_per_field_with_matching_confidence():
     result = _result({"invoice_number": ("INV-001", 0.97), "total": ("42.5", 0.88)})
 
-    rows = build_field_extraction_rows_from_pipeline_result("job-1", "run-1", result, confidence_threshold=0.75)
+    rows = build_field_extraction_rows_from_pipeline_result(DB, "job-1", "run-1", result, confidence_threshold=0.75)
 
     assert len(rows) == 2
     by_name = {r["field_name"]: r for r in rows}
@@ -40,7 +45,7 @@ def test_builds_one_row_per_field_with_matching_confidence():
 def test_low_confidence_field_is_flagged_needs_review():
     result = _result({"invoice_number": ("INV-002", 0.95), "total": ("1.0", 0.30)})
 
-    rows = build_field_extraction_rows_from_pipeline_result("job-2", "run-2", result, confidence_threshold=0.75)
+    rows = build_field_extraction_rows_from_pipeline_result(DB, "job-2", "run-2", result, confidence_threshold=0.75)
 
     by_name = {r["field_name"]: r for r in rows}
     assert by_name["invoice_number"]["fallback_method"] is None
@@ -49,20 +54,20 @@ def test_low_confidence_field_is_flagged_needs_review():
 
 def test_is_final_flag_is_passed_through():
     result = _result({"a": ("1", 0.9)})
-    final_rows = build_field_extraction_rows_from_pipeline_result("job-3", "run-3", result, is_final=1)
-    raw_rows = build_field_extraction_rows_from_pipeline_result("job-3", "run-3", result, is_final=0)
+    final_rows = build_field_extraction_rows_from_pipeline_result(DB, "job-3", "run-3", result, is_final=1)
+    raw_rows = build_field_extraction_rows_from_pipeline_result(DB, "job-3", "run-3", result, is_final=0)
     assert final_rows[0]["is_final"] == 1
     assert raw_rows[0]["is_final"] == 0
 
 
 def test_empty_fields_yields_no_rows():
     result = _result({})
-    assert build_field_extraction_rows_from_pipeline_result("job-4", "run-4", result) == []
+    assert build_field_extraction_rows_from_pipeline_result(DB, "job-4", "run-4", result) == []
 
 
 def test_default_threshold_comes_from_settings_when_not_passed():
     result = _result({"total": ("50.0", 0.50)})
-    rows = build_field_extraction_rows_from_pipeline_result("job-5", "run-5", result)
+    rows = build_field_extraction_rows_from_pipeline_result(DB, "job-5", "run-5", result)
     assert rows[0]["fallback_method"] == "needs_review"
 
 
@@ -72,12 +77,23 @@ def test_page_id_resolved_from_page_ids_map():
     so the evidence endpoint can later join FIELD_EXTRACTIONS -> DOCUMENT_PAGES."""
     result = _result({"a": ("1", 0.9)})
     rows = build_field_extraction_rows_from_pipeline_result(
-        "job-6", "run-6", result, page_ids={1: "page-uuid-1", 2: "page-uuid-2"},
+        DB, "job-6", "run-6", result, page_ids={1: "page-uuid-1", 2: "page-uuid-2"},
     )
     assert rows[0]["page_id"] == "page-uuid-1"
 
 
 def test_page_id_is_none_when_page_ids_not_supplied():
     result = _result({"a": ("1", 0.9)})
-    rows = build_field_extraction_rows_from_pipeline_result("job-7", "run-7", result)
+    rows = build_field_extraction_rows_from_pipeline_result(DB, "job-7", "run-7", result)
     assert rows[0]["page_id"] is None
+
+
+def test_helper_keys_are_never_database_columns():
+    """The rows carry "_page_number"/"_label"/"_source" for the result envelope; they must be
+    stripped before FieldExtraction(**row) — passing them through was the orchestration crash."""
+    from app.db.models import FieldExtraction
+
+    rows = build_field_extraction_rows_from_pipeline_result(DB, "job-8", "run-8", _result({"a": ("1", 0.9)}))
+    assert {"_page_number", "_label", "_source"} <= set(rows[0])
+    FieldExtraction(**_db_row(rows[0]))
+    assert not [k for k in _db_row(rows[0]) if k.startswith("_")]

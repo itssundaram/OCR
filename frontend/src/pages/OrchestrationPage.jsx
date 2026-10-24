@@ -10,9 +10,10 @@ import { Loader } from '../components/ui/Loader';
 import { Badge } from '../components/ui/Badge';
 
 const PIPELINE_META = {
+  'fast_ocr': { name: 'Fast OCR', badges: ['No GPU', 'No LLM'], status: 'Geometry + Rules', statusColor: 'text-success', desc: 'PyMuPDF text + Tesseract with label/column geometry, key-value discovery and grid-table reading. Needs no GPU or language model.' },
   'learned_anchor': { name: 'Learned Geometric Anchor', badges: ['Template Memory', 'Sub-second Warm'], status: 'Autonomous Learning', statusColor: 'text-success', desc: 'Geometric anchor + micro-region OCR for known templates, with VLM cold-learning fallback for new layouts.' },
   'surya': { name: 'Surya Engine', badges: ['GPU Accel', 'High Precision'], status: 'Layout Sovereign', statusColor: 'text-success', desc: 'Surya Layout Detection + TrOCR Fine-Tuned + TATR Tables.' },
-  'tesseract': { name: 'Tesseract OCR', badges: ['CPU Cluster', 'Standard Fallback'], status: 'Deterministic Baseline', statusColor: 'text-secondary', desc: 'PPStructure OCR Pipeline → Tesseract v5 → Img2Table Extraction.' }
+  'tesseract': { name: 'Tesseract OCR', badges: ['CPU OCR', 'LLM Field Mapping'], status: 'LLM-Assisted Baseline', statusColor: 'text-secondary', desc: 'Layout regions → Tesseract v5 OCR → LLM maps the text to template fields; tables via Img2Table. Reads the page as one region if the layout model is unavailable.' }
 };
 
 const OrchestrationPage = () => {

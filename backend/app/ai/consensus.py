@@ -111,6 +111,8 @@ def compare_pipeline_results(
 ) -> list[FieldComparison]:
     """
     results_by_pipeline: {"surya": {"invoice_number": ("INV-1", 0.95), ...}, "tesseract": {...}}
+    A field's tuple is (value, confidence) or (value, confidence, bbox_json, page_id);
+    the trailing two are optional and only carried through to the comparison.
 
     Returns one FieldComparison per field name reported by ANY pipeline, in
     first-seen order. A pipeline that didn't report a field is simply absent
@@ -132,8 +134,8 @@ def compare_pipeline_results(
                 pipeline_name=pname,
                 value=pfields[field_name][0],
                 confidence=pfields[field_name][1],
-                bbox_json=pfields[field_name][2],
-                page_id=pfields[field_name][3],
+                bbox_json=pfields[field_name][2] if len(pfields[field_name]) > 2 else None,
+                page_id=pfields[field_name][3] if len(pfields[field_name]) > 3 else None,
             )
             for pname, pfields in results_by_pipeline.items()
             if field_name in pfields

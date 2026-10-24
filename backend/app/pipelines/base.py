@@ -11,6 +11,11 @@ class PipelineCapabilities:
     supports_vision: bool = False
     requires_gpu: bool = False
     model_name: str = ""
+    # True when extract_fields() already reads the document's tables as a side
+    # effect (fast_ocr) and extract_tables() only hands them over. Such tables
+    # are collected even when the template declares no "table" field, so a
+    # tabular document (e.g. PSG) is not stripped of its tables.
+    tables_with_fields: bool = False
 
 @dataclass
 class FieldResult:
@@ -141,6 +146,8 @@ class OCRPipeline(ABC):
                 extraction_instructions=template.get("extraction_instructions") if isinstance(template, dict) else None,
                 template_id=template.get("template_id") if isinstance(template, dict) else None,
                 force_relearn=template.get("force_relearn", False) if isinstance(template, dict) else False,
+                # comparison runs: a pipeline must not write learned state back to the template
+                read_only=template.get("read_only", False) if isinstance(template, dict) else False,
                 event_callback=_internal_event_callback,
             )
             result.step_events = step_events
@@ -155,7 +162,11 @@ class OCRPipeline(ABC):
             )
 
         has_table_fields = any(f.get("type") == "table" for f in template_fields) if template_fields else False
-        if has_table_fields:
+        # Tables are read when the template asks for them, or when the pipeline
+        # produces them anyway while reading fields (and would otherwise leak the
+        # stored tables). A pipeline that needs a separate, costly table pass
+        # (surya/TATR, tesseract/img2table) still skips it for templates without tables.
+        if has_table_fields or self.capabilities.tables_with_fields:
             try:
                 result.tables = self.extract_tables(pages, job_id)
             except Exception as table_exc:

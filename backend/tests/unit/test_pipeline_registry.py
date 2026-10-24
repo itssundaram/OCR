@@ -56,7 +56,7 @@ class _TablesFailPipeline(_HappyPipeline):
 
 def test_run_merges_fields_and_tables_on_success():
     events = []
-    result = _HappyPipeline().run([], {}, "job-1", event_callback=lambda t, d: events.append(t))
+    result = _HappyPipeline().run([], {"fields": [{"name": "t", "type": "table"}]}, "job-1", event_callback=lambda t, d: events.append(t))
 
     assert result.status == "completed"
     assert len(result.fields) == 1
@@ -75,7 +75,7 @@ def test_run_turns_a_failed_extract_fields_into_a_failed_result_not_an_exception
 
 
 def test_run_marks_partial_when_only_extract_tables_fails_but_keeps_fields():
-    result = _TablesFailPipeline().run([], {}, "job-3")
+    result = _TablesFailPipeline().run([], {"fields": [{"name": "t", "type": "table"}]}, "job-3")
 
     assert result.status == "partial"
     assert len(result.fields) == 1  # fields from extract_fields are preserved
@@ -100,15 +100,12 @@ def test_run_passes_native_texts_and_schema_through_from_the_template_dict():
 
 
 def test_builtin_pipelines_are_registered_on_import():
-    import app.pipelines  # noqa: F401 — triggers @register_pipeline for all three adapters
+    import app.pipelines  # noqa: F401 — triggers @register_pipeline for every adapter
 
     names = list_pipelines()
-    assert "qwen" in names
-    assert "legacy_ocr" in names
-    assert "surya" in names
-    assert get_pipeline("qwen").name == "qwen"
-    assert get_pipeline("legacy_ocr").name == "legacy_ocr"
-    assert get_pipeline("surya").name == "surya"
+    for expected in ("surya", "tesseract", "learned_anchor", "fast_ocr"):
+        assert expected in names
+        assert get_pipeline(expected).name == expected
 
 
 def test_surya_pipeline_is_selectable_independent_of_ocr_strategy_setting():
@@ -118,14 +115,24 @@ def test_surya_pipeline_is_selectable_independent_of_ocr_strategy_setting():
     import app.pipelines  # noqa: F401
     from app.core.config import settings
 
-    original = settings.OCR_STRATEGY
+    original, original_gpu = settings.OCR_STRATEGY, settings.GPU_ENABLED
     try:
         settings.OCR_STRATEGY = "tesseract_only"
+        settings.GPU_ENABLED = True            # requires_gpu follows this setting
         pipeline = get_pipeline("surya")
         assert pipeline.name == "surya"
         assert pipeline.capabilities.requires_gpu is True
     finally:
         settings.OCR_STRATEGY = original
+        settings.GPU_ENABLED = original_gpu
+
+
+def test_only_fast_ocr_reads_tables_without_a_table_field():
+    import app.pipelines  # noqa: F401
+
+    assert get_pipeline("fast_ocr").capabilities.tables_with_fields is True
+    for other in ("surya", "tesseract", "learned_anchor"):
+        assert get_pipeline(other).capabilities.tables_with_fields is False
 
 
 def test_surya_pipeline_extract_tables_returns_empty_list_same_as_legacy_ocr():
