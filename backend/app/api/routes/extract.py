@@ -152,7 +152,7 @@ def re_ocr_field(req: ReOcrFieldRequest, db: Session = Depends(get_db)):
     tight_bbox = {"x1": x1, "y1": y1, "x2": x2, "y2": y2}
 
     # 1. Update ProcessingResult
-    res_stmt = select(ProcessingResult).where(ProcessingResult.job_id == req.job_id)
+    res_stmt = select(ProcessingResult).where(ProcessingResult.job_id == req.job_id).with_for_update()   # the background refiner writes this row too
     result = db.execute(res_stmt).scalars().first()
     if result:
         ej = dict(result.extracted_json or {})
@@ -217,7 +217,7 @@ def update_field_value(req: UpdateFieldValueRequest, db: Session = Depends(get_d
     if not job:
         raise DocIntError(f"Processing job {req.job_id} not found.", "JOB_NOT_FOUND")
 
-    res_stmt = select(ProcessingResult).where(ProcessingResult.job_id == req.job_id)
+    res_stmt = select(ProcessingResult).where(ProcessingResult.job_id == req.job_id).with_for_update()   # the background refiner writes this row too
     result = db.execute(res_stmt).scalars().first()
     if result:
         ej = dict(result.extracted_json or {})
@@ -301,7 +301,7 @@ def update_table_cell(req: UpdateTableCellRequest, db: Session = Depends(get_db)
     if len(req.value) > 2000:
         raise DocIntError("Cell text is too long (limit 2000 characters).", "INVALID_CELL")
 
-    res_stmt = select(ProcessingResult).where(ProcessingResult.job_id == req.job_id)
+    res_stmt = select(ProcessingResult).where(ProcessingResult.job_id == req.job_id).with_for_update()   # the background refiner writes this row too
     result = db.execute(res_stmt).scalars().first()
     if not result:
         raise DocIntError("This job has no extraction result yet.", "TABLE_NOT_FOUND")
@@ -351,7 +351,7 @@ def manage_template_field(req: ManageTemplateFieldsRequest, db: Session = Depend
     template = db.get(Template, job.template_id) if job.template_id else None
 
     # 1. Update ProcessingResult.extracted_json
-    res_stmt = select(ProcessingResult).where(ProcessingResult.job_id == req.job_id)
+    res_stmt = select(ProcessingResult).where(ProcessingResult.job_id == req.job_id).with_for_update()   # the background refiner writes this row too
     result = db.execute(res_stmt).scalars().first()
     if result:
         ej = dict(result.extracted_json or {})
@@ -525,6 +525,98 @@ def rerun_job(
     })
 
 
+class PromoteFieldRequest(BaseModel):
+    field_key: str                       # the key of the "found on document" field in this job's result
+    name: str | None = None              # the template field name to use (default: the key)
+    field_type: str | None = None        # text | date | number | boolean (default: guessed from the value)
+
+
+@router.post("/extract/jobs/{job_id}/promote-field")
+def promote_found_field(job_id: str, req: PromoteFieldRequest, db: Session = Depends(get_db)):
+    """Add a field that was found on the document to the job's template, for every later document. Additive and
+    logged (see app/services/template_fields.py); this job's result is updated too, so its export already has the
+    field among the template fields. Refused when the name or the printed label clashes with an existing field."""
+    from app.services.template_fields import add_field, slug_name
+    job = db.get(ProcessingJob, job_id)
+    if not job:
+        raise DocIntError(f"Processing job {job_id} not found.", "JOB_NOT_FOUND")
+    template = db.get(Template, job.template_id) if job.template_id else None
+    if template is None:
+        raise DocIntError("This job has no template.", "TEMPLATE_NOT_FOUND")
+    result = db.execute(select(ProcessingResult).where(ProcessingResult.job_id == job_id).with_for_update()).scalars().first()
+    ej = dict(result.extracted_json or {}) if result else {}
+    fields = dict(ej.get("fields") or {})
+    entry = fields.get(req.field_key)
+    if not isinstance(entry, dict) or entry.get("source") != "discovered":
+        raise DocIntError("Only a field found on the document can be added to the template.", "NOT_A_FOUND_FIELD")
+    name = slug_name(req.name or req.field_key)
+    if name != req.field_key and name in fields:
+        raise DocIntError(f"This result already has a field named '{name}'.", "FIELD_ALREADY_IN_TEMPLATE")
+
+    tj, fdef = add_field(
+        template.template_json or {}, name=name, label=str(entry.get("label") or req.field_key),
+        value=str(entry.get("value") or ""), field_type=req.field_type, job_id=job_id,
+    )
+    template.template_json = tj
+    flag_modified(template, "template_json")
+
+    fields.pop(req.field_key, None)
+    entry = {**entry, "source": "", "promoted_to_template": True}
+    entry.pop("discovered", None)
+    fields[name] = entry
+    ej["fields"] = fields
+    result.extracted_json = ej
+    flag_modified(result, "extracted_json")
+    if name != req.field_key:
+        db.query(FieldExtraction).filter_by(job_id=job_id, field_name=req.field_key).update({"field_name": name})
+    db.commit()
+    logger.info("template_field_added", template_id=template.id, field=name, job_id=job_id)
+    return APIResponse(data={
+        "field_name": name, "template_id": template.id, "template_version": template.version,
+        "field": fdef, "replaces_key": req.field_key,
+    })
+
+
+@router.get("/extract/jobs/{job_id}/export")
+def export_job_json(job_id: str, detail: bool = False, db: Session = Depends(get_db)):
+    """The finished result as department-ready JSON: template fields as flat key -> value, other fields found on
+    the document separately, and every table as keyed rows. Always built from the stored result, so corrections
+    made on the review screen are included. `detail=true` adds confidence / verified / page per field."""
+    job = db.get(ProcessingJob, job_id)
+    if not job:
+        raise DocIntError(f"Processing job {job_id} not found.", "JOB_NOT_FOUND")
+    result = db.execute(select(ProcessingResult).where(ProcessingResult.job_id == job_id)).scalars().first()
+    if not result:
+        raise DocIntError("This job has no extraction result yet.", "RESULT_NOT_READY")
+    from app.services.export_json import build_export
+    return APIResponse(data={"status": job.status, **build_export(result.extracted_json, job_id=job_id, detail=detail)})
+
+
+@router.post("/extract/jobs/{job_id}/commit")
+def commit_prefetched_job(job_id: str, db: Session = Depends(get_db)):
+    """"Execute extraction" on a document that was prefetched: the hidden job becomes an ordinary one (it shows in
+    Recent Ingestion Jobs) and keeps whatever the worker has already done. 404-style PREFETCH_GONE when the
+    prefetch was discarded or reaped: the page then uploads the document again."""
+    from app.services import prefetch
+    job = prefetch.commit(db, job_id)
+    tmpl = db.get(Template, job.template_id)
+    dept = db.get(Department, tmpl.department_id) if tmpl else None
+    base_url = f"/api/v1/{(dept.slug if dept else '').lower()}/{(tmpl.code if tmpl else '').lower()}"
+    return APIResponse(data={
+        "job_id": job.id, "document_id": job.document_id, "status": job.status, "pipeline": job.pipeline_mode,
+        "status_url": f"{base_url}/status/{job.id}",
+        **({"events_url": f"/api/v1/stream/jobs/{job.id}"} if job.pipeline_mode == "fast_ocr" else {}),
+    })
+
+
+@router.post("/extract/jobs/{job_id}/discard")
+def discard_prefetched_job(job_id: str, db: Session = Depends(get_db)):
+    """The person picked another document / template / pipeline before pressing Execute: stop and remove the
+    hidden job. Refused for a job that was already committed, so a late call cannot cancel real work."""
+    from app.services import prefetch
+    return APIResponse(data={"job_id": job_id, "result": prefetch.discard(db, job_id)})
+
+
 def _resolve_department_and_template(db: Session, department_slug: str, template_code: str) -> Template:
     dept_stmt = select(Department).where(Department.slug == department_slug.upper())
     dept = db.execute(dept_stmt).scalars().first()
@@ -545,7 +637,8 @@ def _resolve_department_and_template(db: Session, department_slug: str, template
     return template
 
 
-def _save_uploaded_file_and_create_job(db: Session, file: UploadFile, template: Template, pipeline_mode: str = "single_pipeline") -> tuple[str, str]:
+def _save_uploaded_file_and_create_job(db: Session, file: UploadFile, template: Template, pipeline_mode: str = "single_pipeline",
+                                       prefetch: bool = False) -> tuple[str, str]:
     """Shared upload mechanics for all three flows above: validate, store the
     file, create the Document + ProcessingJob rows. Returns (doc_id, job_id);
     caller commits and dispatches."""
@@ -590,6 +683,9 @@ def _save_uploaded_file_and_create_job(db: Session, file: UploadFile, template: 
         status="QUEUED",
         pipeline_mode=pipeline_mode,
     )
+    if prefetch:
+        from app.services.prefetch import mark
+        mark(new_job)                                     # hidden from every list until "Execute" commits it
     db.add(new_job)
     db.commit()
     db.refresh(new_doc)
@@ -677,6 +773,7 @@ def extract_document_with_pipeline(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     force_relearn: bool = Form(False),
+    prefetch: bool = Form(False),
     db: Session = Depends(get_db),
 ):
     """
@@ -697,8 +794,9 @@ def extract_document_with_pipeline(
         )
 
     t_req = time.perf_counter()
+    prefetch = bool(prefetch and settings.PREFETCH_ENABLED)
     template = _resolve_department_and_template(db, department_slug, template_code)
-    doc_id, job_id = _save_uploaded_file_and_create_job(db, file, template, pipeline_mode=pipeline_name)
+    doc_id, job_id = _save_uploaded_file_and_create_job(db, file, template, pipeline_mode=pipeline_name, prefetch=prefetch)
     t_saved = time.perf_counter()
 
     if pipeline_name == "fast_ocr":
@@ -721,6 +819,7 @@ def extract_document_with_pipeline(
         "status": "QUEUED",
         "pipeline": pipeline_name,
         "dispatched_via": dispatched_via,
+        "prefetch": prefetch,
         "status_url": f"{base_url}/status/{job_id}",
         **({"events_url": f"/api/v1/stream/jobs/{job_id}"} if pipeline_name == "fast_ocr" else {}),
     })
@@ -818,6 +917,9 @@ def get_extraction_status(
             response_data["result"] = result.extracted_json
             response_data["ocr_metadata_json"] = result.ocr_metadata_json
             response_data["confidence_json"] = result.confidence_json
+            # the same data in the shape a department system binds to (computed now, so corrections are in it)
+            from app.services.export_json import build_export
+            response_data["export"] = build_export(result.extracted_json, job_id=job.id)
 
     return APIResponse(data=response_data)
 

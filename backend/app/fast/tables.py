@@ -42,6 +42,26 @@ def _line_positions(mask: np.ndarray, axis: int, min_len: float) -> list[float]:
     return pos
 
 
+def _h_slope(mask: np.ndarray, min_len: float) -> float:
+    """Median tilt (dy/dx) of the long horizontal rules: a scan that is a degree or two off makes the right-hand
+    columns sit higher than the left-hand ones, which merges a header row with the first data row."""
+    n, lab, stats, _ = cv2.connectedComponentsWithStats(mask, connectivity=8)
+    slopes: list[float] = []
+    for i in range(1, n):
+        if stats[i, cv2.CC_STAT_WIDTH] < min_len:
+            continue
+        pts = cv2.findNonZero((lab == i).astype(np.uint8))
+        if pts is None or len(pts) < 20:
+            continue
+        vx, vy = cv2.fitLine(pts, cv2.DIST_L2, 0, 0.01, 0.01)[:2].ravel()
+        if abs(vx) > 1e-6:
+            slopes.append(float(vy / vx))
+    if len(slopes) < 2:
+        return 0.0
+    m = float(median(slopes))
+    return m if 0.003 <= abs(m) <= 0.08 else 0.0
+
+
 def _merge_close(vals: list[float], gap: float) -> list[float]:
     vals = sorted(vals)
     out: list[list[float]] = []
@@ -120,7 +140,8 @@ def _boundaries(lines: list[float], extent: float, words_spans: list[tuple[float
     return b
 
 
-def _split_merged_header(row_b: list[float], col_b: list[float], words: list, x1: float, y1: float, med_h: float) -> list[float]:
+def _split_header_row(row_b: list[float], ri: int, col_b: list[float], words: list, x1: float, y1: float, med_h: float,
+                      slope: float = 0.0, mid_x: float = 0.0) -> list[float] | None:
     """Faint or missing rule between the header and the first data row => both sit in ONE rule row.
 
     Splits the first row in two when it holds (at least) two aligned text lines across several columns, the first
@@ -129,15 +150,15 @@ def _split_merged_header(row_b: list[float], col_b: list[float], words: list, x1
     """
     if len(row_b) < 3 or len(col_b) < 3:
         return row_b
-    top, bottom = row_b[0], row_b[1]
+    top, bottom = row_b[ri], row_b[ri + 1]
     inside = []
     for w in words:
-        cy = (w.bbox.y1 + w.bbox.y2) / 2 - y1
         cx = (w.bbox.x1 + w.bbox.x2) / 2 - x1
-        if top <= cy < bottom and col_b[0] <= cx <= col_b[-1]:
-            inside.append((cy, cx, w))
+        cy = (w.bbox.y1 + w.bbox.y2) / 2 - y1 - slope * (cx - mid_x)          # straightened: see _h_slope
+        if top <= cy < bottom and col_b[0] <= cx <= col_b[-1] and any(ch.isalnum() for ch in w.text):
+            inside.append((cy, cx, w))                     # box borders read as "|" or "_" are not words
     if len(inside) < 4:
-        return row_b
+        return None                                    # a strip above the table: look at the next rule row
     inside.sort(key=lambda t: t[0])
     lines: list[list] = [[inside[0]]]
     for item in inside[1:]:
@@ -159,11 +180,6 @@ def _split_merged_header(row_b: list[float], col_b: list[float], words: list, x1
             out.setdefault(c, []).append(t[2].text)
         return [" ".join(v) for v in out.values()]
 
-    l0, l1 = lines[0], lines[1]
-    c0, c1 = cols_of(l0), cols_of(l1)
-    if len(c0) < 2 or len(c1) < 2 or len(c0 & c1) < max(2, int(0.6 * min(len(c0), len(c1)))):
-        return row_b                                   # not aligned across columns: a wrapped cell, keep as one row
-
     def alpha_share(cells: list[str]) -> float:
         good = sum(1 for c in cells if sum(ch.isalpha() for ch in c) >= 0.7 * max(1, sum(ch.isalnum() for ch in c)))
         return good / max(1, len(cells))
@@ -171,13 +187,35 @@ def _split_merged_header(row_b: list[float], col_b: list[float], words: list, x1
     def digit_share(cells: list[str]) -> float:
         return sum(1 for c in cells if any(ch.isdigit() for ch in c)) / max(1, len(cells))
 
-    t0, t1 = text_of(l0), text_of(l1)
-    if alpha_share(t0) < 0.8 or digit_share(t1) < 0.3 or digit_share(t0) > 0.2:
-        return row_b                                   # line 1 is not "words over data"
-    cut = (max(t[2].bbox.y2 for t in l0) - y1 + min(t[2].bbox.y1 for t in l1) - y1) / 2
-    if not (top + 2 < cut < bottom - 2):
+    # A header may itself be two or three printed lines ("Cos" over "Section", "Demand" over "Quantity"). Find the FIRST
+    # line that is data (digits in several of the header's columns) with only header-like lines above it, and cut there.
+    for k in range(1, min(len(lines), 5)):
+        head = [t for ln in lines[:k] for t in ln]
+        data = lines[k]
+        hc, dc = cols_of(head), cols_of(data)
+        if len(hc) < 2 or len(dc) < 2 or len(hc & dc) < max(2, int(0.6 * min(len(hc), len(dc)))):
+            continue                                   # not aligned across columns: a wrapped cell, keep as one row
+        th, td = text_of(head), text_of(data)
+        if alpha_share(th) < 0.8 or digit_share(th) > 0.2 or digit_share(td) < 0.3:
+            continue                                   # lines above are not all "words", or this line is not data
+        cut = (max(t[0] + (t[2].bbox.y2 - t[2].bbox.y1) / 2 for ln in lines[:k] for t in ln)
+               + min(t[0] - (t[2].bbox.y2 - t[2].bbox.y1) / 2 for t in data)) / 2
+        if not (top + 2 < cut < bottom - 2):
+            return row_b
+        return sorted([*row_b, cut])
+    return row_b
+
+
+def _split_merged_header(row_b: list[float], col_b: list[float], words: list, x1: float, y1: float, med_h: float,
+                         slope: float = 0.0, mid_x: float = 0.0) -> list[float]:
+    """The header row is the first rule row that holds text (a strip of margin above it is skipped)."""
+    if len(row_b) < 3 or len(col_b) < 3:
         return row_b
-    return sorted([*row_b, cut])
+    for ri in range(min(3, len(row_b) - 1)):
+        got = _split_header_row(row_b, ri, col_b, words, x1, y1, med_h, slope, mid_x)
+        if got is not None:
+            return got
+    return row_b
 
 
 def _grid_table(page: PageData, region: tuple[int, int, int, int], index: int) -> TableResult | None:
@@ -190,6 +228,7 @@ def _grid_table(page: PageData, region: tuple[int, int, int, int], index: int) -
     horiz = cv2.morphologyEx(binary, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_RECT, (max(20, rw // 15), 1)))
     vert = cv2.morphologyEx(binary, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_RECT, (1, max(20, rh // 15))))
 
+    slope = _h_slope(horiz, 0.4 * rw)
     ys = _merge_close(_line_positions(horiz, 0, 0.4 * rw), 5)
     xs = _merge_close(_line_positions(vert, 1, 0.4 * rh), 5)
 
@@ -211,7 +250,7 @@ def _grid_table(page: PageData, region: tuple[int, int, int, int], index: int) -
         col_b = _merge_close(sorted(set([0.0, float(rw)] + xs)), 5)
     else:
         col_b = _columns_from_spans([(w.bbox.x1 - x1, w.bbox.x2 - x1) for w in words], 0.0, float(rw), med_h)
-    row_b = _split_merged_header(row_b, col_b, words, x1, y1, med_h)
+    row_b = _split_merged_header(row_b, col_b, words, x1, y1, med_h, slope, rw / 2)
     n_rows, n_cols = len(row_b) - 1, len(col_b) - 1
     if n_rows < 2 or n_cols < 2 or n_rows > 300 or n_cols > 40:
         return None
@@ -237,6 +276,7 @@ def _grid_table(page: PageData, region: tuple[int, int, int, int], index: int) -
     cell_words: dict[tuple[int, int], list] = {}
     for text, bx1, by1, bx2, by2, conf in pieces:
         cx, cy = (bx1 + bx2) / 2 - x1, (by1 + by2) / 2 - y1
+        cy -= slope * (cx - rw / 2)                       # row of the word on a tilted scan
         if cy < row_b[0] or cy > row_b[-1] or cx < col_b[0] or cx > col_b[-1]:
             outside.append((by1, bx1, text))
             continue
@@ -252,8 +292,9 @@ def _grid_table(page: PageData, region: tuple[int, int, int, int], index: int) -
         cs = [cf for *_, cf in ws if cf is not None]
         confs[(r, c)] = round(sum(cs) / len(cs), 3) if cs else None
 
-    keep_rows = [r for r in range(n_rows) if any(grid[r])]
-    keep_cols = [c for c in range(n_cols) if any(grid[r][c] for r in range(n_rows))]
+    real = lambda t: bool(re.search(r"[A-Za-z0-9]", t or ""))        # noqa: E731  (box borders read as "|" or "_" are not text)
+    keep_rows = [r for r in range(n_rows) if any(real(c) for c in grid[r])]
+    keep_cols = [c for c in range(n_cols) if any(real(grid[r][c]) for r in range(n_rows))]
     if len(keep_rows) < 2 or len(keep_cols) < 2:
         return None
 

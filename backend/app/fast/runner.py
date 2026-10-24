@@ -120,7 +120,7 @@ def _run_fast_job(job_id: str, force_relearn: bool = False) -> None:
             bus = EventBus(job_id, coarse_callback=_coarse)
             tdict = _template_dict(template, [], force_relearn=force_relearn)
             tfields = tdict["fields"]
-            want_tables = any(str(f.get("type") or "").lower() == "table" for f in tfields)
+            want_tables = settings.FAST_TABLES_ALWAYS or any(str(f.get("type") or "").lower() == "table" for f in tfields)
 
             source = DocumentSource(doc.file_path, doc.file_type)
             reader = PageReader(source, cache)

@@ -8,7 +8,8 @@ class JobRepository(BaseRepository[ProcessingJob]):
         super().__init__(ProcessingJob, session)
 
     def list_all(self, filters: dict | None = None, skip: int = 0, limit: int = 1000):
-        stmt = select(self.model_cls)
+        from app.services.prefetch import visible_jobs
+        stmt = select(self.model_cls).where(visible_jobs())      # prefetched, not yet executed jobs stay hidden
         if filters:
             for key, value in filters.items():
                 stmt = stmt.where(getattr(self.model_cls, key) == value)

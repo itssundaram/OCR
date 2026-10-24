@@ -20,9 +20,14 @@ import { Badge } from '../components/ui/Badge';
 import { Loader } from '../components/ui/Loader';
 import ExtractionResultView from '../components/ExtractionResultView';
 import FastExtractionResultView from '../components/FastExtractionResultView';
+import usePrefetchUpload from '../hooks/usePrefetchUpload';
 
 // Pipelines that open the live result view right after upload (fields stream in over SSE)
 const LIVE_PIPELINES = new Set(['fast_ocr', 'learned_anchor']);
+
+// Pipelines whose job can be stopped part-way (the fast worker honours a cancel flag), so a document the person
+// then replaces costs little: only those start processing before "Execute". The others upload on Execute.
+const PREFETCH_PIPELINES = new Set(['fast_ocr']);
 
 const parseJSONRecursively = (data) => {
   let parsed = data;
@@ -79,6 +84,7 @@ const OcrPage = () => {
   const [autoOpenResults, setAutoOpenResults] = useState(true);
   const [loadingJobId, setLoadingJobId] = useState(null);
   const [activeView, setActiveView] = useState('ingest'); // 'ingest' | 'queue'
+  const [notice, setNotice] = useState(null); // { job_id, filename } after Execute: the job runs on, the person stays here
   const [queueFilter, setQueueFilter] = useState('all'); // 'all' | 'processing' | 'review' | 'completed'
   const [queueSearch, setQueueSearch] = useState('');
 
@@ -86,6 +92,32 @@ const OcrPage = () => {
   const prefillApplied = useRef(false);
 
   const selectedTemplateObj = templates.find((t) => t.code === selectedTemplateCode);
+  // A document may only be chosen once the department, the template and the pipeline are known
+  const canStage = Boolean(selectedDept && selectedTemplateCode && selectedTemplateObj && selectedPipeline);
+
+  const { start: startPrefetch, stop: stopPrefetch, commit: commitPrefetch } = usePrefetchUpload({
+    pipelines: PREFETCH_PIPELINES,
+    onError: (err) => {
+      // a file the server will never accept is worth telling about now, not at Execute
+      if (err?.code === 'FILE_TYPE_INVALID' || err?.code === 'FILE_TOO_LARGE') setError(err.message);
+    },
+  });
+  const lastPrefetchFile = useRef(null);
+  useEffect(() => {
+    if (!file || !canStage) {
+      lastPrefetchFile.current = null;
+      stopPrefetch();
+      return undefined;
+    }
+    // a new file starts at once; a change of department / template / pipeline waits a moment so that
+    // flicking through a dropdown does not start (and discard) a run per option
+    const delay = lastPrefetchFile.current === file ? 300 : 0;
+    lastPrefetchFile.current = file;
+    const timer = setTimeout(() => {
+      startPrefetch({ file, dept: selectedDept, template: selectedTemplateCode, pipeline: selectedPipeline });
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [file, canStage, selectedDept, selectedTemplateCode, selectedPipeline, startPrefetch, stopPrefetch]);
   const learnedAnchors = selectedTemplateObj?.template_json?.learned_anchors;
   const hasLearnedPattern = Boolean(learnedAnchors?.fields && Object.keys(learnedAnchors.fields).length > 0);
 
@@ -244,10 +276,13 @@ const OcrPage = () => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    if (e.dataTransfer.files?.[0]) setFile(e.dataTransfer.files[0]);
+    if (!canStage) { setError('Select a department and a template first, then choose the document.'); return; }
+    if (e.dataTransfer.files?.[0]) { setError(null); setFile(e.dataTransfer.files[0]); }
   };
   const handleFileChange = (e) => {
-    if (e.target.files?.[0]) setFile(e.target.files[0]);
+    if (!canStage) { setError('Select a department and a template first, then choose the document.'); e.target.value = ''; return; }
+    if (e.target.files?.[0]) { setError(null); setFile(e.target.files[0]); }
+    e.target.value = '';                       // choosing the same file again must still fire onChange
   };
 
   const handleOpenJob = async (jobId) => {
@@ -265,50 +300,47 @@ const OcrPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (uploading) return;
     if (!file || !selectedTemplateCode || !selectedPipeline) {
       setError('Select a department, template, pipeline, and a file.');
       return;
     }
     setUploading(true);
     setError(null);
-    setPipelineSteps([]);
+    setNotice(null);
+    const staged = file;
     try {
-      const res = await extractService.uploadWithPipeline(
-        selectedDept,
-        selectedTemplateCode,
-        selectedPipeline,
-        file,
-        false
-      );
-      const newJobId = res.data.job_id;
+      // Normally this only commits the document that has been processing in the background since it was chosen;
+      // with no usable prefetch it uploads now. Either way the person STAYS on this page: the job appears in
+      // Recent Ingestion Jobs and its results open when they click it.
+      const data = await commitPrefetch({
+        file: staged, dept: selectedDept, template: selectedTemplateCode, pipeline: selectedPipeline,
+      });
+      const newJobId = data.job_id;
+      const startedStatus = ['QUEUED', 'PROCESSING', 'COMPLETED', 'WARNING', 'FAILED'].includes(data.status) ? data.status : 'PROCESSING';
 
       const newUploadItem = {
         job_id: newJobId,
-        filename: file.name,
-        file_size: file.size,
+        filename: staged.name,
+        file_size: staged.size,
         department: selectedDept,
         template: selectedTemplateCode,
         pipeline: selectedPipeline,
-        status: 'PROCESSING',
+        status: startedStatus,
         created_at: new Date().toISOString(),
       };
-
       setRecentUploads((prev) => [newUploadItem, ...prev.filter((x) => x.job_id !== newJobId)].slice(0, 10));
       setFile(null);
-      if (LIVE_PIPELINES.has(selectedPipeline)) {
-        // Open the result view straight away: it shows the document at once and the fields stream in
-        // as the worker reads them (no waiting screen). The view polls/streams the real job itself.
-        setActiveJob({
-          job_id: newJobId,
-          document_id: res.data.document_id,
-          status: 'QUEUED',
-          pipeline_mode: selectedPipeline,
-          pipeline: selectedPipeline,
-          original_filename: file.name,
-          created_at: new Date().toISOString(),
-        });
+      setNotice({ job_id: newJobId, filename: staged.name, ready: startedStatus === 'COMPLETED' || startedStatus === 'WARNING' });
+      if (startedStatus !== 'QUEUED' && startedStatus !== 'PROCESSING') {
+        // the prefetch had already finished: fetch confidence / completion time for the list row once
+        processingService.getJob(newJobId).then((res) => {
+          if (!res?.data) return;
+          setRecentUploads((prev) => prev.map((it) => (it.job_id === newJobId
+            ? { ...it, status: res.data.status, overall_confidence: res.data.overall_confidence, completed_at: res.data.completed_at }
+            : it)));
+        }).catch(() => { /* the list's own polling or a later open fills it in */ });
       }
-      // other pipelines: the user stays on the upload form with the Recent Uploads queue tracking progress
     } catch (err) {
       setError(err.message || 'Upload failed');
     } finally {
@@ -675,7 +707,7 @@ const OcrPage = () => {
                   <select
                     className="input-field py-2 bg-white text-xs border-slate-300 rounded-lg shadow-2xs font-medium"
                     value={selectedDept}
-                    onChange={(e) => setSelectedDept(e.target.value)}
+                    onChange={(e) => { setSelectedDept(e.target.value); setTemplates([]); setSelectedTemplateCode(''); }}
                     disabled={uploading}
                   >
                     <option value="" disabled>Select Department...</option>
@@ -800,12 +832,16 @@ const OcrPage = () => {
                   <div
                     className={`border-2 border-dashed transition-all duration-200 flex flex-col items-center justify-center cursor-pointer min-h-[170px] rounded-xl p-4 text-center ${
                       dragActive ? 'border-blue-600 bg-blue-50/20' : 'border-slate-300 bg-slate-50/50 hover:border-slate-400'
-                    } ${file ? 'bg-blue-50/20 border-blue-600' : ''}`}
+                    } ${file ? 'bg-blue-50/20 border-blue-600' : ''} ${!canStage ? 'opacity-60 cursor-not-allowed' : ''}`}
                     onDragEnter={handleDrag}
                     onDragLeave={handleDrag}
                     onDragOver={handleDrag}
                     onDrop={handleDrop}
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => {
+                      if (!canStage) { setError('Select a department and a template first, then choose the document.'); return; }
+                      fileInputRef.current?.click();
+                    }}
+                    title={canStage ? undefined : 'Select a department and a template first'}
                   >
                     <input
                       ref={fileInputRef}
@@ -813,14 +849,14 @@ const OcrPage = () => {
                       className="hidden"
                       accept="image/jpeg,image/png,application/pdf"
                       onChange={handleFileChange}
-                      disabled={uploading}
+                      disabled={uploading || !canStage}
                     />
 
                     <div className="p-2.5 bg-white border border-slate-200 rounded-full text-blue-600 shadow-2xs mb-2">
                       <UploadCloud size={20} />
                     </div>
                     <div className="text-xs font-bold text-slate-800 mb-0.5">
-                      Drag & drop document or click to browse
+                      {canStage ? 'Drag & drop document or click to browse' : 'Select a department and a template to enable upload'}
                     </div>
                     <div className="text-[11px] text-slate-500 mb-3">
                       Accepts PDF, PNG, TIFF, or JPEG (Max 25 MB)
@@ -888,6 +924,19 @@ const OcrPage = () => {
                       </>
                     )}
                   </button>
+
+                  {notice && (
+                    <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-xs flex items-start gap-2 mt-3" data-testid="execute-notice">
+                      <CheckCircle2 size={14} className="flex-shrink-0 mt-0.5" />
+                      <span className="flex-1">
+                        <b className="font-bold">{notice.filename}</b> {notice.ready ? 'is ready.' : 'is being processed.'} Open it from
+                        {' '}<b className="font-bold">Recent Ingestion Jobs</b> to see the extracted values. You can stage the next document now.
+                      </span>
+                      <button type="button" onClick={() => setNotice(null)} className="text-emerald-700 hover:text-emerald-900 cursor-pointer" title="Dismiss">
+                        <XCircle size={14} />
+                      </button>
+                    </div>
+                  )}
 
                   {error && (
                     <div className="p-2.5 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs flex items-center gap-2 mt-3">

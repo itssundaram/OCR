@@ -5,13 +5,13 @@ import {
   ShieldCheck, Eye, Layers, Sparkles, ChevronRight, ChevronLeft, AlertCircle, Database,
   Edit2, Lock, Unlock, RotateCcw, Save, X, Trash2, Search, PlusCircle, Table as TableIcon
 } from 'lucide-react';
-import { JsonView, allExpanded, darkStyles } from 'react-json-view-lite';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { Badge } from './ui/Badge';
 import KeyValuePanel from './KeyValuePanel';
 import TableGrid from './TableGrid';
 import TableRecords from './TableRecords';
 import PageTypeStrip from './PageTypeStrip';
+import DepartmentJsonPanel from './DepartmentJsonPanel';
 import LiveFieldsPanel from './LiveFieldsPanel';
 import { useJobStream } from '../hooks/useJobStream';
 import { evidenceService } from '../services/evidence';
@@ -231,6 +231,12 @@ const FastExtractionResultView = ({
     setTimeout(() => setToast(null), 3500);
   };
 
+  // changes whenever a field value or a table cell is corrected: the Raw JSON tab then reloads the server's export
+  const exportSignature = useMemo(
+    () => JSON.stringify([Object.entries(localFields).map(([k, d]) => [k, d?.value]), localTables.map((t) => t.rows)]),
+    [localFields, localTables],
+  );
+
   if (!currentJob) return null;
 
   const isWorking = currentJob.status === 'PROCESSING' || currentJob.status === 'QUEUED';
@@ -323,11 +329,44 @@ const FastExtractionResultView = ({
     }
   };
 
+  // "Found on document" -> template field. Permanent for every later document, so it is always asked first and
+  // only ever ADDS a field (removing or redefining one is done in the template editor / a new template version).
+  const handlePromoteField = async (key) => {
+    const d = localFields[key] || {};
+    const label = d.label || key.replace(/_/g, ' ');
+    const suggested = key.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_+/g, '_').slice(0, 40);
+    const entered = window.prompt(
+      `Add "${label}" to this template?\n\n`
+      + 'Every later document of this template will extract it (found by its printed label), and the data sent to the '
+      + 'department will carry it as a regular field. Earlier results are not changed.\n\n'
+      + 'Field name (letters, digits, underscore):',
+      suggested,
+    );
+    if (entered === null) return;
+    const name = entered.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
+    if (!name) return;
+    try {
+      const res = await extractService.promoteField(currentJob.job_id, key, name);
+      const finalName = res.data.field_name;
+      setLocalFields((prev) => {
+        const next = { ...prev };
+        const entry = next[key];
+        delete next[key];
+        next[finalName] = { ...entry, source: '', promoted_to_template: true };
+        return next;
+      });
+      if (selectedField === key) setSelectedField(finalName);
+      showToast(`"${label}" added to the template as ${finalName}.`, 'success');
+    } catch (err) {
+      showToast(`Could not add it to the template: ${err.message}`, 'error');
+    }
+  };
+
   const handleRemoveField = async (key, isDiscovered = false) => {
     const label = localFields[key]?.label || key.replace(/_/g, ' ');
     const question = isDiscovered
       ? `Dismiss "${label}" from this result? (The template is not changed.)`
-      : `Are you sure you want to remove field "${label}" from this template?`;
+      : `Remove "${label}" from this result and forget its saved position? (The template's field list is not changed.)`;
     if (!window.confirm(question)) return;
     try {
       await extractService.manageTemplateField(
@@ -344,7 +383,7 @@ const FastExtractionResultView = ({
         delete next[key];
         return next;
       });
-      showToast(isDiscovered ? `"${label}" dismissed.` : `Field "${key}" removed from template.`, 'info');
+      showToast(isDiscovered ? `"${label}" dismissed.` : `Field "${key}" removed from this result.`, 'info');
     } catch (err) {
       showToast(`Failed to remove field: ${err.message}`, 'error');
     }
@@ -1395,7 +1434,7 @@ const FastExtractionResultView = ({
                 }`}
                 onClick={() => setActiveTab('json')}
               >
-                Raw JSON
+                JSON
               </button>
             </div>
             <span className="text-[11px] font-mono text-slate-400 pb-2">
@@ -1422,6 +1461,7 @@ const FastExtractionResultView = ({
               onReOcr={handleReOcr}
               reOcrLoading={reOcrLoading}
               onRemove={handleRemoveField}
+              onPromote={handlePromoteField}
               onShowOccurrence={handleShowOccurrence}
               onUseOccurrence={handleUseOccurrence}
               rowRefs={fieldRefs}
@@ -1680,7 +1720,7 @@ const FastExtractionResultView = ({
           {/* Raw JSON Tab */}
           {activeTab === 'json' && (
             <div className="flex-1 overflow-auto p-4 bg-slate-900 text-slate-100 text-xs font-mono">
-              <JsonView data={localFields} shouldExpandNode={allExpanded} style={darkStyles} />
+              <DepartmentJsonPanel jobId={currentJob?.job_id} editSignature={exportSignature} reviewData={localFields} />
             </div>
           )}
         </div>

@@ -21,7 +21,7 @@ from app.db.models import ProcessingJob
 logger = get_logger(__name__)
 
 GRACE_SECONDS = 180
-INTERVAL_SECONDS = 300
+INTERVAL_SECONDS = 120
 
 
 def stuck_cutoff(now: datetime.datetime | None = None) -> datetime.datetime:
@@ -58,10 +58,22 @@ def reap_stuck_jobs() -> int:
         return 0
 
 
+def reap_prefetches() -> int:
+    """Discard prefetches nobody committed and purge discarded ones that have stopped (see app/services/prefetch.py)."""
+    try:
+        from app.services import prefetch
+        with SessionLocal() as db:
+            return prefetch.reap(db)
+    except Exception as exc:
+        logger.warning("prefetch_reaper_failed", error=str(exc))
+        return 0
+
+
 async def reaper_loop() -> None:
     while True:
         try:
             await asyncio.get_running_loop().run_in_executor(None, reap_stuck_jobs)
+            await asyncio.get_running_loop().run_in_executor(None, reap_prefetches)
         except asyncio.CancelledError:
             raise
         except Exception as exc:  # never let the loop die

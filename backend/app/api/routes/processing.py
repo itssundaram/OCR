@@ -62,6 +62,8 @@ def get_processing_job(job_id: str, db: Session = Depends(get_db)):
             response_data["confidence_json"] = result.confidence_json
             response_data["ocr_metadata_json"] = result.ocr_metadata_json
             response_data["validation_warnings"] = result.validation_warnings
+            from app.services.export_json import build_export
+            response_data["export"] = build_export(result.extracted_json, job_id=job_id)
             
     return APIResponse(data=response_data)
 

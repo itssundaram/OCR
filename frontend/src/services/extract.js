@@ -54,16 +54,47 @@ export const extractService = {
   // forceRelearn: the "this is a new format" checkbox on the upload page —
   // tells geometry-learning pipelines (learned_anchor) to ignore any stored
   // pattern for this template and learn fresh from this document instead.
-  uploadWithPipeline: (department, templateCode, pipelineName, file, forceRelearn = false) => {
+  // opts.prefetch: the upload is a hidden background job until commitPrefetch() is called (see usePrefetchUpload).
+  // opts.signal / opts.onUploadProgress: abort the request / learn when all bytes have been sent.
+  uploadWithPipeline: (department, templateCode, pipelineName, file, forceRelearn = false, opts = {}) => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('force_relearn', forceRelearn ? 'true' : 'false');
+    if (opts.prefetch) formData.append('prefetch', 'true');
     return api.post(
       `/${department.toLowerCase()}/${templateCode.toLowerCase()}/pipeline/${pipelineName}`,
       formData,
-      { headers: { 'Content-Type': 'multipart/form-data' } }
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        signal: opts.signal,
+        onUploadProgress: opts.onUploadProgress,
+      }
     );
   },
+
+  // "Execute extraction" on a prefetched document: the hidden job becomes an ordinary one.
+  commitPrefetch: (jobId) => api.post(`/extract/jobs/${jobId}/commit`),
+  // The person chose another document / template / pipeline: stop and remove the hidden job.
+  discardPrefetch: (jobId) => api.post(`/extract/jobs/${jobId}/discard`),
+  // Same, for a closing tab (fire-and-forget; the server also reaps forgotten prefetches by itself).
+  discardPrefetchBeacon: (jobId) => {
+    try {
+      if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+        return navigator.sendBeacon(`${config.API_BASE_URL}/extract/jobs/${jobId}/discard`);
+      }
+    } catch {
+      /* the server-side reaper handles it */
+    }
+    return false;
+  },
+
+  // Add a "found on document" field to the job's template for every later document (additive, logged on the server).
+  promoteField: (jobId, fieldKey, name = null, fieldType = null) =>
+    api.post(`/extract/jobs/${jobId}/promote-field`, { field_key: fieldKey, name, field_type: fieldType }),
+
+  // The result as department-ready JSON (template fields flat, other fields apart, tables as keyed rows).
+  // Built by the server from the stored result, so corrections already saved are in it.
+  getExport: (jobId, detail = false) => api.get(`/extract/jobs/${jobId}/export${detail ? '?detail=true' : ''}`),
 
   // Phase 13 — Orchestration page: upload with SEVERAL pipelines selected
   // together. All of them run and are reconciled field-by-field.

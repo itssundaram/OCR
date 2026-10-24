@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import re
 import threading
+from difflib import SequenceMatcher
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 from dataclasses import dataclass, field as dc_field
@@ -28,7 +29,7 @@ from app.fast.types import PageData
 from app.fast.validate import assess
 from app.fast.vlm import FieldVlm, supported_by_ocr
 from app.fast.copyvote import pick_best_copy
-from app.knowledge.kb import classify_page, enrich_fields, value_is_header, zone_ok
+from app.knowledge.kb import classify_page, enrich_fields, known_labels, norm_label, value_is_header, zone_ok
 from app.ocr.base import OCRLine
 from app.ocr import label_kb
 from app.ocr.kv_discovery import DiscoveredPair, assign_unique_keys, discover_key_values
@@ -99,6 +100,18 @@ class FieldExtractor:
         self.timings: dict[str, int] = {}
         self._claimed: list[tuple[int, dict]] = []     # (page, value box) already given to a field
 
+    def _known_labels(self) -> frozenset[str]:
+        """Printed labels that may open a pair without a colon: the forms' vocabulary plus every spelling of the
+        template's own fields. Empty (colon pairs only) when FAST_BARE_PAIRS_ENABLED is off."""
+        cached = getattr(self, "_known_cache", None)
+        if cached is None:
+            cached = frozenset()
+            if settings.FAST_BARE_PAIRS_ENABLED:
+                own = {norm_label(" ".join(c)) for f in self.fields for c in _candidates(f)}
+                cached = frozenset(k for k in (set(known_labels()) | own) if k and len(k) >= 2)
+            self._known_cache = cached
+        return cached
+
     # ── per page (called as each page is read) ────────────────────────────────
     def add_page(self, page: PageData) -> None:
         t0 = time.perf_counter()
@@ -111,7 +124,7 @@ class FieldExtractor:
         except Exception as exc:                          # classification is informational; never fail a page
             logger.warning("fast_page_type_failed", page=page.page_number, error=str(exc)[:160])
         if settings.KV_DISCOVERY_ENABLED or self.fields:
-            for pair in discover_key_values([page.lines]):
+            for pair in discover_key_values([page.lines], self._known_labels()):
                 pair.page_number = page.page_number
                 self.pairs.append(pair)
         for name, m in match_fields(self.fields, self.pairs, self._widths).items():
@@ -266,7 +279,7 @@ class FieldExtractor:
                 if n == primary.page_number:
                     continue
                 pairs = [p for p in self.pairs if p.page_number == n]
-                m = match_fields([fdef], pairs).get(name)
+                m = match_fields([fdef], pairs, self._widths).get(name)
                 if m:
                     value, conf, bbox, src = m.pair.value, m.pair.confidence, m.pair.bbox, "kv_pair"
                 else:
@@ -284,6 +297,37 @@ class FieldExtractor:
         finally:
             self._claimed = claimed
         return out
+
+    def _wrapped_reading(self, fdef: dict, pair) -> "FieldResult | None":
+        """A pair found without a colon ends where its stretch of the row ends. When the same label read by label
+        proximity gives the same text and MORE of it (a value that wraps onto the next line: "Auth ... dt 30 Jan 2025
+        and 23 Inf DOU" / "disposal order No ..."), that longer reading is the real value."""
+        page = self.pages.get(pair.page_number)
+        if page is None or not pair.bbox:
+            return None
+        claimed, self._claimed = self._claimed, [c for c in self._claimed if c[1] is not pair.bbox]
+        try:
+            hit = self._proximity(fdef, pages=[page])
+        except Exception:
+            return None
+        finally:
+            self._claimed = claimed
+        if not hit or not hit[2]:
+            return None
+        words = hit[2]
+        value = " ".join(w.text for w in words)
+        a, b = re.sub(r"[^a-z0-9]", "", pair.value.lower()), re.sub(r"[^a-z0-9]", "", value.lower())
+        if len(b) <= len(a) + 3 or not _value_ok(fdef, value) or value_is_header(value):
+            return None
+        if SequenceMatcher(None, a, b[:len(a)]).ratio() < 0.9:
+            return None
+        vb = _union(words)
+        if vb and page.width and not zone_ok(fdef, [], None, vb["x1"] / page.width):
+            return None
+        return FieldResult(
+            field_name=fdef["name"], value=value, confidence=round(_avg_conf(words) * 0.9, 3), page_number=page.page_number,
+            bbox=vb, extraction_method="label_proximity", label=str(fdef.get("label") or fdef["name"]),
+        )
 
     def _vote_copies(self, slot: dict, fr: FieldResult) -> None:
         """The same field read on another copy of the voucher may be the better reading: keep that one as the value
@@ -444,6 +488,16 @@ class FieldExtractor:
         extra = getattr(rd, "extra", None) or {}
         if int(extra.get("lines") or 1) > 6:
             return None, "anchor_box_too_large"
+        page = self.pages.get(getattr(rd, "page_number", None))
+        vb = getattr(rd, "bbox", None)
+        vb = vb if isinstance(vb, dict) else None
+        if vb and page is not None and page.width and fdef.get("side") in ("left", "right"):
+            # a confirmed box on the wrong half of a two-column voucher (the left Unit anchored on the right Unit)
+            if not zone_ok(fdef, [], None, vb["x1"] / page.width):
+                return None, "anchor_wrong_column"
+        if vb and any(pn == getattr(rd, "page_number", None) and _overlaps(vb, cb) and not (m is not None and m.pair.bbox is cb)
+                      for pn, cb in self._claimed):
+            return None, "anchor_box_taken"            # another field already owns this text: two fields never share a box
         if extra.get("has_label") and not extra.get("landmark") and m is not None:
             from difflib import SequenceMatcher
             norm = lambda t: re.sub(r"[^a-z0-9]", "", (t or "").lower())
@@ -584,6 +638,11 @@ class FieldExtractor:
                     extraction_method="kv_match", label=m.pair.label,
                 )
                 meta.source = "kv_pair"
+                if getattr(m.pair, "kind", "colon") == "bare":
+                    up = self._wrapped_reading(fdef, m.pair)
+                    if up is not None:
+                        fr = up
+                        meta.source = "label_proximity"
             else:
                 label_hit = self._proximity(fdef)
                 if label_hit:

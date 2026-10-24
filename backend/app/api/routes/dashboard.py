@@ -9,20 +9,22 @@ from sqlalchemy import select, func
 from app.db.database import get_db
 from app.db.models import Document, ProcessingJob
 from app.schemas.common import APIResponse
+from app.services.prefetch import HIDDEN, visible_jobs
 
 router = APIRouter(tags=['Dashboard'])
 
 @router.get('/dashboard/stats', response_model=APIResponse)
 def dashboard_stats(db: Session = Depends(get_db)):
     # Total documents
-    total_docs = db.scalar(select(func.count(Document.id))) or 0
+    hidden_docs = select(ProcessingJob.document_id).where(ProcessingJob.error_code.in_(HIDDEN))
+    total_docs = db.scalar(select(func.count(Document.id)).where(Document.id.notin_(hidden_docs))) or 0
     
     # Processed jobs stats
     stmt_jobs = select(
         ProcessingJob.status, 
         func.count(ProcessingJob.id),
         func.avg(ProcessingJob.overall_confidence)
-    ).group_by(ProcessingJob.status)
+    ).where(visible_jobs()).group_by(ProcessingJob.status)
     
     job_stats = db.execute(stmt_jobs).all()
     

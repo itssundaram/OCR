@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Check, Copy, Edit2, RefreshCw, Search, Trash2, X, Zap, ScanSearch, LayoutTemplate } from 'lucide-react';
+import { Check, Copy, Edit2, PlusCircle, RefreshCw, Search, Trash2, X, Zap, ScanSearch, LayoutTemplate } from 'lucide-react';
 
 /**
  * Key : value view of everything extracted from a document.
@@ -36,6 +36,7 @@ const KeyValuePanel = ({
   onReOcr,
   reOcrLoading,
   onRemove,
+  onPromote,
   onShowOccurrence,
   onUseOccurrence,
   rowRefs,
@@ -233,10 +234,19 @@ const KeyValuePanel = ({
           >
             {copiedKey === key ? <Check size={11} className="text-emerald-600" /> : <Copy size={11} />}
           </button>
+          {isDiscovered && onPromote && hasValue && (
+            <button
+              onClick={() => onPromote(key)}
+              className="p-1 text-slate-400 hover:text-emerald-700 hover:bg-emerald-50 rounded cursor-pointer"
+              title="Add this field to the template (every later document will extract it)"
+            >
+              <PlusCircle size={11} />
+            </button>
+          )}
           <button
             onClick={() => onRemove(key, isDiscovered)}
             className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded cursor-pointer"
-            title={isDiscovered ? 'Dismiss this pair' : 'Remove field from template'}
+            title={isDiscovered ? 'Dismiss this pair' : 'Remove this field from the result (the template keeps it)'}
           >
             <Trash2 size={11} />
           </button>

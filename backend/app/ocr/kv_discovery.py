@@ -47,6 +47,7 @@ class DiscoveredPair:
     page_number: int
     bbox: dict | None = None        # union box of the value words (page pixels)
     label_bbox: dict | None = None  # union box of the label words
+    kind: str = "colon"             # "colon" = printed "Label: value"; "bare" = label and value with no colon between them
 
 
 @dataclass
@@ -269,8 +270,141 @@ def _resolve_missing_value(
     return chosen.toks if chosen else None
 
 
-def discover_key_values(pages: list[list[OCRLine]]) -> list[DiscoveredPair]:
-    """pages: OCRLine lists, one per page (page numbers are 1-based indexes)."""
+# ── pairs the form prints WITHOUT a colon ("Unit  14 JAK RIF", "Station   c/o 99 APO") ──────────────────────
+_STOP_AFTER_LABEL = {"is", "are", "will", "was", "were", "has", "have", "had", "shall", "should", "be", "the", "a", "an",
+                     "that", "which", "and", "for", "with", "as", "by", "on", "in", "at", "it", "this", "these", "may", "can",
+                     "of", "to", "from", "into", "wef", "w.e.f", "taken", "report", "reg", "regarding"}
+BARE_CONF_FACTOR = 0.92          # a pair without a colon is a little less certain than one with it
+_ALIGN_TOL = 1.4                 # label column: left edges within this many text heights
+
+
+def _norm_label(text: str) -> str:
+    return " ".join(re.findall(r"[a-z0-9]+", str(text or "").lower()))
+
+
+def _known_prefix(toks: list[_Tok], known: frozenset[str]) -> int:
+    """Number of leading tokens that form a known printed label (longest first), 0 if none."""
+    for n in range(min(4, len(toks)), 0, -1):
+        if _norm_label(" ".join(t.text for t in toks[:n])) in known:
+            return n
+    return 0
+
+
+def _bare_label_ok(label_toks: list[_Tok]) -> bool:
+    first = label_toks[0].text
+    return bool(first[:1].isalpha() and first[:1].isupper() and all(_is_label_word(t.text) for t in label_toks)
+                and sum(c.isalpha() for t in label_toks for c in t.text) >= 2)
+
+
+def _value_ok_bare(value_toks: list[_Tok], known: frozenset[str]) -> bool:
+    if not value_toks:
+        return False
+    text = " ".join(t.text for t in value_toks)
+    if not any(c.isalnum() for c in text):
+        return False
+    first = value_toks[0].text.strip(_EDGE_JUNK).lower()
+    if first in _STOP_AFTER_LABEL:
+        return False                                  # "Unit will be ...": a sentence, not a value
+    if value_toks[-1].text.strip(_EDGE_JUNK).lower() in {"by", "to", "of", "for", "and", "no"} and len(value_toks) <= 4:
+        return False                                  # "ISSUED BY  COLLECTED BY": the next label, not a value
+    if _norm_label(text) in known:
+        return False                                  # a label followed by another label has no value
+    try:
+        from app.knowledge.kb import value_is_header
+        return not value_is_header(text)              # "Pers No | Rank & Name": the next column header
+    except Exception:
+        return True
+
+
+def _make_pair(label_toks: list[_Tok], value_toks: list[_Tok], page_no: int) -> DiscoveredPair:
+    confs = [t.conf for t in value_toks]
+    conf = (sum(confs) / len(confs)) * BARE_CONF_FACTOR if confs else 0.0
+    return DiscoveredPair(
+        label=_clean(" ".join(t.text for t in label_toks)), value=_value_text(value_toks, ""),
+        confidence=round(max(0.0, min(1.0, conf)), 3), page_number=page_no,
+        bbox=_union(value_toks), label_bbox=_union(label_toks), kind="bare",
+    )
+
+
+def _bare_pairs(segs: list[_Segment], taken: list[DiscoveredPair], page_no: int, known: frozenset[str]) -> list[DiscoveredPair]:
+    """Label/value pairs with no colon, found two ways (both need the form's own vocabulary or a label column):
+      1. a segment that STARTS with a known printed label, the rest of the segment being the value;
+      2. a short label segment with a value segment to its right on the same row (a wide gap instead of a colon),
+         when it is a known label, or sits in a column of left-aligned labels of which at least two are known."""
+    if not known:
+        return []
+    out: list[DiscoveredPair] = []
+    used_ids: set[int] = set()
+
+    def clashes(vtoks: list[_Tok], ltoks: list[_Tok]) -> bool:
+        vb, lb = _union(vtoks), _union(ltoks)
+        for p in list(taken) + out:
+            for a, b in ((vb, p.bbox), (lb, p.label_bbox), (vb, p.label_bbox), (lb, p.bbox)):
+                if a and b and min(a["x2"], b["x2"]) - max(a["x1"], b["x1"]) > 0 and min(a["y2"], b["y2"]) - max(a["y1"], b["y1"]) > 0:
+                    return True
+        return False
+
+    cross: list[tuple[_Segment, _Segment, bool]] = []          # (label seg, value seg, label is known)
+    for seg in segs:
+        if seg.pairs:
+            continue
+        n = _known_prefix(seg.toks, known)
+        if n and n < len(seg.toks):                            # case 1: "Unit 14 JAK RIF" in one segment
+            lt, vt = seg.toks[:n], seg.toks[n:]
+            if _bare_label_ok(lt) and _value_ok_bare(vt, known) and not clashes(vt, lt):
+                out.append(_make_pair(lt, vt, page_no))
+                used_ids.add(id(seg))
+                continue
+        if len(seg.toks) <= 4 and _bare_label_ok(seg.toks) and not any(c.isdigit() for t in seg.toks for c in t.text):
+            right = [o for o in segs if o is not seg and abs(o.cy - seg.cy) < 0.6 * seg.height
+                     and o.x1 >= seg.x2 - 5 and o.x1 - seg.x2 < 40 * seg.height and not o.pairs]
+            if right:
+                nxt = min(right, key=lambda o: o.x1)
+                cross.append((seg, nxt, _norm_label(seg.text) in known))
+
+    # case 2: known labels directly, then label columns
+    columns: list[list[tuple[_Segment, _Segment, bool]]] = []
+    for item in sorted(cross, key=lambda c: c[0].x1):
+        for col in columns:
+            if abs(col[0][0].x1 - item[0].x1) <= _ALIGN_TOL * item[0].height:
+                col.append(item)
+                break
+        else:
+            columns.append([item])
+    for col in columns:
+        n_known = sum(1 for _, _, k in col if k)
+        for lab, val, is_known in col:
+            if not (is_known or (len(col) >= 3 and n_known >= 2)):
+                continue
+            if id(lab) in used_ids or not _value_ok_bare(val.toks, known) or clashes(val.toks, lab.toks):
+                continue
+            out.append(_make_pair(lab.toks, val.toks, page_no))
+            used_ids.add(id(lab))
+    return _drop_table_columns(out)
+
+
+def _drop_table_columns(pairs: list[DiscoveredPair]) -> list[DiscoveredPair]:
+    """The same printed label three or more times, stacked in one column, is a table column ("Sub Depot | 2" on every
+    row), not a form field: those pairs are dropped. A real form prints each label once per page (twice at most, for a
+    left/right unit pair)."""
+    groups: dict[str, list[DiscoveredPair]] = {}
+    for p in pairs:
+        groups.setdefault(_norm_label(p.label), []).append(p)
+    drop: set[int] = set()
+    for members in groups.values():
+        if len(members) < 3:
+            continue
+        for m in members:
+            lb = m.label_bbox or {}
+            stacked = [o for o in members if o is not m and abs((o.label_bbox or {}).get("x1", 1e9) - lb.get("x1", -1e9)) <= 1.4 * max(1.0, lb.get("y2", 0) - lb.get("y1", 0))]
+            if len(stacked) >= 2:
+                drop.add(id(m))
+    return [p for p in pairs if id(p) not in drop]
+
+
+def discover_key_values(pages: list[list[OCRLine]], known_labels: frozenset[str] | None = None) -> list[DiscoveredPair]:
+    """pages: OCRLine lists, one per page (page numbers are 1-based indexes). `known_labels` (normalised printed labels)
+    switches on the colon-less pass; without it only "Label: value" pairs are returned, as before."""
     found: list[DiscoveredPair] = []
 
     for p_idx, lines in enumerate(pages):
@@ -311,6 +445,8 @@ def discover_key_values(pages: list[list[OCRLine]]) -> list[DiscoveredPair]:
                     bbox=_union(bbox_toks),
                     label_bbox=_union(pair.label_toks),
                 ))
+        if known_labels:
+            page_pairs.extend(_bare_pairs(segs, page_pairs, p_idx + 1, known_labels))
         page_pairs.sort(key=lambda d: ((d.bbox or {}).get("y1", 0) // 12, (d.bbox or {}).get("x1", 0)))
         found.extend(page_pairs)
     return found

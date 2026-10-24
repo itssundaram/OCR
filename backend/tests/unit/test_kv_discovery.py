@@ -122,3 +122,44 @@ def test_colon_glued_to_value():
 def test_sentence_end_is_not_a_label():
     got = _pairs(_line(10, ("initial", 10), ("commissioning:", 80), ("1.", 250), ("Name", 290)))
     assert "commissioning" not in got
+
+
+# ── pairs printed without a colon ─────────────────────────────────────────────────────────────────────────────
+KNOWN = frozenset({"unit", "station", "kms", "depot", "date"})
+
+
+def _bare(*lines, known=KNOWN):
+    return [p for p in discover_key_values([list(lines)], known) if p.kind == "bare"]
+
+
+def test_bare_pair_known_label_prefix():
+    got = _bare(_line(100, ("Unit", 100), ("14", 160), ("JAK", 190), ("RIF", 230)))
+    assert [(p.label, p.value) for p in got] == [("Unit", "14 JAK RIF")]
+    assert got[0].bbox["x1"] == 160                      # the box covers the value only
+
+
+def test_bare_pair_label_and_value_split_by_wide_gap():
+    got = _bare(_line(100, ("Station", 100), ("c/o", 420), ("99", 460), ("APO", 500)))
+    assert [(p.label, p.value) for p in got] == [("Station", "c/o 99 APO")]
+
+
+def test_bare_pairs_need_the_known_vocabulary():
+    line = _line(100, ("Unit", 100), ("14", 160), ("JAK", 190), ("RIF", 230))
+    assert discover_key_values([[line]]) == []           # without known labels only "Label: value" is found
+    assert _bare(line, known=frozenset()) == []
+
+
+def test_bare_pair_rejects_sentence_and_next_label():
+    assert _bare(_line(100, ("Unit", 100), ("will", 160), ("be", 210), ("shown", 245))) == []
+    assert _bare(_line(100, ("Unit", 100), ("Station", 160))) == []
+
+
+def test_bare_pair_colon_pair_wins():
+    got = discover_key_values([[_line(100, ("Unit:", 100), ("9", 170), ("ASSAM", 200))]], KNOWN)
+    assert [(p.label, p.value, p.kind) for p in got] == [("Unit", "9 ASSAM", "colon")]
+
+
+def test_bare_pairs_stacked_in_a_table_column_are_dropped():
+    rows = [_line(100 + 40 * i, ("Depot", 100), ("2", 420)) for i in range(3)]
+    assert _bare(*rows) == []                            # a table column, not a form field
+    assert len(_bare(*rows[:1])) == 1                    # the same pair once is a real field

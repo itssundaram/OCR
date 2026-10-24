@@ -1,4 +1,6 @@
 """TMS / MMS / PSG knowledge layer: field vocabulary, left/right voucher columns, page types, table headers."""
+from types import SimpleNamespace
+
 from app.fast.events import EventBus
 from app.fast.fields import FieldExtractor
 from app.fast.types import PageData
@@ -133,7 +135,7 @@ def test_date_text_leaves_nonsense_alone():
 
 def test_mms_tms_table_headers_are_known():
     from app.knowledge.kb import canonical_header
-    for printed, label in [("Serial No", "S No"), ("Material Description", "Nomenclature"), ("AIU", "AU"),
+    for printed, label in [("Ser No", "S No"), ("Serial No", "Serial No"), ("Material Description", "Nomenclature"), ("AIU", "AU"),
                            ("Demand Qty", "Demand Qty"), ("UH Qty", "UH Qty"), ("Regn Nos", "Regd Nos"),
                            ("Veh BA", "Veh BA No"), ("Section Number", "Section Number")]:
         got = canonical_header(printed)
@@ -186,3 +188,18 @@ def test_cue_pages_are_recognised_and_their_fields_are_known():
     assert ty == "cue_adoption_letter"
     f = {x["name"]: x for x in enrich_fields([{"name": "we_no"}, {"name": "jcos"}])}
     assert "War Establishment No" in f["we_no"]["aliases"] and f["jcos"].get("exact_labels")
+
+
+def test_a_confirmed_anchor_on_the_wrong_half_or_on_another_fields_box_is_refused():
+    bus = EventBus("j", redis_conn=None)
+    bus._redis = None
+    ex = FieldExtractor([{"name": "unit_from"}, {"name": "unit_to"}], bus)
+    ex.pages[1] = _page([_line([("Unit", 100, 60), ("14", 200, 30), ("JAK", 240, 40)], 160)])
+    reading = lambda x1: SimpleNamespace(value="9 ASSAM", bbox={"x1": x1, "y1": 160, "x2": x1 + 120, "y2": 190},
+                                         page_number=1, extra={})
+    f_from, f_to = ex.fields
+    assert ex._vet_anchor(f_from, reading(700), None)[1] == "anchor_wrong_column"        # right half, left field
+    assert ex._vet_anchor(f_from, reading(150), None)[1] == ""
+    assert ex._vet_anchor(f_to, reading(700), None)[1] == ""
+    ex._claimed = [(1, {"x1": 700, "y1": 160, "x2": 820, "y2": 190})]
+    assert ex._vet_anchor(f_to, reading(705), None)[1] == "anchor_box_taken"

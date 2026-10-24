@@ -151,6 +151,31 @@ def _close(a: str, b: str) -> bool:
     return any(long_[:i] + long_[i + 1:] == short for i in range(len(long_)))
 
 
+def norm_label(text: str) -> str:
+    """Lower-case words joined by one space ("Veh BA No." -> "veh ba no"), the form labels are compared in."""
+    return " ".join(re.findall(r"[a-z0-9]+", str(text or "").lower()))
+
+
+@lru_cache(maxsize=1)
+def known_labels() -> frozenset[str]:
+    """Every label the forms print: the canonical field labels plus the extra label lexicon. Used to find
+    "Label value" pairs on forms that print no colon. Empty when the knowledge layer is switched off."""
+    if not _on():
+        return frozenset()
+    out: set[str] = set()
+    for f in _fields()["all"]:
+        for lab in f.get("labels") or []:
+            k = norm_label(lab)
+            if k:
+                out.add(k)
+    try:
+        d = json.loads((DATA / "lexicons.json").read_text(encoding="utf-8"))
+        out.update(k for k in (norm_label(x) for x in d.get("labels", [])) if k)
+    except Exception:
+        pass
+    return frozenset(out)
+
+
 def classify_page(text: str) -> tuple[str, float, list[tuple[str, float]]]:
     """(doc_type or "", score of the winner, all scores best-first). Landmarks are phrases; a phrase counts
     when all its words are on the page (one-letter OCR typos tolerated on longer words)."""

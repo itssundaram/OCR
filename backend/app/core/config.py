@@ -174,7 +174,11 @@ class Settings(BaseSettings):
     # TMS / MMS / PSG knowledge layer (app/knowledge): field vocabulary, left/right voucher columns, soft value checks,
     # page types, table header repair + records. Off = the general behaviour only.
     KNOWLEDGE_ENABLED: bool = True
+    FAST_TABLES_ALWAYS: bool = True          # look for ruled tables on every job, not only when the template has a table field
+    FAST_BARE_PAIRS_ENABLED: bool = True     # also discover "Label  value" pairs the form prints without a colon
     FAST_COPY_VOTE_ENABLED: bool = True      # keep the best reading of a field across copies of the same voucher
+    PREFETCH_ENABLED: bool = True            # a chosen document starts processing before Execute is pressed (hidden until then)
+    PREFETCH_TTL_SECONDS: int = 900          # an uncommitted prefetch is discarded after this long
     FAST_GAP_FILL_ENABLED: bool = False
     FAST_GAP_FILL_BUDGET_S: float = 3.0     # per page, when enabled
     FAST_LABEL_REREAD_ENABLED: bool = True  # re-read the spot next to a found label that came back empty

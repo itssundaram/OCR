@@ -21,8 +21,6 @@
     "s.no",
     "s no.",
     "ser no",
-    "serial no",
-    "serial number",
     "s/no"
    ]
   },
@@ -318,6 +316,91 @@
    "kind": "",
    "variants": [
     "depot"
+   ]
+  },
+  {
+   "id": "cos_section",
+   "label": "Cos Section",
+   "kind": "",
+   "variants": [
+    "cos section",
+    "cos sec",
+    "section"
+   ]
+  },
+  {
+   "id": "part_number",
+   "label": "Part Number",
+   "kind": "id",
+   "variants": [
+    "part number",
+    "part no"
+   ]
+  },
+  {
+   "id": "sap_number",
+   "label": "SAP Number",
+   "kind": "id",
+   "variants": [
+    "sap number",
+    "sap no",
+    "sap nomber"
+   ]
+  },
+  {
+   "id": "batch_no",
+   "label": "Batch No",
+   "kind": "id",
+   "variants": [
+    "batch no",
+    "batch number"
+   ]
+  },
+  {
+   "id": "serial_no",
+   "label": "Serial No",
+   "kind": "id",
+   "variants": [
+    "serial no",
+    "serial number",
+    "serial nos"
+   ]
+  },
+  {
+   "id": "obd_qty",
+   "label": "OBD Quantity",
+   "kind": "number",
+   "variants": [
+    "obd quantity",
+    "obd qty"
+   ]
+  },
+  {
+   "id": "sub_depot",
+   "label": "Sub Depot",
+   "kind": "",
+   "variants": [
+    "sub depot"
+   ]
+  },
+  {
+   "id": "rank",
+   "label": "Rank",
+   "kind": "",
+   "variants": [
+    "rank",
+    "rnk"
+   ]
+  },
+  {
+   "id": "name",
+   "label": "Name",
+   "kind": "",
+   "variants": [
+    "name",
+    "name of person",
+    "name of individual",
+    "name of personnel"
    ]
   }
  ]

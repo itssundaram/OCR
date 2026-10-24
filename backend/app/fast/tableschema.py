@@ -697,9 +697,27 @@ def _quality(m: dict, specs: list[dict], counts: list[dict], rows: list[list[str
     return q
 
 
+def refresh_records(table: dict) -> dict:
+    """Rebuild meta.records (the per-row records keyed by canonical column ids) from the table's CURRENT headers and
+    rows, so a corrected cell shows up in them. Removes the key when the columns are not recognised."""
+    meta = table.get("meta")
+    if not isinstance(meta, dict):
+        return table
+    try:
+        records = table_records(normalize_headers([str(h or "") for h in table.get("headers") or []]), table.get("rows") or [])
+    except Exception:
+        records = []
+    if records:
+        meta["records"] = records
+    else:
+        meta.pop("records", None)
+    return table
+
+
 def recount_quality(table: dict) -> dict:
     """Refresh the per-table summary from the stored cells (after an edit or a
     background re-read). Pure; works on the dict that is saved in the result."""
+    refresh_records(table)
     meta = table.get("meta") or {}
     q = meta.get("quality")
     if not q:
