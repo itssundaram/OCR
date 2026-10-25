@@ -38,11 +38,15 @@ class TATRTableEngine:
             # the weaker img2table fallback. Weights load from the local cache
             # (HF_HUB_OFFLINE=1 is set in app/core/config.py), so no network
             # timeout applies anyway.
+            # use_pretrained_backbone=False: the checkpoint already contains the backbone weights. Left at its
+            # default (True) timm first fetches resnet50 weights from the hub, which fails offline and made the
+            # whole model fall back to img2table.
             self._processor = DetrImageProcessor.from_pretrained(
                 "microsoft/table-transformer-structure-recognition",
             )
             self._structure_model = TableTransformerForObjectDetection.from_pretrained(
                 "microsoft/table-transformer-structure-recognition",
+                use_pretrained_backbone=False,
             )
             self._structure_model.to(device)
             self._device = device

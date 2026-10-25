@@ -97,11 +97,13 @@ async def lifespan(app: FastAPI):
                 logger.warning("fast_worker_autostart_skipped", error=str(exc)[:160])
         asyncio.get_running_loop().run_in_executor(None, _warm_fast_worker)
 
-    from app.workers.reaper import reaper_loop
+    from app.workers.reaper import fast_rescue_loop, reaper_loop
     reaper_task = asyncio.create_task(reaper_loop())
+    rescue_task = asyncio.create_task(fast_rescue_loop())
 
     yield
     reaper_task.cancel()
+    rescue_task.cancel()
     logger.info("docint_shutdown")
 
 

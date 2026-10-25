@@ -69,6 +69,67 @@ def reap_prefetches() -> int:
         return 0
 
 
+RESCUE_AFTER_S = 45          # a fast_ocr job waiting this long on the fast queue with no live fast worker is moved
+RESCUE_INTERVAL_S = 20
+
+
+def rescue_queued_fast_jobs() -> int:
+    """Move fast_ocr jobs that nobody can pick up to the default queue.
+
+    A job is queued for the fast worker while that worker is alive; if the worker then dies (killed, crashed, or being
+    replaced), the job would sit at QUEUED for ever. The default worker can run the same task (slower on Windows,
+    where it starts a process per job), so it is handed over instead. Returns how many were moved.
+    """
+    try:
+        from app.workers.queue import redis_conn
+        if redis_conn is None:
+            return 0
+        from app.fast.worker_supervisor import worker_listening
+        if worker_listening(redis_conn):
+            return 0
+        from rq import Callback, Queue
+        fast_q = Queue(settings.FAST_QUEUE_NAME, connection=redis_conn)
+        default_q = Queue(settings.REDIS_QUEUE_NAME, connection=redis_conn)
+        now = datetime.datetime.now(datetime.timezone.utc)
+        moved = []
+        for jid in list(fast_q.job_ids):
+            job = fast_q.fetch_job(jid)
+            if job is None or job.func_name != "app.fast.runner.run_fast_job":
+                continue
+            enq = job.enqueued_at
+            if enq is not None:
+                if enq.tzinfo is None:
+                    enq = enq.replace(tzinfo=datetime.timezone.utc)
+                if (now - enq).total_seconds() < RESCUE_AFTER_S:
+                    continue
+            args = tuple(job.args)
+            timeout = job.timeout
+            job.delete(remove_from_queue=True)
+            default_q.enqueue(
+                job.func_name, *args, job_id=jid, job_timeout=timeout,
+                on_failure=Callback("app.workers.tasks.job_failed_callback"),
+            )
+            moved.append(jid)
+        if moved:
+            logger.warning("fast_jobs_rescued", count=len(moved), job_ids=moved[:20], to_queue=settings.REDIS_QUEUE_NAME,
+                           reason="no live fast worker")
+        return len(moved)
+    except Exception as exc:
+        logger.warning("fast_rescue_failed", error=str(exc)[:200])
+        return 0
+
+
+async def fast_rescue_loop() -> None:
+    while True:
+        try:
+            await asyncio.get_running_loop().run_in_executor(None, rescue_queued_fast_jobs)
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            logger.warning("fast_rescue_loop_error", error=str(exc))
+        await asyncio.sleep(RESCUE_INTERVAL_S)
+
+
 async def reaper_loop() -> None:
     while True:
         try:

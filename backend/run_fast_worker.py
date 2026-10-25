@@ -14,9 +14,11 @@ from __future__ import annotations
 import os
 import platform
 import threading
+import time
 
 import redis
 from rq import Queue, SimpleWorker
+from rq.timeouts import TimerDeathPenalty
 
 from app.core.config import settings
 from app.core.logging import configure_logging, get_logger
@@ -24,6 +26,58 @@ from app.core.logging import configure_logging, get_logger
 configure_logging()
 logger = get_logger(__name__)
 os.environ.setdefault("OMP_THREAD_LIMIT", str(settings.TESSERACT_OMP_THREADS))
+
+
+class _TimerSimpleWorker(SimpleWorker):
+    """SimpleWorker that enforces job timeouts with a thread timer instead of SIGALRM.
+
+    RQ's default (UnixSignalDeathPenalty) calls signal.SIGALRM, which does not exist on Windows: the worker
+    crashed on its first job, and the failure callback crashed the same way, so the job stayed QUEUED forever.
+    """
+    death_penalty_class = TimerDeathPenalty
+
+
+def _worker_class():
+    mode = (settings.FAST_WORKER_TIMEOUT or "auto").lower()
+    if mode == "auto":
+        mode = "timer" if (os.name == "nt" or not hasattr(__import__("signal"), "SIGALRM")) else "signal"
+    return _TimerSimpleWorker if mode == "timer" else SimpleWorker
+
+
+PRESENCE_EVERY_S = 10
+
+
+def _start_presence(worker, conn) -> threading.Event:
+    """Tell the API this worker is alive (a key that expires within seconds of a crash or kill), and leave
+    cleanly - when idle - if the API asks for a worker on newer code. Works the same on Windows and Linux."""
+    from app.core.build_info import build_id
+    from app.fast.worker_supervisor import clear_alive, publish_alive, should_retire
+    mine = build_id()
+    every = PRESENCE_EVERY_S
+
+    stop = threading.Event()
+
+    def _loop() -> None:
+        while not stop.is_set():
+            try:
+                if should_retire(conn, mine):
+                    if worker.get_state() != "busy":
+                        logger.warning("fast_worker_retiring", reason="newer code requested", build=mine)
+                        clear_alive(conn)
+                        try:
+                            worker.register_death()
+                        except Exception:
+                            pass
+                        os._exit(0)
+                else:
+                    publish_alive(conn)
+            except Exception as exc:   # never let the presence thread die
+                logger.warning("fast_worker_presence_error", error=str(exc)[:160])
+            stop.wait(every)
+
+    publish_alive(conn)
+    threading.Thread(target=_loop, name="fast-presence", daemon=True).start()
+    return stop
 
 
 def main() -> None:
@@ -46,8 +100,10 @@ def main() -> None:
     logger.info("fast_worker_build", build=build_id())
     # order = priority: a waiting upload is always served before background refinement
     queues = [Queue(settings.FAST_QUEUE_NAME, connection=conn), Queue(settings.FAST_REFINE_QUEUE_NAME, connection=conn)]
-    worker = SimpleWorker(queues, connection=conn)
-    print(f"Starting fast_ocr worker ({platform.system()}) on queues '{settings.FAST_QUEUE_NAME}', '{settings.FAST_REFINE_QUEUE_NAME}' ...")
+    worker_cls = _worker_class()
+    worker = worker_cls(queues, connection=conn)
+    _start_presence(worker, conn)
+    print(f"Starting fast_ocr worker ({worker_cls.__name__}, {platform.system()}) on queues '{settings.FAST_QUEUE_NAME}', '{settings.FAST_REFINE_QUEUE_NAME}' ...")
     worker.work()
 
 

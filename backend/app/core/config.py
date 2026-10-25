@@ -211,6 +211,8 @@ class Settings(BaseSettings):
     FAST_REFINE_SLICE_S: int = 20           # one refine job works this long, saves, then re-queues itself (fast jobs interleave)
     FAST_REFINE_BATCH: int = 8              # cells saved + announced together
     FAST_REFINE_VLM_MAX: int = 150          # vision-model cell reads per document
+    OFFLINE_MODE: bool = True               # air-gapped: models read only from MODEL_CACHE_DIR, no connection leaves private networks
+    OFFLINE_ALLOW_HOSTS: str = ""           # extra hosts the guard lets through (comma separated); DB/Redis/Ollama hosts are automatic
     FAST_QUEUE_NAME: str = "docint-fast"    # run_fast_worker.py listens here; falls back to REDIS_QUEUE_NAME
     FAST_AUTOSTART_WORKER: bool = True      # the API starts run_fast_worker.py itself when none is listening
     FAST_AUTOSTART_WAIT_S: int = 25         # an upload waits this long for that worker to register before using the slow queue
@@ -259,6 +261,9 @@ class Settings(BaseSettings):
     # How run_worker.py runs a job: "auto"/"simple" = inside the worker process (no fork, safe with CUDA models
     # loaded in the parent), "fork" = classic RQ child process per job (can deadlock after CUDA init).
     WORKER_MODE: Literal["auto", "simple", "fork"] = "auto"
+    # How the fast_ocr worker enforces a job's time limit. "auto" picks by operating system: Linux/macOS use RQ's
+    # signal timer (SIGALRM); Windows has no SIGALRM, so it uses a thread timer instead. Force one only if needed.
+    FAST_WORKER_TIMEOUT: Literal["auto", "signal", "timer"] = "auto"
     # A job that has not finished after this long gets every thread's stack written to the log, repeatedly,
     # so a stuck job always shows WHERE it is stuck. 0 = off.
     WORKER_STALL_DUMP_S: int = 90
@@ -400,3 +405,6 @@ os.environ.setdefault("HF_HOME", str(settings.hf_home_path))
 os.environ.setdefault("TRANSFORMERS_CACHE", str(settings.hf_home_path))
 os.environ.setdefault("HF_HUB_OFFLINE", "1")
 os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+if settings.OFFLINE_MODE:
+    from app.core.offline_guard import install as _install_offline_guard
+    _install_offline_guard(settings)

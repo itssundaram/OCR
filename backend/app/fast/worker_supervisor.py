@@ -25,14 +25,57 @@ logger = get_logger(__name__)
 
 _LOCK_KEY = "docint:fast_worker:spawn_lock"
 BUILD_KEY = "docint:fast_worker:build"
+ALIVE_KEY = "docint:fast_worker:alive"     # refreshed every few seconds by the worker itself; gone ~ALIVE_TTL_S after it dies
+STOP_KEY = "docint:fast_worker:stop"       # value = the build a worker must run; any worker on another build leaves when idle
+ALIVE_TTL_S = 45
 _BACKEND_DIR = Path(__file__).resolve().parents[2]
 _child: subprocess.Popen | None = None
 
 
 def worker_listening(conn, queue_name: str | None = None) -> bool:
+    """Is a fast worker ALIVE right now?
+
+    RQ's own worker registry is not enough: a worker that is killed (always the case when Windows stops a process,
+    and on a crash or power loss anywhere) stays registered for several minutes, so uploads were queued for a
+    worker that no longer existed and sat at QUEUED. The fast worker therefore refreshes ALIVE_KEY every few seconds
+    with a short expiry: a dead worker stops counting within ALIVE_TTL_S seconds, on every operating system.
+    """
     try:
+        if queue_name in (None, settings.FAST_QUEUE_NAME):
+            return bool(conn.exists(ALIVE_KEY))
         from rq import Queue, Worker
-        return Worker.count(connection=conn, queue=Queue(queue_name or settings.FAST_QUEUE_NAME, connection=conn)) > 0
+        return Worker.count(connection=conn, queue=Queue(queue_name, connection=conn)) > 0
+    except Exception:
+        return False
+
+
+def publish_alive(conn) -> None:
+    """Called repeatedly by the worker: 'I am here, running this build'."""
+    from app.core.build_info import build_id
+    try:
+        conn.set(ALIVE_KEY, f"{os.getpid()}|{build_id()}", ex=ALIVE_TTL_S)
+    except Exception:
+        pass
+
+
+def clear_alive(conn) -> None:
+    """Called by a worker that is leaving on purpose (only removes its own mark)."""
+    try:
+        mine = f"{os.getpid()}|"
+        cur = conn.get(ALIVE_KEY)
+        cur = cur.decode() if isinstance(cur, bytes) else cur
+        if cur and cur.startswith(mine):
+            conn.delete(ALIVE_KEY)
+    except Exception:
+        pass
+
+
+def should_retire(conn, my_build: str) -> bool:
+    """A worker on another build than the one the API asked for must leave (when idle)."""
+    try:
+        want = conn.get(STOP_KEY)
+        want = want.decode() if isinstance(want, bytes) else want
+        return bool(want) and want != my_build
     except Exception:
         return False
 
@@ -66,23 +109,29 @@ def publish_build(conn) -> None:
 
 
 def _retire_stale_workers(conn) -> bool:
-    """A worker started before the last `git pull` still runs the old code. Ask it to stop; True if one was asked."""
+    """A worker started before the last code change still runs the old code. Ask it to leave; True if one was asked.
+
+    The request is a Redis flag the worker reads itself and acts on when it is idle. RQ's shutdown command is NOT
+    used on Windows: there it ends in os.kill(), which terminates the process hard and leaves a ghost registration.
+    """
     from app.core.build_info import build_id
     try:
         theirs = conn.get(BUILD_KEY)
         theirs = theirs.decode() if isinstance(theirs, bytes) else theirs
         if theirs == build_id():
             return False
-        from rq import Queue, Worker
-        from rq.command import send_shutdown_command
-        asked = False
-        for w in Worker.all(connection=conn, queue=Queue(settings.FAST_QUEUE_NAME, connection=conn)):
-            send_shutdown_command(conn, w.name)
-            asked = True
-        if asked:
-            logger.warning("fast_worker_stale_retired", worker_build=theirs, api_build=build_id())
-            conn.delete(BUILD_KEY)
-        return asked
+        if not conn.exists(ALIVE_KEY):
+            return False
+        conn.set(STOP_KEY, build_id(), ex=600)
+        if os.name != "nt":                           # workers from before this flag existed only know the RQ command
+            from rq import Queue, Worker
+            from rq.command import send_shutdown_command
+            for w in Worker.all(connection=conn, queue=Queue(settings.FAST_QUEUE_NAME, connection=conn)):
+                send_shutdown_command(conn, w.name)
+        logger.warning("fast_worker_stale_retired", worker_build=theirs, api_build=build_id())
+        conn.delete(BUILD_KEY)
+        conn.delete(ALIVE_KEY)                        # a replacement may start now; the old one leaves when its job is done
+        return True
     except Exception as exc:
         logger.warning("fast_worker_retire_failed", error=str(exc)[:200])
         return False
