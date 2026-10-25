@@ -148,6 +148,10 @@ class Settings(BaseSettings):
     #   "none"  - no cropping, the whole page goes to the table reader
     #   "surya" - Surya layout model; accurate but very slow on CPU
     TABLE_REGION_DETECTOR: str = "lines"
+    # Every pipeline reads tables with the geometry reader first (the same one fast_ocr uses: ruling lines, word gaps,
+    # text lines, then header / column / cell understanding); its own table model is used only for pages where that
+    # finds no table. Set false to go back to each pipeline's own model alone.
+    TABLE_GEOMETRY_FIRST: bool = True
     # learned_anchor pipeline, "pairs first": read the page once, find every
     # "Label: value" pair and match the template's fields to those pairs by label.
     # When every field is matched with at least KV_FIRST_MIN_CONFIDENCE the result
@@ -194,6 +198,7 @@ class Settings(BaseSettings):
     FAST_OCR_CACHE_MAX_MB: int = 512
     FAST_OCR_CACHE_MAX_AGE_DAYS: int = 14
     FAST_TABLE_TIMEOUT_S: int = 20          # per page; a timeout means "no table", never a stuck job
+    FAST_TEXT_TABLES_ENABLED: bool = True    # tables with no ruling lines at all, found from aligned text columns
     FAST_TATR_FALLBACK_ENABLED: bool = False  # borderless tables via TATR on a crop (needs weights)
     FAST_VLM_FALLBACK_ENABLED: bool = True  # re-read ONE cropped field when the cheap steps failed
     FAST_VLM_TIMEOUT_S: int = 40            # one crop read; a stalled call ends here

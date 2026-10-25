@@ -292,9 +292,14 @@ class TesseractPipeline(OCRPipeline):
         )
 
     def extract_tables(self, pages: list[Image.Image], job_id: str) -> list[TableResult]:
-        # Implementation of table extraction
+        from app.pipelines.geometry_tables import geometry_first_tables
+        return geometry_first_tables(pages, job_id, lambda idx: self._model_tables(pages, idx))
+
+    def _model_tables(self, pages: list[Image.Image], indexes: list[int]) -> list[TableResult]:
+        """Layout regions + img2table (the fallback when geometry found no table)."""
         tables = []
-        for i, img in enumerate(pages):
+        for i in indexes:
+            img = pages[i]
             try:
                 regions = self.layout_engine.detect_layout(img)
                 table_images = [r.cropped_image for r in regions if r.region_type == "Table"]

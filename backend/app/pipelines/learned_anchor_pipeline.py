@@ -142,9 +142,14 @@ class LearnedAnchorPipeline(OCRPipeline):
             return box
 
     def extract_tables(self, pages: list[Image.Image], job_id: str) -> list[TableResult]:
+        """Tables by geometry first (shared with fast_ocr); the TATR path below only for pages with none."""
+        from app.pipelines.geometry_tables import geometry_first_tables
+        return geometry_first_tables(pages, job_id, lambda idx: self._model_tables(pages, idx))
+
+    def _model_tables(self, pages: list[Image.Image], indexes: list[int]) -> list[TableResult]:
         """Extract structured tables (cells with geometry) from every table region.
 
-        Table regions come from Surya layout; each crop goes to the singleton
+        Table regions come from the line finder (or Surya layout); each crop goes to the singleton
         TATR engine (which itself falls back to img2table), and boxes are
         mapped back to full-page coordinates so evidence crops line up.
         """
@@ -153,7 +158,8 @@ class LearnedAnchorPipeline(OCRPipeline):
             from app.core.model_registry import get_tatr_engine
             tatr = get_tatr_engine()
             table_idx = 1
-            for p_idx, page in enumerate(pages):
+            for p_idx in indexes:
+                page = pages[p_idx]
                 for crop, ox, oy in self._table_regions(page):
                     t_read = time.perf_counter()
                     read = tatr.extract_tables(crop)

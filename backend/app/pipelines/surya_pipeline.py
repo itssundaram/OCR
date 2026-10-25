@@ -285,13 +285,19 @@ class SuryaPipeline(OCRPipeline):
         )
 
     def extract_tables(self, pages: list[Image.Image], job_id: str) -> list[TableResult]:
-        tables = []
-        for i, img in enumerate(pages):
+        from app.pipelines.geometry_tables import geometry_first_tables
+        return geometry_first_tables(pages, job_id, lambda idx: self._model_tables(pages, idx))
+
+    def _model_tables(self, pages: list[Image.Image], indexes: list[int]) -> list[TableResult]:
+        """Surya layout finds the table regions, TATR reads each crop (the fallback when geometry found no table)."""
+        tables: list[TableResult] = []
+        for i in indexes:
+            img = pages[i]
             regions = self.layout_engine.detect_layout(img)
             table_regions = [r for r in regions if r.region_type == "Table"]
             for r in table_regions:
                 page_tables = self.tatr.extract_tables(r.cropped_image)
-                
+
                 for t in page_tables:
                     tables.append(TableResult(
                         table_index=len(tables) + 1,

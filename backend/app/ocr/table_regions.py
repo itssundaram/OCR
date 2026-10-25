@@ -22,6 +22,7 @@ from PIL import Image
 
 _MAX_SIDE = 1400        # analyse a downscaled copy; boxes are scaled back up
 _MAX_REGIONS = 6
+_FRAME_BAND = 0.04       # a long line this close to the page edge is the scan's own border / shadow, not a table rule
 _RULE_MIN_WIDTH = 0.40  # a table rule spans at least this share of the page width
 _RULE_PAIR_ALIGN = 0.04  # the two rules start and end within this share of the page width of each other
 _PAIR_MIN_GAP = 0.05     # share of page height between the rules (room for a header and a few rows)
@@ -46,6 +47,49 @@ def _merge(boxes: list[list[int]], gap: int) -> list[list[int]]:
                 out.append(b)
         boxes = out
     return boxes
+
+
+def drop_page_frame(mask: np.ndarray, horizontal: bool) -> np.ndarray:
+    """Remove the scan's own edge from a line mask: page borders, scanner shadows and the paper edge show up as very
+    long lines hugging the image boundary. Left in, they join every real rule into one page-sized "table" (a ruled
+    table on a scanned page then reads as one cell). A table rule is never both long AND within a few percent of the
+    boundary, so only such lines go; everything else is untouched."""
+    h, w = mask.shape
+    n, labels, stats, _ = cv2.connectedComponentsWithStats(mask, connectivity=8)
+    out = mask.copy()
+    for i in range(1, n):
+        x, y, bw, bh = (int(v) for v in stats[i][:4])
+        if horizontal:
+            long_enough, near_edge, whole = bw >= 0.5 * w, y <= _FRAME_BAND * h or y + bh >= h - _FRAME_BAND * h, bw >= 0.97 * w
+        else:
+            long_enough, near_edge, whole = bh >= 0.5 * h, x <= _FRAME_BAND * w or x + bw >= w - _FRAME_BAND * w, bh >= 0.97 * h
+        if (long_enough and near_edge) or whole:
+            out[labels == i] = 0
+    return out
+
+
+def _trim_to_grid(vert: np.ndarray, box: tuple[int, int, int, int]) -> tuple[int, int, int, int]:
+    """A ruled form box sitting directly above a table joins it into one region. The table has several vertical
+    rules running through its rows; the box has only its two sides. Rows with fewer than four vertical rules at the
+    top or bottom of a region that clearly contains a real grid are cut off (only when that is a sizeable part)."""
+    x1, y1, x2, y2 = box
+    sub = vert[y1:y2, x1:x2]
+    n, lab, stats, _ = cv2.connectedComponentsWithStats(sub, connectivity=8)
+    cover = np.zeros(sub.shape[0], dtype=np.int32)
+    for i in range(1, n):
+        bh = int(stats[i, cv2.CC_STAT_HEIGHT])
+        if bh >= 0.08 * sub.shape[0] and bh >= 25:
+            ya = int(stats[i, cv2.CC_STAT_TOP])
+            cover[ya:ya + bh] += 1
+    rows = np.flatnonzero(cover >= 4)
+    if rows.size == 0:
+        return box
+    top, bot = int(rows[0]), int(rows[-1])
+    height = sub.shape[0]
+    if (bot - top) < 0.15 * height or ((top + (height - bot)) < 0.2 * height):
+        return box
+    pad = max(4, int(0.004 * height))
+    return (x1, y1 + max(0, top - pad), x2, y1 + min(height, bot + pad))
 
 
 def _long_rules(horiz: np.ndarray, w: int, h: int) -> list[tuple[int, int, int]]:
@@ -126,10 +170,29 @@ def find_table_regions(page: Image.Image, pad: int = 10) -> list[tuple[int, int,
         gray = cv2.resize(gray, (int(w0 * scale), int(h0 * scale)), interpolation=cv2.INTER_AREA)
     h, w = gray.shape
 
-    binary = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 15, 10)
-    horiz = cv2.morphologyEx(binary, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_RECT, (max(25, w // 20), 1)))
-    vert = cv2.morphologyEx(binary, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_RECT, (1, max(25, h // 40))))
+    def masks(g: np.ndarray):
+        b = cv2.adaptiveThreshold(g, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 15, 10)
+        hz = cv2.morphologyEx(b, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_RECT, (max(25, w // 20), 1)))
+        vt = cv2.morphologyEx(b, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_RECT, (1, max(25, h // 40))))
+        return b, hz, vt
 
+    binary, horiz, vert = masks(gray)
+
+    # A crooked scan: the bounding boxes of two tilted tables (or a form box above a table) overlap and merge into one
+    # region. Look at the page straightened, then map the boxes back to the page as scanned.
+    back = None
+    try:
+        from app.fast.linefree import MIN_SKEW_DEG, estimate_skew
+        angle = estimate_skew(gray, horiz)
+        if abs(angle) >= MIN_SKEW_DEG:
+            rot = cv2.getRotationMatrix2D((w / 2, h / 2), angle, 1.0)
+            gray = cv2.warpAffine(gray, rot, (w, h), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=255)
+            binary, horiz, vert = masks(gray)
+            back = cv2.invertAffineTransform(rot)
+    except Exception:
+        back = None
+
+    horiz, vert = drop_page_frame(horiz, True), drop_page_frame(vert, False)
     joined = cv2.dilate(cv2.bitwise_or(horiz, vert), cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5)), iterations=2)
     contours, _ = cv2.findContours(joined, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -138,7 +201,7 @@ def find_table_regions(page: Image.Image, pad: int = 10) -> list[tuple[int, int,
         x, y, bw, bh = cv2.boundingRect(c)
         if bw >= 0.15 * w and bh >= 0.025 * h:
             boxes.append([x, y, x + bw, y + bh])
-    boxes = _merge(boxes, gap=int(0.01 * h))
+    boxes = _merge(boxes, gap=int(0.005 * h))
 
     regions: list[tuple[int, int, int, int]] = []
     for x1, y1, x2, y2 in boxes:
@@ -151,10 +214,21 @@ def find_table_regions(page: Image.Image, pad: int = 10) -> list[tuple[int, int,
 
     if not regions:
         regions = [tuple(b) for b in _rule_pair_regions(binary, horiz, vert, w, h)]
+    else:
+        regions = [_trim_to_grid(vert, r) for r in regions]
 
     regions.sort(key=lambda r: (r[2] - r[0]) * (r[3] - r[1]), reverse=True)
     regions = regions[:_MAX_REGIONS]
     regions.sort(key=lambda r: r[1])
+
+    if back is not None:                                  # boxes found on the straightened page -> page as scanned
+        mapped = []
+        for x1, y1, x2, y2 in regions:
+            pts = [(back[0, 0] * x + back[0, 1] * y + back[0, 2], back[1, 0] * x + back[1, 1] * y + back[1, 2])
+                   for x, y in ((x1, y1), (x2, y1), (x1, y2), (x2, y2))]
+            mapped.append((int(max(0, min(p[0] for p in pts))), int(max(0, min(p[1] for p in pts))),
+                           int(min(w, max(p[0] for p in pts))), int(min(h, max(p[1] for p in pts)))))
+        regions = mapped
 
     out = []
     for x1, y1, x2, y2 in regions:
