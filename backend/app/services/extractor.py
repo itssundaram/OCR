@@ -566,6 +566,8 @@ def process_document_job(job_id: str) -> None:
                 )
 
             ocr_meta = ocr_result.model_dump()
+            from app.core.build_info import build_id
+            ocr_meta["engine_build"] = build_id()
             template_la = (template.template_json or {}).get("learned_anchors") if template else None
             if template_la and not ocr_meta.get("learned_anchors"):
                 ocr_meta["learned_anchors"] = template_la

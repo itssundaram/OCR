@@ -212,6 +212,8 @@ class Settings(BaseSettings):
     FAST_REFINE_BATCH: int = 8              # cells saved + announced together
     FAST_REFINE_VLM_MAX: int = 150          # vision-model cell reads per document
     FAST_QUEUE_NAME: str = "docint-fast"    # run_fast_worker.py listens here; falls back to REDIS_QUEUE_NAME
+    FAST_AUTOSTART_WORKER: bool = True      # the API starts run_fast_worker.py itself when none is listening
+    FAST_AUTOSTART_WAIT_S: int = 25         # an upload waits this long for that worker to register before using the slow queue
     FAST_JOB_TIMEOUT_S: int = 600           # outer ceiling only; stage limits do the real work
     FAST_ALLOW_BACKGROUND_FALLBACK: bool = False  # False: answer 503 if Redis is down
     FAST_EVENT_STREAM_MAXLEN: int = 5000

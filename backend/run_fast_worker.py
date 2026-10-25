@@ -40,6 +40,10 @@ def main() -> None:
     start_heartbeat("fast_worker")
 
     conn = redis.from_url(settings.REDIS_URL)
+    from app.fast.worker_supervisor import publish_build
+    publish_build(conn)
+    from app.core.build_info import build_id
+    logger.info("fast_worker_build", build=build_id())
     # order = priority: a waiting upload is always served before background refinement
     queues = [Queue(settings.FAST_QUEUE_NAME, connection=conn), Queue(settings.FAST_REFINE_QUEUE_NAME, connection=conn)]
     worker = SimpleWorker(queues, connection=conn)

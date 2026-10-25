@@ -27,6 +27,7 @@ from sqlalchemy.orm.attributes import flag_modified
 
 import pytesseract
 
+from app.core.build_info import build_id
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.db.database import SessionLocal
@@ -291,6 +292,7 @@ class LearnedAnchorPipeline(OCRPipeline):
                 "anchor_learned": False,
                 "all_detections": detections,
                 "doc_page_width": pages[0].width if pages else 0,
+                "engine_build": build_id(),
                 "doc_page_height": pages[0].height if pages else 0,
                 "ocr_metadata": kv["ocr_res"].model_dump(),
             },
@@ -555,6 +557,7 @@ class LearnedAnchorPipeline(OCRPipeline):
                 "learned_anchors": {k: v for k, v in la.items() if k != "history"},
                 "all_detections": dets,
                 "doc_page_width": pages[0].width if pages else 0,
+                "engine_build": build_id(),
                 "doc_page_height": pages[0].height if pages else 0,
                 "ocr_metadata": kv["ocr_res"].model_dump(),
             },
@@ -1246,6 +1249,7 @@ class LearnedAnchorPipeline(OCRPipeline):
                 "fields_extracted": len(fields_out),
                 "all_detections": all_detections,
                 "doc_page_width": cur_w,
+                "engine_build": build_id(),
                 "doc_page_height": cur_h,
             },
         )
@@ -1684,6 +1688,7 @@ class LearnedAnchorPipeline(OCRPipeline):
                 "learned_anchors": new_learned_anchors,
                 "all_detections": all_detections,
                 "doc_page_width": pages[0].width if pages else 0,
+                "engine_build": build_id(),
                 "doc_page_height": pages[0].height if pages else 0,
                 "ai_engine": ai_result_engine,
                 "ai_model": ai_result_model,

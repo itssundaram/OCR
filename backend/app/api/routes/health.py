@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from redis import Redis
 
+from app.core.build_info import build_id
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.api.dependencies import get_db, get_redis_connection
@@ -49,6 +50,7 @@ def health_check(
     payload = {
         "status": overall,
         "version": settings.APP_VERSION,
+        "build": build_id(),
         "environment": settings.APP_ENV,
         "ai_provider": settings.AI_PROVIDER,
         "ai_model": settings.AI_MODEL,

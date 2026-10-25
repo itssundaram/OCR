@@ -21,11 +21,8 @@ TASK_PATH = "app.fast.runner.run_fast_job"
 
 
 def _worker_listening(conn, queue_name: str) -> bool:
-    try:
-        from rq import Queue, Worker
-        return Worker.count(connection=conn, queue=Queue(queue_name, connection=conn)) > 0
-    except Exception:
-        return False
+    from app.fast.worker_supervisor import worker_listening
+    return worker_listening(conn, queue_name)
 
 
 def dispatch_fast_job(job_id: str, force_relearn: bool, background_tasks=None) -> str:
@@ -35,10 +32,14 @@ def dispatch_fast_job(job_id: str, force_relearn: bool, background_tasks=None) -
         try:
             from rq import Callback, Queue
             fast_ready = _worker_listening(redis_conn, settings.FAST_QUEUE_NAME)
+            if not fast_ready:
+                from app.fast.worker_supervisor import ensure_fast_worker
+                fast_ready = ensure_fast_worker(redis_conn, wait_s=settings.FAST_AUTOSTART_WAIT_S)
             name = settings.FAST_QUEUE_NAME if fast_ready else settings.REDIS_QUEUE_NAME
             if not fast_ready:
                 logger.warning("fast_worker_not_listening", job_id=job_id, queue=name,
-                               hint="start `python run_fast_worker.py`; the default worker is slower to pick this up")
+                               hint="the automatic start did not produce a worker: see data/logs/fast_worker.log or run `python run_fast_worker.py`; "
+                                    "the default worker is slower to pick this up")
             Queue(name, connection=redis_conn).enqueue(
                 TASK_PATH, job_id, force_relearn,
                 job_id=job_id, job_timeout=settings.FAST_JOB_TIMEOUT_S,

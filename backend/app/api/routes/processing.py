@@ -43,6 +43,17 @@ def get_processing_job(job_id: str, db: Session = Depends(get_db)):
         "pipeline_mode": job.pipeline_mode
     }
 
+    # which code answers (the review page compares it with the build stored in the result and the fast worker's)
+    from app.core.build_info import build_id
+    response_data["api_build"] = build_id()
+    try:
+        from app.workers.queue import redis_conn as _rc
+        from app.fast.worker_supervisor import BUILD_KEY
+        _wb = _rc.get(BUILD_KEY) if _rc is not None else None
+        response_data["fast_worker_build"] = _wb.decode() if isinstance(_wb, bytes) else _wb
+    except Exception:
+        response_data["fast_worker_build"] = None
+
     # Query document page dimensions so frontend can scale bounding boxes accurately
     if job.document_id:
         stmt_pages = select(DocumentPage).where(DocumentPage.document_id == job.document_id).order_by(DocumentPage.page_number)

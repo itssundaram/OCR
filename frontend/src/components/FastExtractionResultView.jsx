@@ -431,17 +431,21 @@ const FastExtractionResultView = ({
   };
 
   // ── Document & Rendered Dimensions ─────────────────────────────────────
+  // The boxes are in the pixels of THE PAGE THEY BELONG TO. Pages of one document are often different sizes (a
+  // sideways photo next to an A4 scan), so the page being shown must use its own size - not page 1's.
+  const shownPageNo = parsePageNumber(currentPage) || 1;
+  const shownPageDims = (currentJob.page_dimensions || []).find((p) => Number(p.page_number) === shownPageNo);
   const docImgWidth =
+    shownPageDims?.width ||
     currentJob.doc_page_width ||
     ocrMetadata?.doc_page_width ||
-    currentJob.page_dimensions?.[0]?.width ||
     pageDimensions.originalWidth ||
     1654;
 
   const docImgHeight =
+    shownPageDims?.height ||
     currentJob.doc_page_height ||
     ocrMetadata?.doc_page_height ||
-    currentJob.page_dimensions?.[0]?.height ||
     pageDimensions.originalHeight ||
     2338;
 
@@ -462,9 +466,33 @@ const FastExtractionResultView = ({
   const scaleX = renderedWidth / docImgWidth;
   const scaleY = renderedHeight / docImgHeight;
 
-  // Scaling factors for template reference ground truth boxes
-  const refScaleX = renderedWidth / refWidth;
-  const refScaleY = renderedHeight / refHeight;
+
+  // Where a reference (template) box lands on THIS scan: the stored box is relative to the page it was saved on
+  // (rel_bbox when present), then moved by the offset the scan shows against the template - the median distance
+  // between each detected value and its own reference box, used only when several fields agree.
+  const referenceOffset = (() => {
+    const refs = learnedAnchors?.fields || {};
+    const dx = [];
+    const dy = [];
+    for (const [k, r] of Object.entries(refs)) {
+      const d = localFields[k]?.bbox;
+      const rb = r?.rel_bbox
+        ? { x1: r.rel_bbox.x1 * docImgWidth, y1: r.rel_bbox.y1 * docImgHeight, x2: r.rel_bbox.x2 * docImgWidth, y2: r.rel_bbox.y2 * docImgHeight }
+        : r?.bbox && r.bbox.x1 !== undefined
+          ? { x1: r.bbox.x1 * (docImgWidth / refWidth), y1: r.bbox.y1 * (docImgHeight / refHeight), x2: r.bbox.x2 * (docImgWidth / refWidth), y2: r.bbox.y2 * (docImgHeight / refHeight) }
+          : null;
+      if (!d || d.x1 === undefined || !rb) continue;
+      if ((parsePageNumber(localFields[k]?.page_number) || 1) !== shownPageNo) continue;
+      const ox = (d.x1 + d.x2) / 2 - (rb.x1 + rb.x2) / 2;
+      const oy = (d.y1 + d.y2) / 2 - (rb.y1 + rb.y2) / 2;
+      if (Math.abs(ox) <= docImgWidth * 0.08 && Math.abs(oy) <= docImgHeight * 0.08) {
+        dx.push(ox);
+        dy.push(oy);
+      }
+    }
+    const med = (a) => [...a].sort((x, y) => x - y)[Math.floor(a.length / 2)];
+    return dx.length >= 3 ? { x: med(dx), y: med(dy) } : { x: 0, y: 0 };
+  })();
 
   // Fit Page Handler: scales document so entire height fits on screen with zero clipping
   const handleFitPage = () => {
@@ -883,6 +911,28 @@ const FastExtractionResultView = ({
             {currentJob.pipeline_mode && (
               <span className="text-[11px] text-slate-400 font-mono">{currentJob.pipeline_mode}</span>
             )}
+
+            {/* Which code produced this result, and whether it is the code that is running now */}
+            {ocrMetadata?.engine_build && (
+              <span
+                className="text-[10px] text-slate-400 font-mono"
+                title={`This result was produced by build ${ocrMetadata.engine_build}. The server runs build ${currentJob.api_build || 'unknown'}.`}
+              >
+                build {ocrMetadata.engine_build}
+              </span>
+            )}
+            {currentJob.api_build && ocrMetadata?.engine_build && ocrMetadata.engine_build !== currentJob.api_build && (
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-amber-100/90 text-amber-800 border border-amber-200"
+                title="The code changed after this result was made (a git pull, for example). Press Re-run to read the document with the current code.">
+                older build - Re-run
+              </span>
+            )}
+            {currentJob.api_build && currentJob.fast_worker_build && currentJob.fast_worker_build !== currentJob.api_build && (
+              <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-red-100 text-red-800 border border-red-200"
+                title={`The fast worker runs build ${currentJob.fast_worker_build} but the server is build ${currentJob.api_build}. Restart the API (it replaces the worker) or the worker.`}>
+                worker runs older code - restart
+              </span>
+            )}
           </div>
 
           {/* Action Buttons on Right */}
@@ -1115,10 +1165,11 @@ const FastExtractionResultView = ({
 
                       const isSelected = selectedField === refKey;
                       const isHovered = hoveredField === refKey;
-                      const refLeft = refData.bbox.x1 * refScaleX;
-                      const refTop = refData.bbox.y1 * refScaleY;
-                      const refWidthPx = (refData.bbox.x2 - refData.bbox.x1) * refScaleX;
-                      const refHeightPx = (refData.bbox.y2 - refData.bbox.y1) * refScaleY;
+                      const rel = refData.rel_bbox && refData.rel_bbox.x1 !== undefined ? refData.rel_bbox : null;
+                      const refLeft = (rel ? rel.x1 * docImgWidth : refData.bbox.x1 * (docImgWidth / refWidth) ) * scaleX + referenceOffset.x * scaleX;
+                      const refTop = (rel ? rel.y1 * docImgHeight : refData.bbox.y1 * (docImgHeight / refHeight)) * scaleY + referenceOffset.y * scaleY;
+                      const refWidthPx = (rel ? (rel.x2 - rel.x1) * docImgWidth : (refData.bbox.x2 - refData.bbox.x1) * (docImgWidth / refWidth)) * scaleX;
+                      const refHeightPx = (rel ? (rel.y2 - rel.y1) * docImgHeight : (refData.bbox.y2 - refData.bbox.y1) * (docImgHeight / refHeight)) * scaleY;
 
                       return (
                         <div

@@ -476,6 +476,32 @@ def _body_row_is_junk(row: list[dict]) -> bool:
     return len(filled) == 1 and len(filled[0]["text"].strip()) <= 3 and (filled[0].get("confidence") or 0) < 0.5
 
 
+def _sound_token(tok: str) -> bool:
+    """A reading that could be a word or a number: two or more characters, mostly letters/digits."""
+    alnum = sum(ch.isalnum() for ch in tok)
+    if alnum / len(tok) < 0.6:
+        return False
+    return alnum >= 2 or tok.isdigit()                   # a lone digit is a quantity; a lone letter or mark is a speck
+
+
+def looks_like_noise_table(t: TableResult) -> bool:
+    """A "table" that is a fragment or scan noise, whatever found it. Ruled boxes on photographed log-book pages,
+    stamps and fold lines give grids whose cells hold specks ("} } Tie In | . 'i."). Two tests, both about the
+    result and neither about any document: (1) a header plus one row in two columns is a label/value fragment,
+    not a table; (2) when most readings are not word- or number-like the grid is noise - tested on narrow grids only."""
+    n_cols, n_rows = len(t.headers), len(t.rows)
+    if n_cols <= 2 and n_rows <= 1:
+        return True
+    if n_cols <= 4 and n_rows <= 1 and _header_hits([str(h or "") for h in t.headers], set()) < 2:
+        return True                                   # a header and one row in a few columns whose header is not a clear one
+    if t.extraction_method == "grid_text" and n_rows < 3:
+        return True                                   # no rules vouch for it and little is left once the header is taken out
+    toks = [tok for cell in list(t.headers) + [c for r in t.rows for c in r] for tok in str(cell or "").split()]
+    if n_cols <= 3 and len(toks) >= 6 and sum(1 for tok in toks if _sound_token(tok)) / len(toks) < 0.5:
+        return True                                   # (wide scanned tables carry rule specks too, and stay)
+    return False
+
+
 def finalize_tables(tables: list[TableResult], pages: dict, template_fields: list[dict] | None = None) -> list[TableResult]:
     extra = set()
     for f in template_fields or []:
@@ -523,7 +549,11 @@ def finalize_tables(tables: list[TableResult], pages: dict, template_fields: lis
     out: list[TableResult] = []
     for i, m in enumerate(merged, start=1):
         out.append(_analyse(m, i, pages))
-    return out
+    kept = [t for t in out if not looks_like_noise_table(t)]      # label/value fragments and speck grids are not tables
+    if len(kept) != len(out):
+        for i, t in enumerate(kept, start=1):
+            t.table_index = i
+    return kept
 
 
 def _header_cleanliness(cell: dict | None) -> float:

@@ -86,6 +86,17 @@ async def lifespan(app: FastAPI):
     preload_models()
 
     import asyncio
+    if settings.FAST_AUTOSTART_WORKER:
+        # start the fast worker now (in a thread: it may wait for Redis), so the first upload already finds it
+        def _warm_fast_worker():
+            try:
+                from app.workers.queue import redis_conn
+                from app.fast.worker_supervisor import ensure_fast_worker
+                ensure_fast_worker(redis_conn, wait_s=0, retire_stale=True)
+            except Exception as exc:
+                logger.warning("fast_worker_autostart_skipped", error=str(exc)[:160])
+        asyncio.get_running_loop().run_in_executor(None, _warm_fast_worker)
+
     from app.workers.reaper import reaper_loop
     reaper_task = asyncio.create_task(reaper_loop())
 

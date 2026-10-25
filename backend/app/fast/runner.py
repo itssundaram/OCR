@@ -17,6 +17,7 @@ import datetime
 import time
 from concurrent.futures import ThreadPoolExecutor
 
+from app.core.build_info import build_id
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.db.database import SessionLocal
@@ -199,6 +200,7 @@ def _run_fast_job(job_id: str, force_relearn: bool = False) -> None:
                 "speed": engine.timings, "all_detections": engine.all_detections(),
                 "doc_page_width": pages[0].width if pages else None,
                 "doc_page_height": pages[0].height if pages else None,
+                "engine_build": build_id(),
                 "page_sources": {str(p.page_number): p.source for p in pages},
                 "page_types": {str(k): v for k, v in sorted(engine.extractor.page_types.items())},
                 "blocks": engine.blocks, "warnings": engine.warnings,

@@ -23,6 +23,7 @@ import numpy as np
 
 from app.core.config import settings
 from app.core.logging import get_logger
+from app.fast.tableschema import looks_like_noise_table
 from app.fast.triage import words_to_lines
 from app.fast.types import PageData
 from app.ocr.table_regions import find_table_regions
@@ -785,6 +786,11 @@ def extract_page_tables(page: PageData, first_index: int = 1) -> list[TableResul
         if t is not None and looks_like_form_block(t):
             logger.info("fast_table_skipped_form_block", page=page.page_number, cols=len(t.headers))
             t = None
+        if t is not None and looks_like_noise_table(t):
+            logger.info("fast_table_skipped_noise", page=page.page_number, cols=len(t.headers), rows=len(t.rows))
+            t = None
+        if t is not None and from_text:
+            t.extraction_method = "grid_text"                          # found from text alignment, not from ruling lines
         if t is not None and from_text and not _plausible_text_table(t):
             logger.info("fast_text_table_rejected", page=page.page_number, cols=len(t.headers), rows=len(t.rows))
             t = None

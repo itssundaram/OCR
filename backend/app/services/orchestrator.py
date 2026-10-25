@@ -26,6 +26,7 @@ import datetime
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from app.core.build_info import build_id
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.db.database import SessionLocal
@@ -365,6 +366,7 @@ def run_single_pipeline_job(job_id: str, pipeline_name: str, force_relearn: bool
                 "learned_anchors": final_la,
                 "all_detections": all_dets,
                 "doc_page_width": result.metadata.get("doc_page_width"),
+                "engine_build": build_id(),
                 "doc_page_height": result.metadata.get("doc_page_height"),
             })
 
@@ -690,6 +692,7 @@ def run_pipeline_comparison_job(job_id: str, pipeline_names: list[str]) -> None:
                 "flagged_fields": flagged,
                 "table_source_pipeline": table_source,
                 "doc_page_width": (first_ok.metadata.get("doc_page_width") if first_ok else None),
+                "engine_build": build_id(),
                 "doc_page_height": (first_ok.metadata.get("doc_page_height") if first_ok else None),
                 "raw_results": {
                     p_name: {
