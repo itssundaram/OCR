@@ -45,6 +45,25 @@ def _fields() -> dict:
 
 
 @lru_cache(maxsize=1)
+def _synonyms_file() -> dict:
+    try:
+        return json.loads((DATA / "label_synonyms.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def label_synonym_groups() -> list[list[str]]:
+    """Groups of printed labels naming one concept (label_synonyms.json). Independent of KNOWLEDGE_ENABLED:
+    this is general label matching, not the voucher knowledge."""
+    return [[str(p) for p in g] for g in _synonyms_file().get("groups", []) if isinstance(g, list)]
+
+
+def spelling_variants() -> dict[str, str]:
+    """variant -> canonical token, applied to labels before they are compared (label_synonyms.json)."""
+    return {str(k): str(v) for k, v in (_synonyms_file().get("spellings") or {}).items() if not str(k).startswith("_")}
+
+
+@lru_cache(maxsize=1)
 def _types() -> list[dict]:
     return json.loads((DATA / "doc_types.json").read_text(encoding="utf-8"))["types"]
 

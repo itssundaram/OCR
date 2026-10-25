@@ -862,14 +862,16 @@ const FastExtractionResultView = ({
             <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-0.5 text-xs font-medium text-slate-700">
               <span className="text-slate-400 font-bold uppercase text-[9px]">Document type:</span>
               <span className="font-semibold text-blue-800 font-mono text-[11px]">
-                {currentJob.template_code || 'TMS engine chasis no'}
+                {currentJob.template_code || 'Unknown'}
               </span>
             </div>
 
-            {/* Template Version Pill */}
-            <span className="text-[11px] text-slate-500 font-mono bg-slate-100 px-2 py-0.5 rounded border border-slate-200/60">
-              tms_family v1.0.0
-            </span>
+            {/* Template Version Pill (the version this job actually ran against) */}
+            {currentJob.template_version != null && (
+              <span className="text-[11px] text-slate-500 font-mono bg-slate-100 px-2 py-0.5 rounded border border-slate-200/60">
+                template v{currentJob.template_version}
+              </span>
+            )}
 
             {/* Flagged Count Pill */}
             {flaggedCount > 0 && (
@@ -878,15 +880,13 @@ const FastExtractionResultView = ({
               </span>
             )}
 
-            <span className="text-[11px] text-slate-400 font-mono">↻ run #1</span>
+            {currentJob.pipeline_mode && (
+              <span className="text-[11px] text-slate-400 font-mono">{currentJob.pipeline_mode}</span>
+            )}
           </div>
 
           {/* Action Buttons on Right */}
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono font-medium text-slate-600 bg-slate-100 px-2.5 py-1 rounded border border-slate-200">
-              Run #1 (current) ▾
-            </span>
-
             {/* Ground Truth Status & Management Action */}
             {hasUnsavedModifications ? (
               <button

@@ -32,6 +32,7 @@ def get_processing_job(job_id: str, db: Session = Depends(get_db)):
         "template_id": job.template_id,
         "original_filename": job.document.original_filename if job.document else "Unknown Document",
         "template_code": job.template.code if job.template else "Unknown Template",
+        "template_version": job.template_version,
         "status": job.status,
         "started_at": job.started_at,
         "completed_at": job.completed_at,

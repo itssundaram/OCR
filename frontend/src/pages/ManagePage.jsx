@@ -385,7 +385,7 @@ const ManagePage = () => {
                </div>
                <div>
                  <div className="flex flex-col gap-1">
-                   <span className="text-sm font-bold text-gray-800 font-heading tracking-tight leading-tight m-0 flex items-center gap-3">Active Schema Definition: <span className="text-[0.6rem] font-bold text-[#1e3a8a] tracking-widest uppercase bg-blue-50 px-2 py-0.5 rounded border border-blue-100">{departments.find(d => d.id === selectedTemplate.department_id)?.slug?.substring(0,3).toUpperCase() || 'TMS'} Department</span> <span className="text-[0.6rem] font-bold text-gray-500 tracking-widest uppercase ml-2">ID: <span className="font-mono">sch_{String(selectedTemplate.id).padStart(8, '0')}</span></span></span>
+                   <span className="text-sm font-bold text-gray-800 font-heading tracking-tight leading-tight m-0 flex items-center gap-3">Active Schema Definition: <span className="text-[0.6rem] font-bold text-[#1e3a8a] tracking-widest uppercase bg-blue-50 px-2 py-0.5 rounded border border-blue-100">{departments.find(d => d.id === selectedTemplate.department_id)?.slug?.substring(0,3).toUpperCase() || '—'} Department</span> <span className="text-[0.6rem] font-bold text-gray-500 tracking-widest uppercase ml-2">ID: <span className="font-mono">sch_{String(selectedTemplate.id).padStart(8, '0')}</span></span></span>
                    <span className="font-bold text-[#1e3a8a] text-xl font-heading">{selectedTemplate.code}</span>
                  </div>
                  <p className="text-sm text-secondary mt-1">JSON schema specifications and extraction field constraints enforced during pipeline execution.</p>

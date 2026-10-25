@@ -1,0 +1,305 @@
+{
+ "_note": "Groups of printed labels that name the same concept (people write them as printed; they are normalised like labels). Edit freely - this file is data, not code. An operator can add more groups through settings.LABEL_SYNONYMS_FILE, and each template field can carry its own aliases; neither needs a code change.",
+ "groups": [
+  [
+   "from",
+   "unit",
+   "issued by",
+   "issuing unit",
+   "consignor",
+   "sender",
+   "despatched by",
+   "dispatched by",
+   "originator",
+   "raised by",
+   "submitted by",
+   "forwarded by"
+  ],
+  [
+   "to",
+   "issued to",
+   "consignee",
+   "consigned to",
+   "consign to",
+   "receiver",
+   "recipient",
+   "addressee",
+   "despatched to",
+   "dispatched to",
+   "forwarded to",
+   "submitted to"
+  ],
+  [
+   "name",
+   "full name",
+   "name of person",
+   "person name",
+   "name of individual",
+   "candidate name",
+   "employee name",
+   "name of officer",
+   "name of the person"
+  ],
+  [
+   "father name",
+   "father s name",
+   "name of father",
+   "fathers name",
+   "s o",
+   "son of"
+  ],
+  [
+   "rank",
+   "designation",
+   "grade"
+  ],
+  [
+   "address",
+   "addr",
+   "postal address",
+   "mailing address",
+   "residential address",
+   "permanent address"
+  ],
+  [
+   "place",
+   "location",
+   "station",
+   "stn",
+   "loc"
+  ],
+  [
+   "phone",
+   "tel",
+   "telephone",
+   "mobile",
+   "mob",
+   "mobile no",
+   "contact no",
+   "ph no",
+   "phone no",
+   "tele no"
+  ],
+  [
+   "email",
+   "e mail",
+   "mail id",
+   "email id",
+   "e mail id",
+   "email address"
+  ],
+  [
+   "date",
+   "dated",
+   "dt",
+   "issue date",
+   "date of issue",
+   "date issued",
+   "doc date",
+   "document date",
+   "dtd"
+  ],
+  [
+   "dob",
+   "date of birth",
+   "birth date",
+   "born on"
+  ],
+  [
+   "due date",
+   "date due",
+   "payable by",
+   "last date"
+  ],
+  [
+   "ref no",
+   "ref",
+   "reference no",
+   "reference",
+   "our ref",
+   "your ref",
+   "file no",
+   "letter no",
+   "ref number"
+  ],
+  [
+   "sl no",
+   "s no",
+   "sr no",
+   "serial no",
+   "serial",
+   "ser no",
+   "ser",
+   "sno"
+  ],
+  [
+   "inv no",
+   "invoice no",
+   "bill no",
+   "invoice number"
+  ],
+  [
+   "po no",
+   "p o no",
+   "purchase order no",
+   "purchase order",
+   "order no"
+  ],
+  [
+   "batch no",
+   "batch number",
+   "lot no"
+  ],
+  [
+   "id no",
+   "identity no",
+   "identification no",
+   "card no"
+  ],
+  [
+   "gst no",
+   "gstin",
+   "gst in",
+   "gst number",
+   "gst"
+  ],
+  [
+   "pan",
+   "pan no",
+   "pan number",
+   "permanent account number"
+  ],
+  [
+   "aadhaar no",
+   "aadhar no",
+   "aadhaar",
+   "aadhar",
+   "uid",
+   "uidai"
+  ],
+  [
+   "amount",
+   "amt",
+   "total amount",
+   "grand total",
+   "net amount",
+   "net payable",
+   "amount payable",
+   "total value"
+  ],
+  [
+   "qty",
+   "quantity",
+   "qnty",
+   "no of units"
+  ],
+  [
+   "rate",
+   "unit price",
+   "unit rate"
+  ],
+  [
+   "description",
+   "desc",
+   "particulars",
+   "item description",
+   "details",
+   "nomenclature"
+  ],
+  [
+   "remarks",
+   "remark",
+   "comments",
+   "comment",
+   "note",
+   "notes"
+  ],
+  [
+   "authority",
+   "auth",
+   "authorisation",
+   "authorization",
+   "order authority"
+  ],
+  [
+   "ba no",
+   "veh ba no",
+   "army no",
+   "ba number",
+   "ba reg no"
+  ],
+  [
+   "veh no",
+   "vehicle no",
+   "reg no",
+   "registration no",
+   "vehicle registration no",
+   "regn no"
+  ],
+  [
+   "chasis no",
+   "chassis no",
+   "frame no",
+   "vin"
+  ],
+  [
+   "eng no",
+   "engine no",
+   "motor no"
+  ],
+  [
+   "rv no",
+   "receipt voucher no",
+   "receipt voucher",
+   "rv number"
+  ],
+  [
+   "iv no",
+   "issue voucher no",
+   "issue voucher",
+   "iv number"
+  ],
+  [
+   "type of str",
+   "type of store",
+   "type of stores",
+   "store type",
+   "str type",
+   "category of store"
+  ],
+  [
+   "cat part no",
+   "cat no",
+   "part no",
+   "catalogue no",
+   "part number",
+   "item code",
+   "stock no",
+   "nsn"
+  ],
+  [
+   "a u",
+   "au",
+   "unit of issue",
+   "uom",
+   "unit of measure"
+  ]
+ ],
+ "spellings": {
+  "_note": "Variant spellings folded to one token before labels are compared (variant -> canonical).",
+  "number": "no",
+  "num": "no",
+  "nos": "no",
+  "nr": "no",
+  "dated": "date",
+  "dt": "date",
+  "chassis": "chasis",
+  "chasi": "chasis",
+  "authority": "auth",
+  "regn": "reg",
+  "registration": "reg",
+  "quantity": "qty",
+  "qyt": "qty",
+  "vehicle": "veh"
+ }
+}

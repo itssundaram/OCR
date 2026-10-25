@@ -7,7 +7,8 @@ Tables from geometry: the ruling lines give the grid, the page's own words
      boundaries (columns come from word gaps when there are no vertical rules)
   3. every word goes to the cell that contains its centre
 
-Borderless tables are not found by line detection; with
+A table with a header rule and a closing rule but no row rules (an invoice) is read with rows taken from the text
+lines. Tables with no rules at all are not found by line detection; with
 FAST_TATR_FALLBACK_ENABLED a TATR pass on a crop can be tried (time-boxed).
 """
 from __future__ import annotations
@@ -28,6 +29,9 @@ from app.ocr.table_regions import find_table_regions
 from app.pipelines.base import TableResult
 
 logger = get_logger(__name__)
+
+TEXT_ROWS_MIN_COLS = 3    # a grid-less table read by text lines needs at least this many columns ...
+TEXT_ROWS_MIN_ROWS = 4    # ... and a header plus this many rows - smaller blocks are forms, not tables
 
 
 def _line_positions(mask: np.ndarray, axis: int, min_len: float) -> list[float]:
@@ -218,6 +222,34 @@ def _split_merged_header(row_b: list[float], col_b: list[float], words: list, x1
     return row_b
 
 
+def _rows_from_text(words: list, y1: float, rh: float, med_h: float) -> list[float]:
+    """Row boundaries for a table with no row rules: the page's own text lines. A line sitting closer to the one above
+    than the table's usual line pitch is a wrapped continuation of that row, not a new row."""
+    ctr = sorted((((w.bbox.y1 + w.bbox.y2) / 2 - y1), w.bbox.y1 - y1, w.bbox.y2 - y1) for w in words)
+    lines: list[list[float]] = []                      # [mean centre, top, bottom]
+    for cy, top, bot in ctr:
+        if lines and cy - lines[-1][0] <= 0.6 * med_h:
+            n = lines[-1]
+            n[0] = (n[0] + cy) / 2
+            n[1], n[2] = min(n[1], top), max(n[2], bot)
+        else:
+            lines.append([cy, top, bot])
+    if len(lines) < 2:
+        return []
+    gaps = [b[0] - a[0] for a, b in zip(lines, lines[1:])]
+    pitch = median(gaps)
+    starts = [0]
+    for i, g in enumerate(gaps, start=1):
+        if g >= 0.75 * pitch:
+            starts.append(i)
+    edges = [0.0]
+    for k in range(1, len(starts)):
+        prev_last, nxt_first = lines[starts[k] - 1], lines[starts[k]]
+        edges.append((prev_last[2] + nxt_first[1]) / 2)
+    edges.append(rh)
+    return edges
+
+
 def _grid_table(page: PageData, region: tuple[int, int, int, int], index: int) -> TableResult | None:
     x1, y1, x2, y2 = region
     rw, rh = x2 - x1, y2 - y1
@@ -239,17 +271,24 @@ def _grid_table(page: PageData, region: tuple[int, int, int, int], index: int) -
     med_h = median(max(1.0, w.bbox.y2 - w.bbox.y1) for w in words)
 
     outside: list = []
+    text_rows: list[float] = []
     if len(ys) >= 3:
         gaps = [b - a for a, b in zip(ys, ys[1:])]
         row_b = _boundaries(ys, float(rh), [(w.bbox.y1 - y1, w.bbox.y2 - y1) for w in words], 2.2 * median(gaps))
     else:
         row_b = _merge_close(sorted(set([0.0, float(rh)] + ys)), 5)
+        rule_row_b = row_b
+        text_rows = _rows_from_text(words, y1, float(rh), med_h) if (len(words) >= 6 and len(xs) < 2) else []
+        if text_rows:
+            row_b = text_rows                                          # no grid at all: rows are the text lines
     if len(xs) >= 3:
         col_b = _merge_close(sorted(xs), 5)               # rules only: margins hold no cells
     elif len(xs) == 2:
         col_b = _merge_close(sorted(set([0.0, float(rw)] + xs)), 5)
     else:
         col_b = _columns_from_spans([(w.bbox.x1 - x1, w.bbox.x2 - x1) for w in words], 0.0, float(rw), med_h)
+    if text_rows and (len(col_b) - 1 < TEXT_ROWS_MIN_COLS or len(row_b) - 1 < TEXT_ROWS_MIN_ROWS):
+        row_b = rule_row_b                                             # too small to be a table: a form block, as before
     row_b = _split_merged_header(row_b, col_b, words, x1, y1, med_h, slope, rw / 2)
     n_rows, n_cols = len(row_b) - 1, len(col_b) - 1
     if n_rows < 2 or n_cols < 2 or n_rows > 300 or n_cols > 40:

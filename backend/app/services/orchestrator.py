@@ -43,6 +43,7 @@ from app.pipelines.registry import get_pipeline
 import app.pipelines  # noqa: F401 - ensure all pipelines are registered
 from app.ai.field_fallback import classify_all_fields
 from app.ai.consensus import compare_pipeline_results, _normalize, overall_consensus_rate
+from app.fast.validate import assess
 from app.ocr.image_extractor import extract_pages_as_images_with_metadata
 from app.services.asset_service import get_asset_service
 from app.services.extractor import (
@@ -99,6 +100,16 @@ def _tables_out(tables) -> list[dict]:
         }
         for t in tables
     ]
+
+
+def _passes_field_checks(fdef: dict | None, value) -> bool:
+    """Does a value satisfy its template field's own checks (non-empty, type, pattern, length)? Same checks the
+    extractors use (app/fast/validate.assess), minus the confidence threshold: this asks whether the value is
+    plausible for the field, not whether the reader was sure."""
+    try:
+        return assess(fdef, str(value or ""), 1.0).status == "validated"
+    except Exception:
+        return True
 
 
 def _fail_open_pipeline_runs(job_id: str, message: str) -> None:
@@ -446,6 +457,7 @@ def run_pipeline_comparison_job(job_id: str, pipeline_names: list[str]) -> None:
             template_dict["read_only"] = True
 
             pipelines = {name: get_pipeline(name) for name in pipeline_names}
+            field_defs = {f.get("name"): f for f in template_dict["fields"] if isinstance(f, dict)}
 
             results_by_pipeline: dict[str, dict] = {}  # name -> {field_name: (value, confidence, bbox, page_id)}
             pipeline_statuses: dict[str, str] = {}
@@ -541,7 +553,10 @@ def run_pipeline_comparison_job(job_id: str, pipeline_names: list[str]) -> None:
 
                 field_rows_by_pipeline[name] = {r["field_name"]: r for r in template_rows}
                 results_by_pipeline[name] = {
-                    r["field_name"]: (r["field_value"], r["confidence"] or 0.0, r["bbox_json"], r["page_id"]) for r in template_rows
+                    r["field_name"]: (
+                        r["field_value"], r["confidence"] or 0.0, r["bbox_json"], r["page_id"],
+                        _passes_field_checks(field_defs.get(r["field_name"]), r["field_value"]),
+                    ) for r in template_rows
                 }
 
             db.flush()

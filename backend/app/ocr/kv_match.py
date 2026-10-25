@@ -13,22 +13,17 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from app.knowledge.kb import generic_label, value_is_header, zone_ok
+from app.knowledge.kb import generic_label, spelling_variants, value_is_header, zone_ok
 from app.ocr import label_kb
 from app.ocr.kv_discovery import DiscoveredPair
 
 MIN_SCORE = 0.85  # below this a label is not considered the same field
 
-# Spellings that mean the same thing on the forms we read.
-_CANON = {
-    "number": "no", "num": "no", "nos": "no", "nr": "no",
-    "dated": "date", "dt": "date",
-    "chassis": "chasis", "chasi": "chasis",
-    "authority": "auth",
-    "regn": "reg", "registration": "reg",
-    "quantity": "qty", "qyt": "qty",
-    "vehicle": "veh",
-}
+def _canon() -> dict[str, str]:
+    """Variant spellings folded to one token (app/knowledge/data/label_synonyms.json, editable data)."""
+    return spelling_variants()
+
+
 
 
 _SIDE_WORDS = {"left", "right", "side", "hand", "of", "the", "page"}
@@ -46,7 +41,8 @@ class KVMatch:
 def _tokens(text: str) -> list[str]:
     text = re.sub(r"\(.*?\)", " ", text or "")           # "UNIT (right side)" -> "UNIT"
     words = re.findall(r"[a-z0-9]+", text.lower().replace("_", " "))
-    return [_CANON.get(w, w) for w in words]
+    canon = _canon()
+    return [canon.get(w, w) for w in words]
 
 
 def _edit_distance(a: str, b: str, limit: int) -> int:

@@ -231,3 +231,17 @@ def test_tables_from_a_pipeline_without_table_fields_are_not_dropped_when_it_rea
 
     r = _Plain().run([], {"fields": [{"name": "iv_no", "type": "text"}]}, "job-y")
     assert r.tables == []                                           # a costly separate table pass is still skipped
+
+
+def test_an_implausible_value_for_a_typed_field_does_not_win_the_vote(env):
+    S, job_id = env
+    with S() as db:                                    # make "iv_no" a date field for this test
+        t = db.query(Template).first()
+        t.template_json = {"fields": [{"name": "when", "type": "date", "description": "d"}]}
+        db.commit()
+    _register("_stub_a", FIELDS=[_fr("when", "of Final Insp - 30 May", 0.95)])
+    _register("_stub_b", FIELDS=[_fr("when", "30 May 2025", 0.55)])
+    orch.run_pipeline_comparison_job(job_id, ["_stub_a", "_stub_b"])
+    job, runs, res, events, final = _state(S, job_id)
+    assert res.extracted_json["fields"]["when"]["value"] == "30 May 2025"
+    assert res.extracted_json["fields"]["when"]["resolution_rule"] == "only_valid"

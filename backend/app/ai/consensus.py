@@ -14,6 +14,8 @@ Dynamic Highest Conf" framing):
     and the field is flagged needs_review=True — this is the product's
     "Flagged Discrepancies / Verification Needed" case.
   - only one pipeline reported the field at all                -> "single_pipeline"
+  - several reported it but only one value passes the field's
+    own checks (type / pattern / non-empty)                    -> "only_valid"
 
 Pure functions only: no DB, no pipeline execution, no GPU/LLM calls. Takes
 already-computed per-pipeline field values and produces the comparison —
@@ -42,6 +44,7 @@ class PipelineFieldValue:
     confidence: float
     bbox_json: dict | None = None
     page_id: str | None = None
+    valid: bool = True            # passed the template field's own checks (type / pattern / non-empty); see below
 
 
 @dataclass
@@ -59,15 +62,31 @@ def compare_field_across_pipelines(
     field_name: str,
     values: list[PipelineFieldValue],
 ) -> FieldComparison:
-    """One field's cross-pipeline comparison + consensus resolution."""
+    """One field's cross-pipeline comparison + consensus resolution.
+
+    A value that fails the template field's own checks (an empty value, a "date" that is not a date, text that
+    misses the field's pattern) does not get a vote while at least one other pipeline's value passes: a confident
+    but wrong reading must not out-vote a plausible one. All values still appear in the comparison. When NO value
+    passes, nothing is excluded and the usual rules (and review flag) apply."""
     if not values:
         return FieldComparison(field_name=field_name, values=[], needs_review=True, resolution_rule="no_data")
+
+    all_values = values
+    valid = [v for v in values if v.valid]
+    if valid and len(valid) < len(values):
+        values = valid
+        if len(values) == 1:
+            v = values[0]
+            return FieldComparison(
+                field_name=field_name, values=all_values, consensus_value=v.value, consensus_confidence=v.confidence,
+                agreement=False, resolution_rule="only_valid", needs_review=False,
+            )
 
     if len(values) == 1:
         v = values[0]
         return FieldComparison(
             field_name=field_name,
-            values=values,
+            values=all_values,
             consensus_value=v.value,
             consensus_confidence=v.confidence,
             agreement=True,
@@ -83,7 +102,7 @@ def compare_field_across_pipelines(
     if top_count == len(values):
         consensus_confidence = sum(v.confidence for v in matching) / len(matching)
         return FieldComparison(
-            field_name=field_name, values=values,
+            field_name=field_name, values=all_values,
             consensus_value=matching[0].value, consensus_confidence=consensus_confidence,
             agreement=True, resolution_rule="unanimous", needs_review=False,
         )
@@ -91,7 +110,7 @@ def compare_field_across_pipelines(
     if top_count > len(values) / 2:
         consensus_confidence = sum(v.confidence for v in matching) / len(matching)
         return FieldComparison(
-            field_name=field_name, values=values,
+            field_name=field_name, values=all_values,
             consensus_value=matching[0].value, consensus_confidence=consensus_confidence,
             agreement=False, resolution_rule="majority", needs_review=False,
         )
@@ -100,7 +119,7 @@ def compare_field_across_pipelines(
     # flag it for human review (the product's "Flagged Discrepancies" case).
     best = max(values, key=lambda v: v.confidence)
     return FieldComparison(
-        field_name=field_name, values=values,
+        field_name=field_name, values=all_values,
         consensus_value=best.value, consensus_confidence=best.confidence,
         agreement=False, resolution_rule="highest_confidence", needs_review=True,
     )
@@ -111,8 +130,8 @@ def compare_pipeline_results(
 ) -> list[FieldComparison]:
     """
     results_by_pipeline: {"surya": {"invoice_number": ("INV-1", 0.95), ...}, "tesseract": {...}}
-    A field's tuple is (value, confidence) or (value, confidence, bbox_json, page_id);
-    the trailing two are optional and only carried through to the comparison.
+    A field's tuple is (value, confidence), optionally followed by bbox_json, page_id and
+    valid (False = failed the template field's own checks, see compare_field_across_pipelines).
 
     Returns one FieldComparison per field name reported by ANY pipeline, in
     first-seen order. A pipeline that didn't report a field is simply absent
@@ -136,6 +155,7 @@ def compare_pipeline_results(
                 confidence=pfields[field_name][1],
                 bbox_json=pfields[field_name][2] if len(pfields[field_name]) > 2 else None,
                 page_id=pfields[field_name][3] if len(pfields[field_name]) > 3 else None,
+                valid=bool(pfields[field_name][4]) if len(pfields[field_name]) > 4 else True,
             )
             for pname, pfields in results_by_pipeline.items()
             if field_name in pfields

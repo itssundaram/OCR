@@ -6,7 +6,7 @@ A template field called "unit" is found on a form that prints "From"; "BA No" is
 that name the same concept and answers "do these two labels name the same thing?".
 
 Three sources, all optional and all merged:
-  1. SEED_GROUPS below - general business / form vocabulary plus the services-logistics forms we read.
+  1. app/knowledge/data/label_synonyms.json - general business / form vocabulary plus the forms we read (data).
   2. settings.LABEL_SYNONYMS_FILE - a JSON file (list of lists of phrases) an operator can extend without code.
   3. per-template aliases on the field itself (template_json fields[].aliases). Those are exact matches in
      kv_match; they are also LEARNED automatically when a person locks a field whose printed label differs
@@ -29,53 +29,10 @@ logger = get_logger(__name__)
 
 SYNONYM_SCORE = 0.88      # below exact (1.0) and typo-tolerant (0.9) matches, above the loose subset match (0.86)
 
-# Each group = phrases that name one concept. Written as people print them; normalised the same way as labels.
-SEED_GROUPS: list[list[str]] = [
-    # who / from / to
-    ["from", "unit", "issued by", "issuing unit", "consignor", "sender", "despatched by", "dispatched by",
-     "originator", "raised by", "submitted by", "forwarded by"],
-    ["to", "issued to", "consignee", "consigned to", "consign to", "receiver", "recipient", "addressee",
-     "despatched to", "dispatched to", "forwarded to", "submitted to"],
-    ["name", "full name", "name of person", "person name", "name of individual", "candidate name", "employee name",
-     "name of officer", "name of the person"],
-    ["father name", "father s name", "name of father", "fathers name", "s o", "son of"],
-    ["rank", "designation", "grade"],
-    ["address", "addr", "postal address", "mailing address", "residential address", "permanent address"],
-    ["place", "location", "station", "stn", "loc"],
-    ["phone", "tel", "telephone", "mobile", "mob", "mobile no", "contact no", "ph no", "phone no", "tele no"],
-    ["email", "e mail", "mail id", "email id", "e mail id", "email address"],
-    # dates
-    ["date", "dated", "dt", "issue date", "date of issue", "date issued", "doc date", "document date", "dtd"],
-    ["dob", "date of birth", "birth date", "born on"],
-    ["due date", "date due", "payable by", "last date"],
-    # numbers / references
-    ["ref no", "ref", "reference no", "reference", "our ref", "your ref", "file no", "letter no", "ref number"],
-    ["sl no", "s no", "sr no", "serial no", "serial", "ser no", "ser", "sno"],
-    ["inv no", "invoice no", "bill no", "invoice number"],
-    ["po no", "p o no", "purchase order no", "purchase order", "order no"],
-    ["batch no", "batch number", "lot no"],
-    ["id no", "identity no", "identification no", "card no"],
-    ["gst no", "gstin", "gst in", "gst number", "gst"],
-    ["pan", "pan no", "pan number", "permanent account number"],
-    ["aadhaar no", "aadhar no", "aadhaar", "aadhar", "uid", "uidai"],
-    # money / quantity
-    ["amount", "amt", "total amount", "grand total", "net amount", "net payable", "amount payable", "total value"],
-    ["qty", "quantity", "qnty", "no of units"],
-    ["rate", "unit price", "unit rate"],
-    ["description", "desc", "particulars", "item description", "details", "nomenclature"],
-    ["remarks", "remark", "comments", "comment", "note", "notes"],
-    ["authority", "auth", "authorisation", "authorization", "order authority"],
-    # vehicle / stores / services-logistics forms
-    ["ba no", "veh ba no", "army no", "ba number", "ba reg no"],
-    ["veh no", "vehicle no", "reg no", "registration no", "vehicle registration no", "regn no"],
-    ["chasis no", "chassis no", "frame no", "vin"],
-    ["eng no", "engine no", "motor no"],
-    ["rv no", "receipt voucher no", "receipt voucher", "rv number"],
-    ["iv no", "issue voucher no", "issue voucher", "iv number"],
-    ["type of str", "type of store", "type of stores", "store type", "str type", "category of store"],
-    ["cat part no", "cat no", "part no", "catalogue no", "part number", "item code", "stock no", "nsn"],
-    ["a u", "au", "unit of issue", "uom", "unit of measure"],
-]
+def _seed_groups() -> list[list[str]]:
+    """The shipped vocabulary: app/knowledge/data/label_synonyms.json (data, edited without touching code)."""
+    from app.knowledge.kb import label_synonym_groups
+    return label_synonym_groups()
 
 
 def _norm(text: str) -> tuple[str, ...]:
@@ -114,7 +71,7 @@ def _build() -> dict[tuple[str, ...], set[int]]:
     extra, stamp = _file_groups()
     _stamp = stamp
     index: dict[tuple[str, ...], set[int]] = {}
-    for gid, group in enumerate([*SEED_GROUPS, *extra]):
+    for gid, group in enumerate([*_seed_groups(), *extra]):
         for phrase in group:
             key = _norm(phrase)
             if key:

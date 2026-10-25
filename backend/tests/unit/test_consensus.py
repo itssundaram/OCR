@@ -89,3 +89,33 @@ def test_overall_consensus_rate():
 
 def test_overall_consensus_rate_of_empty_list_is_zero():
     assert overall_consensus_rate([]) == 0.0
+
+
+# ── a value that fails the field's own checks does not out-vote one that passes ──────────────────────────────
+def _vv(pipeline, value, confidence, valid):
+    return PipelineFieldValue(pipeline_name=pipeline, value=value, confidence=confidence, valid=valid)
+
+
+def test_a_confident_but_invalid_value_does_not_beat_a_plausible_one():
+    values = [_vv("learned_anchor", "of Final Insp - 30 May", 0.95, False), _vv("fast_ocr", "30 May 2025", 0.6, True)]
+    r = compare_field_across_pipelines("date", values)
+    assert r.consensus_value == "30 May 2025"
+    assert r.resolution_rule == "only_valid" and r.needs_review is False
+    assert len(r.values) == 2                                    # the rejected reading is still shown
+
+
+def test_when_no_value_passes_nothing_is_excluded():
+    values = [_vv("a", "x", 0.9, False), _vv("b", "y", 0.4, False)]
+    r = compare_field_across_pipelines("date", values)
+    assert r.resolution_rule == "highest_confidence" and r.consensus_value == "x" and r.needs_review is True
+
+
+def test_valid_values_still_vote_among_themselves():
+    values = [_vv("a", "1", 0.9, True), _vv("b", "1", 0.8, True), _vv("c", "zzz", 0.99, False)]
+    r = compare_field_across_pipelines("n", values)
+    assert r.consensus_value == "1" and r.resolution_rule == "unanimous" and len(r.values) == 3
+
+
+def test_the_five_element_tuple_form_carries_validity():
+    out = compare_pipeline_results({"a": {"d": ("bad", 0.9, None, None, False)}, "b": {"d": ("ok", 0.5, None, None, True)}})
+    assert out[0].consensus_value == "ok"

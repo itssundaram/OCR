@@ -48,6 +48,9 @@ from app.anchors import resolve_anchor, words_from_lines
 
 logger = get_logger(__name__)
 
+# extraction methods that are label-geometry GUESSES (not a confirmed anchor): a better-evidenced pair may replace them
+_GUESS_METHODS = frozenset({"learned_anchor_cold", "label_search"})
+
 # every Tesseract call ends after this long (a hung subprocess used to block the whole job)
 _TESS_TIMEOUT = max(60, int(settings.TESSERACT_TIMEOUT) * 2)
 
@@ -294,10 +297,16 @@ class LearnedAnchorPipeline(OCRPipeline):
         """Use a matched pair for any template field the main path left empty."""
         by_name = {f.field_name: i for i, f in enumerate(result.fields)}
         filled = 0
+        replaced = 0
         for name, m in matches.items():
             idx = by_name.get(name)
             if idx is not None and (result.fields[idx].value or "").strip():
-                continue  # the main path already has a value: keep it
+                cur = result.fields[idx]
+                # The main path has a value: keep it, unless it is only a label-geometry guess (cold path) that the
+                # pair parser reads with MORE confidence. A confirmed reading (verified / stored anchor) is never replaced.
+                if not (cur.extraction_method in _GUESS_METHODS and m.pair.confidence > (cur.confidence or 0.0)):
+                    continue
+                replaced += 1
             fr = FieldResult(
                 field_name=name,
                 value=m.pair.value,
@@ -314,6 +323,8 @@ class LearnedAnchorPipeline(OCRPipeline):
             filled += 1
         if filled:
             result.metadata["kv_filled_fields"] = filled
+        if replaced:
+            result.metadata["kv_replaced_guesses"] = replaced
 
     def _attach_discovered_pairs(
         self,
@@ -455,7 +466,7 @@ class LearnedAnchorPipeline(OCRPipeline):
             a0 = anchored.get(fdef["name"])
             if a0 and self._anchor_trusted(la, a0):
                 r0 = resolve_anchor(a0, words_by_page, sizes, orig_size=orig,
-                                    spec=self.FIELD_SPECS.get(self._normalize_key(fdef["name"])))
+                                    spec=self._field_spec(fdef["name"], fdef))
                 if r0 is not None and r0.valid and r0.aligned:
                     shifts.append((r0.dx, r0.dy))
         page_shift = None
@@ -470,7 +481,7 @@ class LearnedAnchorPipeline(OCRPipeline):
             name = fdef["name"]
             anchor = anchored.get(name)
             trusted = bool(anchor) and self._anchor_trusted(la, anchor)
-            spec = self.FIELD_SPECS.get(self._normalize_key(name))
+            spec = self._field_spec(name, fdef)
             aliases = list(fdef.get("aliases", [])) + list((spec or {}).get("patterns", []))
 
             rd = (resolve_anchor(anchor, words_by_page, sizes, orig_size=orig, spec=spec, shift=page_shift)
@@ -724,34 +735,34 @@ class LearnedAnchorPipeline(OCRPipeline):
             logger.warning("safe_crop_failed", error=str(e))
             return None
 
-    def _normalize_key(self, k: str) -> str:
-        k_str = str(k).lower().strip()
-        k_clean = re.sub(r"[^a-z0-9]", "", k_str)
-        if "engine" in k_clean:
-            return "engine_no"
-        if "chasi" in k_clean or "chass" in k_clean:
-            return "chasis_no"
-        if re.search(r"\bba\b", k_str) or k_clean in ("bano", "ba", "banumber"):
-            return "ba_no"
-        return k_clean
+    @staticmethod
+    def _field_spec(name: str, fdef: dict | None = None) -> dict | None:
+        """Value-extraction hints for one template field, or None when nothing is known about it.
 
-    FIELD_SPECS = {
-        "engine_no": {
-            "patterns": ["engine no:", "engine no.", "engine no", "engine number:", "engine#"],
-            "regex": r"[A-Z0-9/\-]{6,16}",
-            "blacklist": ["log book", "adequate", "carried out", "serviceable", "inadequate", "tyres", "correct", "steering", "brakes"],
-        },
-        "chasis_no": {
-            "patterns": ["chassis no:", "chasis no:", "chassis no.", "chasis no.", "chassis:", "chasis:"],
-            "regex": r"(STLN[\s\w\-]+|MA5[\s\w\-]+|LPTA[\s\w\-]+|[A-Z0-9\-]{8,24})",
-            "blacklist": ["carried out", "tyres", "adequate", "correct", "inadequate", "rotary", "pump", "bar type"],
-        },
-        "ba_no": {
-            "patterns": ["ba no :", "ba no:", "ba number", "ba no.", "b.a. number", "ba:"],
-            "regex": r"\d{2}[A-Z]\s*\d{5,7}[A-Z]?",
-            "blacklist": ["run:", "km", "hours", "distance", "maintained", "wksp", "workshop", "nature", "service", "bar type"],
-        },
-    }
+        Nothing about any form is written in this file. The hints come from DATA: the template field itself
+        (its own `aliases`, `regex`, `blacklist`) plus the knowledge layer's entry for a field of that name
+        (app/knowledge/data/fields.json: printed `labels`, `extract` regex, `blacklist`), which an administrator
+        can edit or extend without touching code. A field the knowledge layer has never heard of simply gets
+        no spec and is found by its own name / aliases alone."""
+        from app.knowledge.kb import known_field
+
+        fd = dict(fdef or {})
+        fd.setdefault("name", name)
+        kb = known_field(fd) or {}
+        regex = fd.get("regex") or kb.get("extract")
+        blacklist = [str(b) for b in list(fd.get("blacklist") or []) + list(kb.get("blacklist") or [])]
+        patterns = [str(x) for x in list(fd.get("aliases") or []) + list(kb.get("labels") or [])]
+        if not (regex or blacklist or patterns):
+            return None
+        return {"patterns": patterns, "regex": regex, "blacklist": blacklist}
+
+    @staticmethod
+    def _evidence_confidence(label_score: float | None, value_words: list[dict] | None, cap: float = 0.95) -> float:
+        """Confidence of a value found by label geometry: how well the label matched times how well the
+        OCR read the value's words. A constant here would make a mis-parsed value as "certain" as a clean one."""
+        confs = [float(w.get("conf") or 0.0) / 100.0 for w in (value_words or []) if (w.get("conf") or 0) > 0]
+        ocr = sum(confs) / len(confs) if confs else 0.5
+        return round(max(0.0, min(cap, (label_score if label_score is not None else 0.5) * ocr)), 3)
 
     def _persist_learned_anchors(self, template_id: int, learned_anchors: dict) -> None:
         """Helper to safely persist updated learned geometric anchors to DB."""
@@ -813,22 +824,19 @@ class LearnedAnchorPipeline(OCRPipeline):
         """
         clean = field_name.replace("_", " ").lower().strip()
         candidates = [f"{clean}:", f"{clean}.", clean]
-        if "no" in clean:
-            base = clean.replace("no", "").strip()
-            candidates.extend([f"{base} no:", f"{base} no.", f"{base} number:", f"{base} number", f"{base}#"])
+        toks = clean.split()
+        if toks and toks[-1] in ("no", "number", "num", "nr"):
+            base = " ".join(toks[:-1]).strip()          # "ba no" -> "ba": also try the printed spellings of "no"
+            if base:
+                candidates.extend([f"{base} no:", f"{base} no.", f"{base} number:", f"{base} number", f"{base}#"])
         else:
             candidates.extend([f"{clean} no:", f"{clean} no.", f"{clean} number:", f"{clean} number"])
 
+        # Other printed spellings of the label come in as `aliases` (the template's own, plus the
+        # knowledge layer's labels for a known field) - nothing field-specific is listed here.
         for a in (aliases or []):
             al = a.lower().strip()
             candidates.extend([f"{al}:", f"{al}.", al])
-
-        if "engine" in clean:
-            candidates.extend(["engine no:", "engine no.", "engine no", "engine number:", "engine#"])
-        elif "chasis" in clean or "chassis" in clean:
-            candidates.extend(["chassis no:", "chasis no:", "chassis no.", "chasis no.", "chassis:", "chasis:"])
-        elif re.search(r"\bba\b", clean) or clean in ("ba no", "bano", "ba"):
-            candidates.extend(["ba no :", "ba no:", "ba number", "ba no.", "b.a. number", "ba:"])
 
         best_match = None
         best_score = 0.0
@@ -872,6 +880,7 @@ class LearnedAnchorPipeline(OCRPipeline):
 
                     direct_value = None
                     direct_bbox = None
+                    direct_words: list[dict] = []
                     val_regex = (spec or {}).get("regex")
                     if val_regex and line_words:
                         line_str = " ".join(w["text"] for w in line_words)
@@ -884,6 +893,7 @@ class LearnedAnchorPipeline(OCRPipeline):
                             if cand_val:
                                 direct_value = cand_val
                                 m_words = [w for w in line_words if any(part in w["text"] for part in direct_value.split())]
+                                direct_words = m_words
                                 if m_words:
                                     pad = 4
                                     direct_bbox = {
@@ -916,6 +926,7 @@ class LearnedAnchorPipeline(OCRPipeline):
                         "label_bbox": {"x1": lx1, "y1": ly1, "x2": lx2, "y2": ly2},
                         "val_bbox": {"x1": max(0, vx1), "y1": max(0, vy1), "x2": min(page_width, max(vx2, vx1 + 1)), "y2": min(page_height, max(vy2, vy1 + 1))},
                         "direct_value": direct_value,
+                        "direct_conf": cls._evidence_confidence(score, direct_words) if direct_value else None,
                     }
 
         return best_match
@@ -999,12 +1010,11 @@ class LearnedAnchorPipeline(OCRPipeline):
             if fdef.get("type") == "table":
                 continue
 
-            norm_key = self._normalize_key(key)
-            spec = self.FIELD_SPECS.get(norm_key, self.FIELD_SPECS.get(key, {
+            spec = self._field_spec(key, fdef) or {
                 "patterns": [key.replace("_", " ") + ":", key.replace("_", " ")],
                 "regex": None,
                 "blacklist": [],
-            }))
+            }
             aliases = list(fdef.get("aliases", [])) + spec.get("patterns", [])
 
             # 1. Try Dynamic Label Anchor on THIS page first
@@ -1064,6 +1074,7 @@ class LearnedAnchorPipeline(OCRPipeline):
                     "spec": spec,
                     "target_page": target_page,
                     "direct_value": lbl_match.get("direct_value") if lbl_match else None,
+                    "direct_conf": lbl_match.get("direct_conf") if lbl_match else None,
                 })
 
         if not crop_tasks:
@@ -1081,7 +1092,7 @@ class LearnedAnchorPipeline(OCRPipeline):
                 return {
                     "field_name": field_name,
                     "value": task["direct_value"],
-                    "confidence": 0.95,
+                    "confidence": task.get("direct_conf") if task.get("direct_conf") is not None else 0.5,
                     "bbox": orig_bbox,
                     "crop_image": crop_img,
                     "page_number": task["page_number"],
@@ -1118,7 +1129,8 @@ class LearnedAnchorPipeline(OCRPipeline):
                     m = re.search(spec["regex"], raw_text, re.IGNORECASE)
                     if m:
                         final_val = m.group(0).strip()
-                        final_conf = max(avg_c, 0.95)
+                        # the expected shape was found: worth a floor, not certainty
+                        final_conf = min(0.95, max(avg_c, 0.6))
                         # Snap bounding box to the matched word(s) only
                         matched_ws = [cw for cw in c_words if any(part in cw["text"] for part in final_val.split())]
                         if matched_ws:
@@ -1306,17 +1318,29 @@ class LearnedAnchorPipeline(OCRPipeline):
         # Step B: Fast deterministic layout matching against template fields
         direct_matched_fields = {}
         target_fields = [f for f in template_fields if isinstance(f, dict) and f.get("type") != "table"]
+        # Fields the pair parser (kv_discovery + kv_match) already matched are left to it: it splits a printed
+        # label from its value properly, where this label-then-everything-to-the-right scan can take the rest of a
+        # longer label ("Date of Final Insp ...") for a value. They are filled from the pairs afterwards.
+        kv_matched: set[str] = set()
+        if kv and kv.get("pairs"):
+            try:
+                kv_matched = set(match_fields(self._wanted_fields(template_fields), kv["pairs"]))
+            except Exception:
+                kv_matched = set()
         if target_fields and words_by_page:
             for f in target_fields:
                 fn = f.get("name", "")
+                if fn in kv_matched:
+                    continue
                 fa = f.get("aliases", [])
-                spec = self.FIELD_SPECS.get(self._normalize_key(fn))
+                spec = self._field_spec(fn, f)
                 lbl_m = self._find_field_bbox_by_label(
                     fn, fa, words_by_page[0], pages[0].width, pages[0].height, spec=spec
                 )
                 if lbl_m:
                     val = lbl_m.get("direct_value")
                     val_box = lbl_m.get("val_bbox")
+                    val_conf = lbl_m.get("direct_conf")
                     if not val and val_box:
                         c_img = self._safe_crop(pages[0], val_box["x1"], val_box["y1"], val_box["x2"], val_box["y2"])
                         if c_img:
@@ -1330,12 +1354,17 @@ class LearnedAnchorPipeline(OCRPipeline):
                                     val = m_spec.group(0).strip() if m_spec else ""
                                 if spec and spec.get("blacklist") and any(b in val.lower() for b in spec["blacklist"]):
                                     val = ""
+                                # words inside the value box carry the OCR confidence of what was read
+                                vw = [w for w in words_by_page[0]
+                                      if val_box["x1"] <= (w["x1"] + w["x2"]) / 2 <= val_box["x2"]
+                                      and val_box["y1"] <= (w["y1"] + w["y2"]) / 2 <= val_box["y2"]]
+                                val_conf = self._evidence_confidence(lbl_m.get("score"), vw)
                             except Exception:
                                 val = ""
                     if val:
                         direct_matched_fields[fn] = {
                             "value": val,
-                            "confidence": 0.95,
+                            "confidence": val_conf if val_conf is not None else 0.5,
                             "bbox": val_box,
                         }
 
@@ -1343,7 +1372,7 @@ class LearnedAnchorPipeline(OCRPipeline):
         if target_fields and len(direct_matched_fields) >= max(1, int(len(target_fields) * 0.7)):
             logger.info("cold_path_bypassing_vlm_via_direct_match", matched=len(direct_matched_fields), total=len(target_fields))
             raw_fields = direct_matched_fields
-            conf_by_field = {k: 0.95 for k in direct_matched_fields}
+            conf_by_field = {k: v["confidence"] for k, v in direct_matched_fields.items()}
             ai_result_engine = "learned_anchor_layout"
             ai_result_model = "deterministic_geometry"
         else:
@@ -1368,7 +1397,7 @@ class LearnedAnchorPipeline(OCRPipeline):
 
             if ai_result is None:
                 raw_fields = dict(direct_matched_fields)
-                conf_by_field = {k: 0.95 for k in direct_matched_fields}
+                conf_by_field = {k: v["confidence"] for k, v in direct_matched_fields.items()}
                 ai_result_engine = "learned_anchor_layout"
                 ai_result_model = "deterministic_geometry(vlm_unavailable)"
             else:

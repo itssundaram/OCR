@@ -1,5 +1,5 @@
 {
- "_note": "Canonical fields of the TMS / MMS / PSG forms. `names` = what a template field may be called (matched after lower-casing and turning punctuation into underscores); `labels` = how the form prints it (added to the field's aliases); `side` = which half of a two-column voucher the field lives in; `strict_labels` = printed labels that appear in BOTH columns, so only the field's own half may use them; `pattern` = soft value check (a miss sends the value to review, it never drops it). Source: the department field lists in OCR_DOCS/Reference Documents For OCR plus the sample documents. `share` = fields that may read the same printed pair (Consignor feeds From/Depot, Consignor and the issuing Unit). `needs_digit` = a value with no digit at all is never this field (a table header word read as its value). `min_digits` = fewest digits a date value has (\"5/6/26\" has 3).",
+ "_note": "Canonical fields of the TMS / MMS / PSG forms. `names` = what a template field may be called (matched after lower-casing and turning punctuation into underscores); `labels` = how the form prints it (added to the field's aliases); `side` = which half of a two-column voucher the field lives in; `strict_labels` = printed labels that appear in BOTH columns, so only the field's own half may use them; `pattern` = soft value check (a miss sends the value to review, it never drops it). Source: the department field lists in OCR_DOCS/Reference Documents For OCR plus the sample documents. `share` = fields that may read the same printed pair (Consignor feeds From/Depot, Consignor and the issuing Unit). `needs_digit` = a value with no digit at all is never this field (a table header word read as its value). `min_digits` = fewest digits a date value has (\"5/6/26\" has 3). `extract` = regex that cuts the value out of the text right of a printed label; `blacklist` = words that mean the text taken was a neighbouring row, not the value (both optional, used by the label-geometry readers).",
  "fields": [
   {
    "id": "unit_from",
@@ -200,7 +200,20 @@
     "B.A. No",
     "Vehicle BA No"
    ],
-   "needs_digit": true
+   "needs_digit": true,
+   "extract": "\\d{2}[A-Za-z]\\s*\\d{5,7}[A-Za-z]?",
+   "blacklist": [
+    "run:",
+    "km",
+    "hours",
+    "distance",
+    "maintained",
+    "wksp",
+    "workshop",
+    "nature",
+    "service",
+    "bar type"
+   ]
   },
   {
    "id": "engine_no",
@@ -215,6 +228,18 @@
     "Engine No",
     "Eng No",
     "Engine Number"
+   ],
+   "extract": "[A-Za-z0-9/\\-]{6,16}",
+   "blacklist": [
+    "log book",
+    "adequate",
+    "carried out",
+    "serviceable",
+    "inadequate",
+    "tyres",
+    "correct",
+    "steering",
+    "brakes"
    ]
   },
   {
@@ -233,6 +258,17 @@
     "Chassis Number",
     "Chasis Number",
     "Frame No"
+   ],
+   "extract": "[A-Za-z0-9\\-]{8,24}",
+   "blacklist": [
+    "carried out",
+    "tyres",
+    "adequate",
+    "correct",
+    "inadequate",
+    "rotary",
+    "pump",
+    "bar type"
    ]
   },
   {

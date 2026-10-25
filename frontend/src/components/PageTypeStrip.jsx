@@ -5,12 +5,10 @@ import { FileSearch } from 'lucide-react';
  * What kind of form each page looks like (ocr_metadata.page_types: {"1": {type, score}, ...}). Informational:
  * nothing is filtered or blocked by it. Nothing is drawn when the backend recognised no page.
  */
-const FAMILY = { tms: 'TMS', mms: 'MMS', psg: 'PSG', cue: 'CUE' };
-
 export const pageTypeLabel = (type) => {
   const parts = String(type || '').split('_').filter(Boolean);
   if (parts.length === 0) return '';
-  const family = FAMILY[parts[0]] || parts[0].toUpperCase();
+  const family = parts[0].toUpperCase();
   const rest = parts.slice(1).join(' ');
   return rest ? `${family} · ${rest.charAt(0).toUpperCase()}${rest.slice(1)}` : family;
 };
