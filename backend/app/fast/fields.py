@@ -127,6 +127,10 @@ class FieldExtractor:
             for pair in discover_key_values([page.lines], self._known_labels()):
                 pair.page_number = page.page_number
                 self.pairs.append(pair)
+            # pages finish in whatever order the page threads end; keep the pairs in page order (stable inside a page) so
+            # ties, "first occurrence wins" and the numbering of repeated discovered labels (engine_no, engine_no_2)
+            # do not depend on timing
+            self.pairs.sort(key=lambda p: p.page_number)
         for name, m in match_fields(self.fields, self.pairs, self._widths).items():
             if self._announced.get(name) != id(m.pair):
                 self._announced[name] = id(m.pair)
@@ -440,7 +444,7 @@ class FieldExtractor:
         return list(best.words) if best else []
 
     # ── VLM on one crop ─────────────────────────────────────────────────────────
-    def _vlm_read(self, page: PageData, label_box: dict, label: str):
+    def _vlm_read(self, page: PageData, label_box: dict, label: str, timeout: float | None = None):
         if page.image is None:
             return None
         h = max(8.0, label_box["y2"] - label_box["y1"])
@@ -453,7 +457,7 @@ class FieldExtractor:
             return None
         if self._vlm is None:
             self._vlm = FieldVlm()
-        value = self._vlm.read_field(crop, label)
+        value = self._vlm.read_field(crop, label, timeout)
         if not value:
             return None
         if self._ocr_engine is None:
@@ -561,13 +565,15 @@ class FieldExtractor:
         failures = [0]
 
         def _work(slot: dict):
-            if dead.is_set() or time.monotonic() > deadline or self.bus.cancel_requested():
+            if dead.is_set() or time.monotonic() > deadline - 1 or self.bus.cancel_requested():
                 return "skipped", None
             page, label_box, _ = slot["hit"]
             self.bus.emit("fallback_started", page=page.page_number, field=slot["name"],
                           reason=(slot["a"].reason if slot["a"] else "value_missing"), engine="vlm")
             try:
-                return "ok", self._vlm_read(page, label_box, str(slot["fdef"].get("label") or slot["name"]))
+                # a call never waits past the job's VLM budget, whatever the per-call timeout is
+                return "ok", self._vlm_read(page, label_box, str(slot["fdef"].get("label") or slot["name"]),
+                                            timeout=deadline - time.monotonic())
             except Exception as exc:
                 logger.warning("fast_vlm_failed", field=slot["name"], error=str(exc)[:200])
                 failures[0] += 1
@@ -655,6 +661,7 @@ class FieldExtractor:
                             logger.warning("fast_label_reread_failed", field=name, error=str(exc)[:160])
                             rr = None
                         if rr is not None and (not _value_ok(fdef, rr[0]) or value_is_header(rr[0])):
+                            logger.info("fast_label_reread_rejected", field=name, value=str(rr[0])[:80])
                             rr = None                   # a header word / fragment, not a value for a date or number field
                         if rr is None:                  # value printed UNDER its label (only if that line is not another label)
                             vwords = self._value_line_below(page, label_box)

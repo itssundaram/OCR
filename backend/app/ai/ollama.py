@@ -129,6 +129,11 @@ class OllamaExtractionEngine(AIExtractionEngine):
                 # the model is stalled or Ollama is down: retrying 3x would triple the wait; fail fast and clearly
                 logger.error("ollama_unreachable_or_timeout", attempt=attempt, error=type(e).__name__,
                              timeout_s=settings.OLLAMA_REQUEST_TIMEOUT_S)
+                if isinstance(e, httpx.ConnectError):
+                    raise RuntimeError(
+                        f"Cannot reach Ollama at {self.base_url} (connection refused). "
+                        "Start Ollama, and check OLLAMA_BASE_URL in .env."
+                    ) from e
                 raise RuntimeError(
                     f"Ollama did not answer within {settings.OLLAMA_REQUEST_TIMEOUT_S}s ({type(e).__name__}). "
                     "Check that Ollama is running and the model is loaded."

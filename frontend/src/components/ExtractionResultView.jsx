@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { ArrowLeft, File, Code, RefreshCw, XCircle, Clock, CheckCircle2, ZoomOut, ZoomIn, Maximize, ShieldCheck, Copy, Edit2, Flag, Printer, Download, Plus, Minus, Menu } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ArrowLeft, File, Code, RefreshCw, XCircle, Clock, CheckCircle2, ZoomOut, ZoomIn, Maximize, ShieldCheck, Copy, Edit2, Flag, Printer, Download, Plus, Minus, Menu, RotateCw, RotateCcw } from 'lucide-react';
 import { JsonView, allExpanded, darkStyles } from 'react-json-view-lite';
 import { Card, CardContent, CardHeader } from './ui/Card';
 import { Badge } from './ui/Badge';
 import { Loader } from './ui/Loader';
 import { evidenceService } from '../services/evidence';
 import { config } from '../config';
+import { usePageRotation } from '../hooks/usePageRotation';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -33,6 +34,18 @@ const ExtractionResultView = ({
 }) => {
   const [activeTab, setActiveTab] = useState('data');
   const [numPages, setNumPages] = useState(null);
+  const { rotation, rotateCW, rotateCCW } = usePageRotation(activeJob?.document_id, 1);
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || (e.key !== 'r' && e.key !== 'R')) return;
+      const t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+      e.preventDefault();
+      if (e.shiftKey) rotateCCW(); else rotateCW();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [rotateCW, rotateCCW]);
 
   if (!activeJob) return null;
 
@@ -167,6 +180,8 @@ const ExtractionResultView = ({
                     <Minus size={14} className="cursor-pointer hover:text-primary" onClick={() => zoomOut()} />
                     <Plus size={14} className="cursor-pointer hover:text-primary" onClick={() => zoomIn()} />
                     <Maximize size={14} className="cursor-pointer hover:text-primary" onClick={() => resetTransform()} />
+                    <RotateCcw size={14} className="cursor-pointer hover:text-primary" title="Rotate left (Shift+R)" onClick={() => rotateCCW()} />
+                    <RotateCw size={14} className="cursor-pointer hover:text-primary" title="Rotate right (R)" onClick={() => rotateCW()} />
                     <RefreshCw size={14} className="cursor-pointer hover:text-primary" />
                     <Download size={14} className="cursor-pointer hover:text-primary" />
                     <Printer size={14} className="cursor-pointer hover:text-primary" />
@@ -181,7 +196,7 @@ const ExtractionResultView = ({
                         loading={<div className="flex items-center justify-center p-8"><Loader text="Loading PDF..." /></div>}
                         className="shadow-md"
                       >
-                        <Page pageNumber={1} renderTextLayer={false} renderAnnotationLayer={false} width={600} />
+                        <Page pageNumber={1} rotate={rotation} renderTextLayer={false} renderAnnotationLayer={false} width={600} />
                       </Document>
                     </TransformComponent>
                   ) : (

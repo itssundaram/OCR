@@ -111,7 +111,7 @@ def dispatch_refine(job_id: str, part: int = 1) -> str | None:
         for name in (settings.FAST_REFINE_QUEUE_NAME, settings.FAST_QUEUE_NAME, settings.REDIS_QUEUE_NAME):
             if _worker_listening(conn, name):
                 Queue(name, connection=conn).enqueue(
-                    TASK_PATH, job_id, job_id=f"refine:{job_id}:{part}", job_timeout=settings.FAST_REFINE_SLICE_S * 6 + 120)
+                    TASK_PATH, job_id, job_id=f"refine-{job_id}-{part}", job_timeout=settings.FAST_REFINE_SLICE_S * 6 + 120)
                 return name
     except Exception as exc:
         logger.warning("refine_enqueue_failed", job_id=job_id, error=str(exc))

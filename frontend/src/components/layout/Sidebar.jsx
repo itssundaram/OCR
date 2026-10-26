@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Layers, ScanLine, Activity, GitCompare,
-  LifeBuoy, FileText, Terminal, Landmark, PlusCircle, Settings, ShieldCheck
+  LifeBuoy, FileText, Terminal, Landmark, PlusCircle, Settings, ShieldCheck, Database
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen }) => {
@@ -16,6 +16,7 @@ const Sidebar = ({ isOpen }) => {
     { name: 'Extraction Results',                 path: '/results',       icon: <FileText size={20} /> },
     { name: 'System Logs',                        path: '/logs',          icon: <Activity size={20} /> },
     { name: 'Multi-Pipeline Orchestration',       path: '/orchestration', icon: <GitCompare size={20} /> },
+    { name: 'Database',                           path: '/database',      icon: <Database size={20} /> },
     { name: 'Help & Support',                     path: '/help',          icon: <LifeBuoy size={20} /> },
   ];
 

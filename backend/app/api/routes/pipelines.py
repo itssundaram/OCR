@@ -30,8 +30,8 @@ def list_available_pipelines():
         desc = ""
         stack = []
         if name == "tesseract":
-            desc = "CPU-based pipeline utilizing PPStructure for layout detection and Tesseract for text extraction."
-            stack = ["PPStructure", "Tesseract", "img2table", "LLM Fallback"]
+            desc = "Tesseract text extraction with Surya layout detection (reads the whole page as one region when the layout weights are missing), img2table tables and a vision-model fallback."
+            stack = ["Surya Layout", "Tesseract", "img2table", "LLM Fallback"]
         elif name == "surya":
             desc = "GPU-accelerated pipeline utilizing Surya's models for document understanding."
             stack = ["Surya Layout", "Surya OCR", "TrOCR", "TATR", "LLM Fallback"]

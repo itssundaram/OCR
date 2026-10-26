@@ -3,7 +3,7 @@ import {
   ArrowLeft, FileText, CheckCircle2, XCircle, Clock, Zap, Cpu,
   Copy, Check, RefreshCw, ZoomIn, ZoomOut, Maximize, Crosshair,
   ShieldCheck, Eye, Layers, Sparkles, ChevronRight, ChevronLeft, AlertCircle, Database,
-  Edit2, Lock, Unlock, RotateCcw, Save, X, Trash2, Search, PlusCircle, Table as TableIcon
+  Edit2, Lock, Unlock, RotateCcw, RotateCw, Save, X, Trash2, Search, PlusCircle, Table as TableIcon
 } from 'lucide-react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { Badge } from './ui/Badge';
@@ -14,6 +14,8 @@ import PageTypeStrip from './PageTypeStrip';
 import DepartmentJsonPanel from './DepartmentJsonPanel';
 import LiveFieldsPanel from './LiveFieldsPanel';
 import { useJobStream } from '../hooks/useJobStream';
+import { usePageRotation } from '../hooks/usePageRotation';
+import { boxTopInFrame, frameSize, localDelta, pageTransform } from '../utils/rotation';
 import { evidenceService } from '../services/evidence';
 import { extractService } from '../services/extract';
 import { templatesService } from '../services/templates';
@@ -413,7 +415,7 @@ const FastExtractionResultView = ({
     // Auto-scroll the PDF container to center the bounding box
     if (scrollContainerRef.current) {
       if (data?.bbox) {
-        const boxTop = data.bbox.y1 * scaleY;
+        const boxTop = topOf(data.bbox, targetPage);
         const container = scrollContainerRef.current;
         const targetScroll = Math.max(0, boxTop - 80);
         container.scrollTo({ top: targetScroll, behavior: 'smooth' });
@@ -465,6 +467,26 @@ const FastExtractionResultView = ({
   // Exact scaling factors for document bounding boxes matching backend crops
   const scaleX = renderedWidth / docImgWidth;
   const scaleY = renderedHeight / docImgHeight;
+
+  // Viewing rotation of the shown page (remembered per document). The page and its boxes turn together.
+  const { rotation, rotationFor, rotateCW, rotateCCW, resetRotation } = usePageRotation(currentJob.document_id, shownPageNo);
+  const rotationRef = useRef(0);
+  rotationRef.current = rotation;
+  const frame = frameSize(rotation, renderedWidth, renderedHeight);
+  const topOf = (bbox, page) => boxTopInFrame(bbox, rotationFor(page), scaleX, scaleY, renderedWidth, renderedHeight);
+
+  // R turns the page clockwise, Shift+R counter-clockwise (not while typing in a field)
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || (e.key !== 'r' && e.key !== 'R')) return;
+      const t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+      e.preventDefault();
+      if (e.shiftKey) rotateCCW(); else rotateCW();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [rotateCW, rotateCCW]);
 
 
   // Where a reference (template) box lands on THIS scan: the stored box is relative to the page it was saved on
@@ -534,8 +556,9 @@ const FastExtractionResultView = ({
     const handleMouseMove = (e) => {
       if (!dragStateRef.current) return;
       const { key, mode, startX, startY, initialBbox } = dragStateRef.current;
-      const dx = (e.clientX - startX) / scaleX;
-      const dy = (e.clientY - startY) / scaleY;
+      const moved = localDelta(e.clientX - startX, e.clientY - startY, rotationRef.current);
+      const dx = moved.dx / scaleX;
+      const dy = moved.dy / scaleY;
 
       let { x1, y1, x2, y2 } = initialBbox;
       const minSize = 10;
@@ -635,7 +658,7 @@ const FastExtractionResultView = ({
     setCurrentPage(target);
     setTimeout(() => {
       if (scrollContainerRef.current && occ?.bbox) {
-        scrollContainerRef.current.scrollTo({ top: Math.max(0, occ.bbox.y1 * scaleY - 120), behavior: 'smooth' });
+        scrollContainerRef.current.scrollTo({ top: Math.max(0, topOf(occ.bbox, target) - 120), behavior: 'smooth' });
       }
     }, 150);
   };
@@ -715,7 +738,7 @@ const FastExtractionResultView = ({
     setTableHighlight({ page: target, bbox });
     setTimeout(() => {
       if (scrollContainerRef.current && bbox) {
-        scrollContainerRef.current.scrollTo({ top: Math.max(0, bbox.y1 * scaleY - 120), behavior: 'smooth' });
+        scrollContainerRef.current.scrollTo({ top: Math.max(0, topOf(bbox, target) - 120), behavior: 'smooth' });
       }
     }, 200);
     setTimeout(() => setTableHighlight(null), 8000);
@@ -1084,6 +1107,35 @@ const FastExtractionResultView = ({
                 </button>
               </div>
 
+              {/* Rotate the page while viewing (R / Shift+R) */}
+              <div className="flex items-center bg-white border border-slate-200 rounded-lg p-0.5 shadow-2xs">
+                <button
+                  onClick={rotateCCW}
+                  className="p-1 text-slate-600 hover:text-blue-700 hover:bg-slate-100 rounded transition-colors cursor-pointer"
+                  title="Rotate page left (Shift+R)"
+                  aria-label="Rotate page left"
+                >
+                  <RotateCcw size={13} />
+                </button>
+                <button
+                  onClick={rotateCW}
+                  className="p-1 text-slate-600 hover:text-blue-700 hover:bg-slate-100 rounded transition-colors cursor-pointer"
+                  title="Rotate page right (R)"
+                  aria-label="Rotate page right"
+                >
+                  <RotateCw size={13} />
+                </button>
+                {rotation !== 0 && (
+                  <button
+                    onClick={resetRotation}
+                    className="px-1.5 py-0.5 text-[10px] font-bold text-amber-700 hover:bg-amber-50 rounded transition-colors cursor-pointer"
+                    title="Back to the original orientation"
+                  >
+                    {rotation}° reset
+                  </button>
+                )}
+              </div>
+
               {/* Reference Anchor toggle */}
               {learnedAnchors && (
                 <button
@@ -1119,11 +1171,23 @@ const FastExtractionResultView = ({
                 className="flex-1 overflow-y-auto overflow-x-auto p-4 select-none scroll-smooth flex flex-col items-center"
               >
                 <div
-                  className="relative inline-block shadow-md my-auto bg-white transition-all"
+                  className="relative my-auto shadow-md bg-white flex-shrink-0"
+                  data-testid="page-frame"
+                  style={{
+                    width: frame.width,
+                    height: frame.height,
+                    filter: viewMode === 'cleaned' ? 'contrast(1.25) saturate(1.1) brightness(1.02)' : 'none',
+                  }}
+                >
+                <div
+                  className="absolute left-0 top-0 inline-block bg-white"
+                  data-testid="page-turned"
+                  data-rotation={rotation}
                   style={{
                     width: renderedWidth,
                     minHeight: renderedHeight,
-                    filter: viewMode === 'cleaned' ? 'contrast(1.25) saturate(1.1) brightness(1.02)' : 'none',
+                    transformOrigin: '0 0',
+                    transform: pageTransform(rotation, renderedWidth, renderedHeight),
                   }}
                 >
                   <Document
@@ -1386,6 +1450,7 @@ const FastExtractionResultView = ({
                       </div>
                     );
                   })}
+                </div>
                 </div>
               </div>
             ) : (

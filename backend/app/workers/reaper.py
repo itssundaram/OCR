@@ -74,45 +74,43 @@ RESCUE_INTERVAL_S = 20
 
 
 def rescue_queued_fast_jobs() -> int:
-    """Move fast_ocr jobs that nobody can pick up to the default queue.
+    """Move jobs that nobody can pick up to the general queue.
 
-    A job is queued for the fast worker while that worker is alive; if the worker then dies (killed, crashed, or being
-    replaced), the job would sit at QUEUED for ever. The default worker can run the same task (slower on Windows,
-    where it starts a process per job), so it is handed over instead. Returns how many were moved.
+    A job is queued for its pipeline's worker while that worker is alive; if the worker then dies (killed, crashed, or
+    being restarted), the job would sit at QUEUED for ever. The general worker can run the same task, so waiting jobs
+    are handed over once their pipeline has had no live worker for RESCUE_AFTER_S. Returns how many were moved.
     """
     try:
         from app.workers.queue import redis_conn
         if redis_conn is None:
             return 0
-        from app.fast.worker_supervisor import worker_listening
-        if worker_listening(redis_conn):
-            return 0
         from rq import Callback, Queue
-        fast_q = Queue(settings.FAST_QUEUE_NAME, connection=redis_conn)
-        default_q = Queue(settings.REDIS_QUEUE_NAME, connection=redis_conn)
+        from app.workers.routing import dedicated_queues, general_queue, queue_alive
+        default_q = Queue(general_queue(), connection=redis_conn)
         now = datetime.datetime.now(datetime.timezone.utc)
         moved = []
-        for jid in list(fast_q.job_ids):
-            job = fast_q.fetch_job(jid)
-            if job is None or job.func_name != "app.fast.runner.run_fast_job":
+        for qn in dedicated_queues():
+            if queue_alive(redis_conn, qn):
                 continue
-            enq = job.enqueued_at
-            if enq is not None:
-                if enq.tzinfo is None:
-                    enq = enq.replace(tzinfo=datetime.timezone.utc)
-                if (now - enq).total_seconds() < RESCUE_AFTER_S:
+            src = Queue(qn, connection=redis_conn)
+            for jid in list(src.job_ids):
+                job = src.fetch_job(jid)
+                if job is None:
                     continue
-            args = tuple(job.args)
-            timeout = job.timeout
-            job.delete(remove_from_queue=True)
-            default_q.enqueue(
-                job.func_name, *args, job_id=jid, job_timeout=timeout,
-                on_failure=Callback("app.workers.tasks.job_failed_callback"),
-            )
-            moved.append(jid)
+                enq = job.enqueued_at
+                if enq is not None:
+                    if enq.tzinfo is None:
+                        enq = enq.replace(tzinfo=datetime.timezone.utc)
+                    if (now - enq).total_seconds() < RESCUE_AFTER_S:
+                        continue
+                args, kwargs, timeout, func = tuple(job.args), dict(job.kwargs or {}), job.timeout, job.func_name
+                job.delete(remove_from_queue=True)
+                default_q.enqueue(func, *args, **kwargs, job_id=jid, job_timeout=timeout,
+                                  on_failure=Callback("app.workers.tasks.job_failed_callback"))
+                moved.append(jid)
         if moved:
-            logger.warning("fast_jobs_rescued", count=len(moved), job_ids=moved[:20], to_queue=settings.REDIS_QUEUE_NAME,
-                           reason="no live fast worker")
+            logger.warning("jobs_rescued", count=len(moved), job_ids=moved[:20], to_queue=general_queue(),
+                           reason="its pipeline has no live worker")
         return len(moved)
     except Exception as exc:
         logger.warning("fast_rescue_failed", error=str(exc)[:200])

@@ -5,6 +5,7 @@ import { templatesService } from '../services/templates';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Loader } from '../components/ui/Loader';
+import config from '../config';
 
 const GenerateUrlPage = () => {
   const [departments, setDepartments] = useState([]);
@@ -67,7 +68,7 @@ const GenerateUrlPage = () => {
 
   if (loading) return <div className="h-full flex items-center justify-center"><Loader text="Loading Endpoints..." /></div>;
 
-  const baseUrl = window.location.origin.replace(':5173', ':8001');
+  const baseUrl = config.API_HOST || window.location.origin.replace(':5173', ':8000');
   const basePrefix = `/api/v1/${selectedDeptSlug || '{dept_slug}'}/${selectedTemplateCode || '{template_code}'}`;
   const fullBaseUrl = `${baseUrl}${basePrefix}`;
 

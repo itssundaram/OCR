@@ -4,7 +4,7 @@ Assembles all sub-routers under /api/v1 prefix.
 """
 from fastapi import APIRouter
 
-from app.api.routes import dashboard, department_urls, departments, documents, events, evidence, extract, health, pipelines, processing, refine, stream, system, templates
+from app.api.routes import dashboard, db_admin, department_urls, departments, documents, events, evidence, extract, health, pipelines, processing, refine, stream, system, templates
 
 api_router = APIRouter(prefix="/api/v1")
 
@@ -19,6 +19,7 @@ api_router.include_router(pipelines.router)  # Phase 13: /pipelines listing for 
 api_router.include_router(evidence.router)  # Phase 16: field evidence (crop/page image) API
 api_router.include_router(events.router)  # Phase 14: processing-events REST feed (job timeline + recent activity)
 api_router.include_router(department_urls.router)  # Generate URL page: shareable department/template pre-filled links
+api_router.include_router(db_admin.router)  # Database page (off unless DB_ADMIN_UI_ENABLED); before extract's wildcards
 api_router.include_router(refine.router)
 api_router.include_router(stream.router)  # fast_ocr live events (SSE) + cancel
 api_router.include_router(extract.router)  # Must be last — uses wildcard paths

@@ -55,3 +55,33 @@ def test_ocr_typo_tolerated():
 def test_different_word_is_not_a_typo():
     assert match_fields([{"name": "consign_to"}], [P("Consignor", "Comdt ESD")]) == {}
     assert match_fields([{"name": "engine_no"}], [P("engine", "89500 KM")]) == {}
+
+
+def test_field_shape_from_the_knowledge_layer_rejects_junk_values():
+    from app.ocr.kv_match import _value_ok
+    chassis = {"name": "chassis_no", "kb_extract": r"[A-Z0-9]{8,}", "kb_blacklist": ["km"]}
+    assert not _value_ok(chassis, "KM")
+    assert not _value_ok(chassis, "12345678 km")
+    assert _value_ok(chassis, "MAS5EGF41S00251560")
+    ba = {"name": "ba_no", "needs_digit": True, "kb_extract": r"\d{2}[A-Za-z]\s*-?\s*\d{5,7}[A-Za-z]?"}
+    assert _value_ok(ba, "20D-210107N.") and _value_ok(ba, "20D 210124N") and _value_ok(ba, "12D190734L")
+    assert not _value_ok(ba, "Adequate")
+
+
+def test_ba_no_shape_in_the_shipped_knowledge_file_accepts_a_hyphen():
+    import json, re
+    from pathlib import Path
+    import app.knowledge as k
+    data = json.loads((Path(k.__file__).parent / "data" / "fields.json").read_text())
+    def find(o):
+        if isinstance(o, dict):
+            if o.get("id") == "ba_no": return o
+            for v in o.values():
+                r = find(v)
+                if r: return r
+        elif isinstance(o, list):
+            for v in o:
+                r = find(v)
+                if r: return r
+    ba = find(data)
+    assert re.search(ba["extract"], "20D-210124N") and re.search(ba["extract"], "20D-210107N.")

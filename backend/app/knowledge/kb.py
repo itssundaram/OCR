@@ -115,6 +115,10 @@ def enrich_fields(template_fields: list[dict]) -> list[dict]:
             e["needs_digit"] = True
         if kb.get("share"):
             e["share"] = kb["share"]
+        if kb.get("extract") and not e.get("kb_extract"):
+            e["kb_extract"] = kb["extract"]                      # what a value of this field looks like (checked by kv_match._value_ok)
+        if kb.get("blacklist") and not e.get("kb_blacklist"):
+            e["kb_blacklist"] = list(kb["blacklist"])
         if kb.get("pattern") and not (e.get("pattern") or e.get("regex")):
             e["pattern"] = kb["pattern"]
         if kb.get("kind") == "date" and not e.get("type"):

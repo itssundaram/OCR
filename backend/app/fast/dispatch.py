@@ -38,8 +38,8 @@ def dispatch_fast_job(job_id: str, force_relearn: bool, background_tasks=None) -
             name = settings.FAST_QUEUE_NAME if fast_ready else settings.REDIS_QUEUE_NAME
             if not fast_ready:
                 logger.warning("fast_worker_not_listening", job_id=job_id, queue=name,
-                               hint="the automatic start did not produce a worker: see data/logs/fast_worker.log or run `python run_fast_worker.py`; "
-                                    "the default worker is slower to pick this up")
+                               hint="no fast_ocr worker is alive: start `python run_worker.py` (it runs every worker); "
+                                    "until then the general worker handles this job, which is slower")
             Queue(name, connection=redis_conn).enqueue(
                 TASK_PATH, job_id, force_relearn,
                 job_id=job_id, job_timeout=settings.FAST_JOB_TIMEOUT_S,

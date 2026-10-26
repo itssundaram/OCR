@@ -116,6 +116,17 @@ def _side_hint(fdef: dict) -> str:
 
 def _value_ok(fdef: dict, value: str) -> bool:
     ftype = str(fdef.get("type") or "").lower()
+    # the field's own shape (knowledge layer `extract` / `blacklist`): "KM" is not a chassis number, "Adequate" is not an engine number
+    rx = fdef.get("kb_extract")
+    if rx:
+        try:
+            if not re.search(rx, value):
+                return False
+        except re.error:
+            pass
+    low = value.lower()
+    if any(str(b).lower() in low for b in (fdef.get("kb_blacklist") or [])):
+        return False
     if fdef.get("needs_digit"):
         return sum(c.isdigit() for c in value) >= int(fdef.get("min_digits") or 1)
     if ftype in ("date", "datetime") or "date" in _tokens(str(fdef.get("name") or "")):

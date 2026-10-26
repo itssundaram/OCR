@@ -2,12 +2,16 @@
 Download the model weights this project needs, skipping what is already there (Windows, Linux, macOS).
 
     cd backend
-    venv\Scripts\activate
-    python scripts\download_models_windows.py            # download what is missing
-    python scripts\download_models_windows.py --check    # only report
+    (activate the venv)
+    python scripts/download_models.py            # download what is missing   (needs internet)
+    python scripts/download_models.py --check    # only report                (works offline)
 
-Weights go to MODEL_CACHE_DIR/huggingface (default backend\data\models\huggingface) - the folder the app points
+Weights go to MODEL_CACHE_DIR/huggingface (default backend/data/models/huggingface) - the folder the app points
 TRANSFORMERS_CACHE at, with the `models--org--name` folders directly inside it. Also checks Tesseract and Ollama.
+
+Air-gapped install: run this on any PC that has internet, then copy the whole backend/data/models folder to the
+same place on the offline machine (USB / file share). The offline machine never needs to run the download.
+Only the surya / tesseract / learned_anchor pipelines use these weights; fast_ocr needs none of them.
 """
 from __future__ import annotations
 
@@ -105,7 +109,7 @@ def ollama_model() -> str:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true", help="report only, download nothing")
-    ap.add_argument("--dest", help="folder for the weights (default: MODEL_CACHE_DIR/huggingface, i.e. backend\\data\\models\\huggingface)")
+    ap.add_argument("--dest", help="folder for the weights (default: MODEL_CACHE_DIR/huggingface, i.e. backend/data/models/huggingface)")
     args = ap.parse_args()
     dest = Path(args.dest).resolve() if args.dest else cache_dir()
     # Everything stays inside the project folder: point every Hugging Face location (cache, token/xet scratch,
@@ -152,11 +156,11 @@ def main() -> int:
             langs = []
         print(f"  Tesseract: {tess}  (eng: {'yes' if 'eng' in langs else 'NO'}, osd: {'yes' if 'osd' in langs else 'NO - page rotation detection needs it'})")
     else:
-        print("  Tesseract: NOT FOUND  ->  winget install -e --id UB-Mannheim.TesseractOCR   (then set TESSERACT_CMD in .env if it is not on PATH)")
+        print("  Tesseract: NOT FOUND  ->  Windows: winget install -e --id UB-Mannheim.TesseractOCR | Linux: apt install tesseract-ocr   (then set TESSERACT_CMD in .env if it is not on PATH)")
     model = ollama_model()
     ollama = shutil.which("ollama")
     if not ollama:
-        print("  Ollama: NOT FOUND  ->  winget install -e --id Ollama.Ollama")
+        print("  Ollama: NOT FOUND  ->  Windows: winget install -e --id Ollama.Ollama | Linux: https://ollama.com/download  (only the surya / tesseract / learned_anchor pipelines and fast_ocr's field repair use it)")
     else:
         try:
             listed = subprocess.run([ollama, "list"], capture_output=True, text=True, timeout=20).stdout

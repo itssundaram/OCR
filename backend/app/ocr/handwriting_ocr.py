@@ -10,6 +10,11 @@ from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 
+# Set once when the model cannot be loaded (not enough RAM, weights missing). From then on the handwriting re-read is
+# skipped for the rest of the process, so the page keeps its normal OCR text instead of the whole job failing.
+_LOAD_FAILED = False
+
+
 class HandwritingOCREngine:
     """
     Uses TrOCR via HuggingFace transformers. Loaded lazily.
@@ -46,9 +51,21 @@ class HandwritingOCREngine:
         Processes a single line/region image. Returns (text, confidence).
         Note: TrOCR is optimized for single-line text, so bounding boxes from layout are helpful.
         """
+        global _LOAD_FAILED
+        if _LOAD_FAILED:
+            return "", 0.0
         if not self._is_loaded:
-            self.load_model()
-            
+            try:
+                self.load_model()
+            except Exception as exc:
+                _LOAD_FAILED = True
+                logger.warning(
+                    "handwriting_fallback_disabled",
+                    reason=str(exc)[:200],
+                    hint="Continuing without the handwriting re-read. Set HANDWRITING_FALLBACK_ENABLED=false to stop trying.",
+                )
+                return "", 0.0
+
         try:
             # Ensure RGB
             if region_image.mode != "RGB":

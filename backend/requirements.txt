@@ -32,6 +32,7 @@ python-dotenv==1.0.1
 # ── Database ──────────────────────────────────────────────────────────────────
 sqlalchemy==2.0.36
 oracledb==2.5.0
+cryptography>=42      # encrypts saved connections of the Database page (oracledb needs it too)
 alembic==1.14.0
 
 # ── Queue / Worker ────────────────────────────────────────────────────────────
@@ -69,6 +70,9 @@ numpy==2.3.2
 jsonschema==4.23.0
 structlog==24.4.0
 img2table==1.3.1
+# img2table pulls in pandas. Pinned to 2.3.x: pandas 3.x ships .pyd files that Windows Application Control
+# (managed PCs) blocks, which stops the whole API from starting.
+pandas==2.3.2
 
 # ── Hardware discovery (app/system) ──────────────────────────────────────────
 # Optional but recommended on GPU servers: exact free-VRAM / compute-capability readings.

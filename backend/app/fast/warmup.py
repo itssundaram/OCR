@@ -40,7 +40,7 @@ def check_tatr_weights() -> str | None:
     if not found:
         raise StartupCheckError(
             "FAST_TATR_FALLBACK_ENABLED=true but the table-transformer-structure-recognition weights "
-            "are not in MODEL_CACHE_DIR/huggingface. Run scripts/download_all_models.py or disable the fallback."
+            "are not in MODEL_CACHE_DIR/huggingface. Run scripts/download_models.py or disable the fallback."
         )
     return "table-transformer-structure-recognition"
 

@@ -706,8 +706,19 @@ def _dispatch_job(
     same contract the original single-flow dispatch block had, now shared by
     all three upload flows."""
     try:
-        from app.workers.queue import q as redis_queue
+        from app.workers.queue import q as redis_queue, redis_conn
         if redis_queue is not None:
+            # each pipeline has its own worker; use its queue while that worker is alive, else the general queue
+            try:
+                from rq import Queue
+                from app.workers.routing import pick_queue
+                pipeline = task_args[0] if (task_args and task_path.endswith("run_single_pipeline_job")) else None
+                chosen = pick_queue(redis_conn, pipeline)
+                if chosen != redis_queue.name:
+                    redis_queue = Queue(chosen, connection=redis_conn, default_timeout=settings.JOB_TIMEOUT_SECONDS)
+                logger.info("job_queue_chosen", job_id=job_id, pipeline=pipeline, queue=chosen)
+            except Exception as route_err:
+                logger.warning("job_queue_routing_failed", error=str(route_err)[:160])
             try:
                 from rq import Retry, Callback
                 redis_queue.enqueue(

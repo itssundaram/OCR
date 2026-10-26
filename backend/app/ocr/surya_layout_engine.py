@@ -47,7 +47,8 @@ class SuryaLayoutEngine:
             logger.info("surya_layout_loaded")
         except Exception as e:
             logger.error("surya_layout_load_failed", error=str(e))
-            raise
+            from app.ocr.model_errors import weights_error
+            raise weights_error(e, "Surya layout") from e
 
     def detect_layout(self, image: Image.Image) -> list[LayoutRegion]:
         if not self._is_loaded:

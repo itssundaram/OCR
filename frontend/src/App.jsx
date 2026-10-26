@@ -12,6 +12,7 @@ import LogsPage from './pages/LogsPage';
 import OrchestrationPage from './pages/OrchestrationPage';
 import OrchestrationCanvasPage from './pages/OrchestrationCanvasPage';
 import HelpSupportPage from './pages/HelpSupportPage';
+import DatabasePage from './pages/DatabasePage';
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
         <Route path="logs" element={<LogsPage />} />
         <Route path="orchestration" element={<OrchestrationPage />} />
         <Route path="orchestration/canvas/:id" element={<OrchestrationCanvasPage />} />
+        <Route path="database" element={<DatabasePage />} />
         <Route path="help" element={<HelpSupportPage />} />
 
         <Route path="*" element={

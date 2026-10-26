@@ -54,6 +54,10 @@ class SuryaOCREngine(OCREngine):
             logger.info("surya_ocr_models_loaded")
         except Exception as exc:
             logger.error("surya_ocr_load_failed", error=str(exc))
+            from app.ocr.model_errors import weights_error
+            hinted = weights_error(exc, "Surya OCR")
+            if hinted is not exc:
+                raise hinted from exc
             raise RuntimeError(f"Failed to load Surya OCR models: {exc}")
 
     def process_images(self, images: list[Image.Image]) -> OCRResult:

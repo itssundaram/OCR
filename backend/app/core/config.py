@@ -27,10 +27,6 @@ class Settings(BaseSettings):
     APP_ENV: Literal["development", "staging", "production"] = "development"
     APP_VERSION: str = "1.0.0"
 
-    # ── API Server ────────────────────────────────────────────────────────────
-    API_HOST: str = "0.0.0.0"
-    API_PORT: int = 8000
-
     # ── Oracle Database ───────────────────────────────────────────────────────
     ORACLE_HOST: str = "localhost"
     ORACLE_PORT: int = 1521
@@ -38,6 +34,15 @@ class Settings(BaseSettings):
     ORACLE_USER: str = "docint_user"
     ORACLE_PASSWORD: str = ""
     DATABASE_URL: str | None = Field(default=None)
+
+    # ── Database page (browse a database from the UI; off unless you switch it on) ──
+    DB_ADMIN_UI_ENABLED: bool = False          # the page and its endpoints answer only when this is true
+    DB_ADMIN_ALLOWED_HOSTS: str = ""           # client addresses allowed besides this machine (comma separated; IPs, CIDR ranges)
+    DB_ADMIN_MAX_ROWS: int = 500               # most rows one preview call returns
+    DB_ADMIN_QUERY_TIMEOUT_S: int = 15         # a preview query that runs longer is cancelled
+    DB_ADMIN_CONNECT_TIMEOUT_S: int = 10
+    DB_ADMIN_SESSION_TTL_S: int = 1800         # an idle browse connection is closed after this
+    DB_ADMIN_DIR: str = ""                     # where saved connections live (default: backend/data/db_admin)
 
     # ── Redis / Queue ─────────────────────────────────────────────────────────
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -214,7 +219,7 @@ class Settings(BaseSettings):
     OFFLINE_MODE: bool = True               # air-gapped: models read only from MODEL_CACHE_DIR, no connection leaves private networks
     OFFLINE_ALLOW_HOSTS: str = ""           # extra hosts the guard lets through (comma separated); DB/Redis/Ollama hosts are automatic
     FAST_QUEUE_NAME: str = "docint-fast"    # run_fast_worker.py listens here; falls back to REDIS_QUEUE_NAME
-    FAST_AUTOSTART_WORKER: bool = True      # the API starts run_fast_worker.py itself when none is listening
+    FAST_AUTOSTART_WORKER: bool = False     # off: run_worker.py starts every worker; on = the API also starts a fast worker if none lives
     FAST_AUTOSTART_WAIT_S: int = 25         # an upload waits this long for that worker to register before using the slow queue
     FAST_JOB_TIMEOUT_S: int = 600           # outer ceiling only; stage limits do the real work
     FAST_ALLOW_BACKGROUND_FALLBACK: bool = False  # False: answer 503 if Redis is down
@@ -236,16 +241,12 @@ class Settings(BaseSettings):
     # Max pixel dimension for images sent to the vision model (smaller = faster tokens)
     LLM_IMAGE_MAX_PX: int = 800
     # Ollama generation options
-    LLM_MAX_OUTPUT_TOKENS: int = 4096  # Cap on LLM response token length
-    OLLAMA_NUM_PREDICT: int = 4096   # Max tokens to generate (aliased by LLM_MAX_OUTPUT_TOKENS)
+    OLLAMA_NUM_PREDICT: int = 4096   # Max tokens to generate
     OLLAMA_NUM_CTX: int = 16384     # Context window size
     # A stalled Ollama call used to block a worker forever (the client had no timeout). Every call now ends
     # after this many seconds with a clear error; the pipeline then degrades instead of hanging.
     OLLAMA_REQUEST_TIMEOUT_S: int = 180
     OLLAMA_KEEP_ALIVE: str = "30m"   # keep the model loaded between jobs (no cold start per document)
-
-    # Set ENABLE_OCR_CACHE=true to reuse stored OCR results on re-processing
-    ENABLE_OCR_CACHE: bool = True
 
     # When True, Tesseract OCR and img2table are skipped entirely.
     # Images are sent directly to the Vision LLM. Requires LLM_PAYLOAD_MODE=image or both.
@@ -264,6 +265,12 @@ class Settings(BaseSettings):
     # How the fast_ocr worker enforces a job's time limit. "auto" picks by operating system: Linux/macOS use RQ's
     # signal timer (SIGALRM); Windows has no SIGALRM, so it uses a thread timer instead. Force one only if needed.
     FAST_WORKER_TIMEOUT: Literal["auto", "signal", "timer"] = "auto"
+
+    # run_worker.py starts one worker per pipeline plus one general worker. "auto" = every pipeline whose packages are
+    # installed; or a comma list, e.g. "fast_ocr,tesseract" to save memory (the others then run on the general worker).
+    WORKER_PIPELINES: str = "auto"
+    WORKER_GENERAL: bool = True              # the general worker (compare / orchestration jobs, and fallback for any pipeline)
+    WORKER_RESTART_MAX_BACKOFF_S: int = 60   # a crashed worker is restarted after 2, 4, 8 ... seconds, up to this
     # A job that has not finished after this long gets every thread's stack written to the log, repeatedly,
     # so a stuck job always shows WHERE it is stuck. 0 = off.
     WORKER_STALL_DUMP_S: int = 90
@@ -272,11 +279,6 @@ class Settings(BaseSettings):
     TESSERACT_OMP_THREADS: int = 1
     # Number of pages from the start of a document to process. 0 = all pages.
     MAX_PAGES_TO_PROCESS: int = 0
-
-    # ── Smart Extraction ──────────────────────────────────────────────────────
-    # If the fraction of fields found via vector search meets this threshold,
-    # the LLM is skipped and extracted data is returned directly.
-    DIRECT_RESPONSE_THRESHOLD: float = 0.75
 
     # ── Logging ───────────────────────────────────────────────────────────────
     LOG_LEVEL: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
@@ -309,11 +311,12 @@ class Settings(BaseSettings):
         """
         if self.DATABASE_URL:
             return self.DATABASE_URL
-        return (
-            f"oracle+oracledb://{self.ORACLE_USER}:{self.ORACLE_PASSWORD}"
-            f"@{self.ORACLE_HOST}:{self.ORACLE_PORT}"
-            f"/?service_name={self.ORACLE_SERVICE_NAME}"
-        )
+        # URL.create escapes @ : / # in the password, which the old f-string did not
+        from sqlalchemy.engine import URL
+        return URL.create(
+            "oracle+oracledb", username=self.ORACLE_USER, password=self.ORACLE_PASSWORD or None,
+            host=self.ORACLE_HOST, port=self.ORACLE_PORT, query={"service_name": self.ORACLE_SERVICE_NAME},
+        ).render_as_string(hide_password=False)
 
     @computed_field
     @property
@@ -392,6 +395,13 @@ def get_settings() -> Settings:
 
 
 settings = get_settings()
+
+# "Use as the app database" on the Database page writes an override file; every process (API and workers) applies it here.
+try:
+    from app.db_admin.vault import apply_override as _apply_db_override
+    _apply_db_override(settings)
+except Exception:  # never stop the app from starting because of the override file
+    pass
 
 # Propagate the model-cache location to the third-party libraries that read
 # it from the process environment (HuggingFace's hub/transformers, which

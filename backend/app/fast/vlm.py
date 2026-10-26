@@ -46,13 +46,16 @@ class FieldVlm:
     def __init__(self):
         self._client = None
 
-    def _get(self):
+    def _get(self, timeout: float | None = None):
+        """The shared client; with `timeout` (seconds left in the job's VLM budget) a short-lived one that gives up then."""
+        from ollama import Client
+        if timeout is not None and timeout < settings.FAST_VLM_TIMEOUT_S:
+            return Client(host=settings.OLLAMA_BASE_URL.rstrip("/"), timeout=max(1.0, float(timeout)))
         if self._client is None:
-            from ollama import Client
             self._client = Client(host=settings.OLLAMA_BASE_URL.rstrip("/"), timeout=settings.FAST_VLM_TIMEOUT_S)
         return self._client
 
-    def read_field(self, crop: Image.Image, label: str) -> str:
+    def read_field(self, crop: Image.Image, label: str, timeout: float | None = None) -> str:
         buf = io.BytesIO()
         crop.convert("RGB").save(buf, format="PNG")
         prompt = (
@@ -61,7 +64,7 @@ class FieldVlm:
             'If the value is not visible, return an empty string. '
             'Reply with JSON only: {"value": "<text>"}'
         )
-        resp = self._get().chat(
+        resp = self._get(timeout).chat(
             model=settings.AI_MODEL,
             messages=[{"role": "user", "content": prompt, "images": [base64.b64encode(buf.getvalue()).decode()]}],
             format="json",

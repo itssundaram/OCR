@@ -25,7 +25,7 @@ def test_repairs_run_in_parallel_and_each_field_is_settled(monkeypatch):
     monkeypatch.setattr(settings, "FAST_VLM_PARALLEL", 4)
     names = [f"f{i}" for i in range(4)]
     ex, bus = _extractor(names)
-    ex._vlm_read = lambda page, box, label: (time.sleep(0.3) or ("VALUE " + label, True, (0, 0, 10, 10)))
+    ex._vlm_read = lambda page, box, label, timeout=None: (time.sleep(0.3) or ("VALUE " + label, True, (0, 0, 10, 10)))
     slots = _slots(ex, names)
     t0 = time.perf_counter()
     ex._vlm_phase(slots, max_calls=8)
@@ -37,7 +37,7 @@ def test_repairs_run_in_parallel_and_each_field_is_settled(monkeypatch):
 def test_cap_flags_the_rest_with_a_reason():
     names = ["a", "b", "c"]
     ex, bus = _extractor(names)
-    ex._vlm_read = lambda *a: ("x", True, (0, 0, 1, 1))
+    ex._vlm_read = lambda *a, **k: ("x", True, (0, 0, 1, 1))
     slots = _slots(ex, names)
     ex._vlm_phase(slots, max_calls=1)
     skipped = [s for s in slots if s["result"].extraction_method == "not_found"]
@@ -50,7 +50,7 @@ def test_a_dead_model_stops_the_phase_early(monkeypatch):
     ex, bus = _extractor(names)
     calls = []
 
-    def boom(*a):
+    def boom(*a, **k):
         calls.append(1)
         raise RuntimeError("ollama down")
     ex._vlm_read = boom
@@ -65,9 +65,30 @@ def test_time_budget_ends_the_phase(monkeypatch):
     monkeypatch.setattr(settings, "FAST_VLM_BUDGET_S", 1)
     names = [f"f{i}" for i in range(5)]
     ex, bus = _extractor(names)
-    ex._vlm_read = lambda *a: (time.sleep(0.6) or ("v", True, (0, 0, 1, 1)))
+    ex._vlm_read = lambda *a, **k: (time.sleep(0.6) or ("v", True, (0, 0, 1, 1)))
     slots = _slots(ex, names)
     t0 = time.perf_counter()
     ex._vlm_phase(slots, max_calls=8)
     assert time.perf_counter() - t0 < 2.5          # would be 3 s without the budget
     assert any(ex.meta[s["name"]].reason == "vlm_budget_spent" for s in slots)
+
+
+def test_a_stalled_model_never_holds_the_job_past_the_vlm_budget(monkeypatch):
+    """Every call gets only the time left in the budget, so three stalled calls do not add up to 3 x the timeout."""
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "FAST_VLM_BUDGET_S", 3)
+    monkeypatch.setattr(settings, "FAST_VLM_PARALLEL", 1)
+    names = ["a", "b", "c"]
+    ex, bus = _extractor(names)
+    seen = []
+
+    def stalled(page, box, label, timeout=None):
+        seen.append(timeout)
+        time.sleep(min(timeout, 1.5))                      # the client gives up at its timeout
+        raise RuntimeError("timed out")
+    ex._vlm_read = stalled
+    slots = _slots(ex, names)
+    t0 = time.monotonic()
+    ex._vlm_phase(slots, max_calls=8)
+    assert time.monotonic() - t0 < 4.5
+    assert all(t is not None and t <= 3 for t in seen)

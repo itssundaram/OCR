@@ -27,6 +27,8 @@ const LIVE_PIPELINES = new Set(['fast_ocr', 'learned_anchor']);
 
 // Pipelines whose job can be stopped part-way (the fast worker honours a cancel flag), so a document the person
 // then replaces costs little: only those start processing before "Execute". The others upload on Execute.
+// the engine pre-selected on this page
+const DEFAULT_PIPELINE = 'fast_ocr';
 const PREFETCH_PIPELINES = new Set(['fast_ocr']);
 
 const parseJSONRecursively = (data) => {
@@ -138,7 +140,9 @@ const OcrPage = () => {
         setSelectedDept(initialDept);
 
         const availablePipelines = pipelinesRes.data.pipelines || [];
-        availablePipelines.sort((a, b) => (a.name === 'learned_anchor' ? -1 : b.name === 'learned_anchor' ? 1 : 0));
+        // fast_ocr is the default engine and is listed first; learned_anchor comes next
+        const rank = (n) => (n === DEFAULT_PIPELINE ? 0 : n === 'learned_anchor' ? 1 : 2);
+        availablePipelines.sort((a, b) => rank(a.name) - rank(b.name));
         setPipelines(availablePipelines);
         if (availablePipelines.length > 0) setSelectedPipeline(availablePipelines[0].name);
       } catch (err) {
